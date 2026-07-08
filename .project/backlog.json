@@ -35,7 +35,7 @@
     "id": "ms-03-left-nav",
     "desc": "左側導覽 10 項 + 切表：點選切換載入該表看板",
     "done_when": "左側列出 10 張數字表、可點選；切換後整個看板換成該表資料；記住目前選的是哪張表",
-    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "status": "done", "attempts": 0, "created": "2026-07-08",
     "notes": "參考截圖左側 sidebar 樣式。"
   },
   {

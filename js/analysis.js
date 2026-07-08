@@ -265,6 +265,7 @@
   function severityRepair(deptAll, openStatus) {
     var openKey = U.normKey(openStatus);
     function classify(r) {
+      if (r.closeBucket) return r.closeBucket; // 多表：已有分桶(open/closed/other)
       if (U.normKey(r.closeStatus) === openKey) return 'open';
       if (String(r.closeStatus).indexOf('結') >= 0) return 'closed';
       return 'other';
@@ -407,6 +408,61 @@
     return { issues: issues, count: totalFlagged };
   }
 
+  /* 補齊衍生欄位(供多表：records 已有 severity/realDue/daysLeft/日期/remark) */
+  function finalizeRecord(r) {
+    var stage = r.exceptionApproval ? 'exception'
+              : r.firstExtension    ? 'extension'
+              : r.fixDeadline       ? 'original' : 'none';
+    r.stage = stage;
+    r.safeException = (stage === 'exception' && r.daysLeft !== null && r.daysLeft >= 0);
+    var actions = parseActions(r.remark || '');
+    r.actionCount = actions.total; r.extCount = actions.ext; r.excCount = actions.exc;
+    r.chronic = actions.total >= (CFG.chronicThreshold || 2);
+    if (r.overdueDays === undefined) r.overdueDays = (r.daysLeft !== null && r.daysLeft < 0) ? -r.daysLeft : 0;
+    r.riskScore = riskScore(r.severity, r.realDue, r.daysLeft, r.overdueDays);
+    if (r.department === undefined) r.department = r.unit || '';
+    if (!r.owner) r.owner = '(未指定)';
+    return r;
+  }
+
+  /* 由「已正規化紀錄陣列」組出完整分析結果(多表共用同一套看板運算)。
+   * allRecords: 該表全部；scoped: 母體(預設 = closeBucket 為 open) */
+  function assembleResult(allRecords, scoped, meta) {
+    meta = meta || {};
+    allRecords.forEach(finalizeRecord);
+    scoped = scoped || allRecords.filter(function (r) { return r.closeBucket ? r.closeBucket === 'open' : true; });
+
+    var statusMap = {};
+    allRecords.forEach(function (r) {
+      var k = r.closeStatus || '(空白)';
+      if (!statusMap[k]) statusMap[k] = { status: k, count: 0, records: [] };
+      statusMap[k].count++; statusMap[k].records.push(r);
+    });
+    var statusItems = Object.keys(statusMap).map(function (k) { return statusMap[k]; })
+      .sort(function (a, b) { return b.count - a.count; });
+
+    return {
+      allCount: meta.allCount != null ? meta.allCount : allRecords.length,
+      deptAllCount: allRecords.length,
+      records: scoped,
+      summary: summarize(scoped),
+      owners: byOwner(scoped),
+      stageStats: byStage(scoped),
+      statusBreakdown: {
+        items: statusItems, total: allRecords.length,
+        openCount: allRecords.filter(function (r) { return r.closeBucket === 'open'; }).length,
+        closedCount: allRecords.filter(function (r) { return r.closeBucket === 'closed'; }).length,
+      },
+      severityRepair: severityRepair(allRecords, CFG.filter.openStatus),
+      governance: governance(scoped),
+      dueMatrix: dueMatrix(scoped, CFG.dueMatrixMonths),
+      todayActions: todayActions(scoped),
+      riskRanking: riskRanking(scoped),
+      quality: qualityIssues(scoped),
+      scopeLabel: meta.scopeLabel,
+    };
+  }
+
   /* 主入口：原始 rows + colMap → 分析結果 */
   function analyze(rows, colMap) {
     var all = rows.map(function (r) { return buildRecord(r, colMap); });
@@ -489,10 +545,14 @@
 
   global.Analysis = {
     analyze: analyze,
+    assembleResult: assembleResult,
+    finalizeRecord: finalizeRecord,
     summarize: summarize,
     BANDS: BANDS,
     bandOf: bandOf,
+    byOwner: byOwner,
     byStage: byStage,
+    severityRepair: severityRepair,
     governance: governance,
     dueMatrix: dueMatrix,
     todayActions: todayActions,

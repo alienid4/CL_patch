@@ -8,7 +8,7 @@
   var U = global.Utils;
   var UI = global.UI;
 
-  var state = { result: null, fileName: '' };
+  var state = { result: null, fileName: '', sheets: null, activeIdx: 0 };
 
   function $(id) { return document.getElementById(id); }
 
@@ -88,7 +88,7 @@
   /* 把關鍵指標整理成一段可讀文字(數字取自與指標卡相同來源) */
   function buildSummaryText(result) {
     var s = result.summary;
-    var dept = (global.APP_CONFIG && global.APP_CONFIG.filter && global.APP_CONFIG.filter.department) || '';
+    var dept = (state.sheets && state.sheets[state.activeIdx]) ? state.sheets[state.activeIdx].name : '';
     var repairRate = (result.severityRepair && result.severityRepair.totals)
       ? Math.round(result.severityRepair.totals.rate * 1000) / 10 : 0;
     var today = new Date();
@@ -104,7 +104,7 @@
     return lines.join('\n');
   }
 
-  /* -------- 檔案處理 -------- */
+  /* -------- 檔案處理（多工作表） -------- */
   function handleFile(file) {
     if (!/\.(xlsx|xlsm|xls|csv)$/i.test(file.name)) {
       UI.toast('請選擇 Excel 檔（.xlsx / .xls / .csv）', 'error');
@@ -114,61 +114,119 @@
     setLoading(true);
     hideError();
 
-    global.ExcelReader.parseFile(file).then(function (parsed) {
-      parsed.fileName = file.name;
-      applyParsed(parsed, true);   // true = 存入 localStorage
+    readArrayBuffer(file).then(function (buf) {
+      loadWorkbook(buf, file.name);
+      saveWorkbook(buf, file.name);
       setLoading(false);
-      UI.toast('解析完成：' + file.name, 'success');
+      UI.toast('解析完成：' + file.name + '（' + state.sheets.length + ' 張表）', 'success');
     }).catch(function (err) {
       setLoading(false);
-      handleParseError(err);
+      showError('解析失敗：' + U.esc(err && err.message || err));
+      UI.toast('解析失敗', 'error');
     });
   }
 
-  /* 套用一份已解析資料(來自檔案或 localStorage 還原) */
-  function applyParsed(parsed, doSave) {
-    var result = global.Analysis.analyze(parsed.rows, parsed.colMap);
-    state.result = result;
-    state.fileName = parsed.fileName || state.fileName;
-    renderAll(result, parsed);
+  function readArrayBuffer(file) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function (e) { resolve(e.target.result); };
+      r.onerror = function () { reject(new Error('檔案讀取失敗（可能正被 Excel 鎖住，請先關閉）')); };
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  /* buf → 建各表 result、渲染左側導覽、選第一張 */
+  function loadWorkbook(buf, fileName) {
+    var sheets = global.Multi.buildAll(buf);
+    if (!sheets.length) { showError('找不到「數字-」開頭的工作表。'); throw new Error('無數字工作表'); }
+    state.sheets = sheets;
+    state.fileName = fileName || state.fileName;
+    if (state.activeIdx >= sheets.length) state.activeIdx = 0;
+    renderSheetNav();
+    selectSheet(state.activeIdx);
     showDashboard();
-    if (doSave) saveState(parsed);
   }
 
-  /* -------- 記住上次匯入(localStorage) -------- */
-  var STORAGE_KEY = 'vulnDashboard.v1';
-
-  function cellForStore(v) {
-    if (v instanceof Date) { return isNaN(v.getTime()) ? '' : (v.getFullYear() + '/' + (v.getMonth() + 1) + '/' + v.getDate()); }
-    return v;
-  }
-  // 只存「有用到的欄位」以縮小體積、避開長描述欄
-  function slimRows(rows, colMap) {
-    var headers = [];
-    Object.keys(colMap).forEach(function (k) { var h = colMap[k]; if (headers.indexOf(h) < 0) headers.push(h); });
-    return rows.map(function (r) {
-      var o = {}; headers.forEach(function (h) { if (r[h] !== undefined) o[h] = cellForStore(r[h]); }); return o;
+  /* -------- 左側工作表導覽 -------- */
+  function renderSheetNav() {
+    var nav = $('sheet-nav');
+    nav.innerHTML = '';
+    state.sheets.forEach(function (s, i) {
+      var item = U.el('button', {
+        class: 'sheet-item' + (i === state.activeIdx ? ' active' : ''),
+        onclick: (function (idx) { return function () { selectSheet(idx); saveActiveIdx(idx); }; })(i),
+      }, [
+        U.el('span', { class: 'sheet-name', text: s.name }),
+        U.el('span', { class: 'sheet-count', text: U.num(s.result.summary.total) + ' 未結' }),
+      ]);
+      nav.appendChild(item);
     });
   }
-  function saveState(parsed) {
-    try {
-      var payload = {
-        v: 1, rows: slimRows(parsed.rows, parsed.colMap), colMap: parsed.colMap,
-        sheetName: parsed.sheetName, requestedSheet: parsed.requestedSheet,
-        fileName: parsed.fileName, savedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch (e) {
-      UI.toast('本次資料量較大，未能記住（下次需重新匯入）', 'error');
+
+  function selectSheet(i) {
+    state.activeIdx = i;
+    var s = state.sheets[i];
+    state.result = s.result;
+    // nav active
+    var items = document.querySelectorAll('#sheet-nav .sheet-item');
+    Array.prototype.forEach.call(items, function (el, idx) { el.classList.toggle('active', idx === i); });
+    renderActive(s);
+  }
+
+  function renderActive(s) {
+    var result = s.result;
+    $('file-name-tag').textContent = state.fileName + '　(工作表：' + s.name + ')';
+    renderQuality(result);
+    global.Dashboard.render(result);
+    global.Tracking.render(result);
+    global.Stats.render(result);
+    global.Search.render(result);
+    // scope-info 改為多表版
+    var scope = $('scope-info');
+    scope.innerHTML = '';
+    scope.appendChild(U.el('span', { html:
+      '<b>' + U.esc(s.name) + '</b>　·　全部部門 · 未結案 <b>' + U.num(result.summary.total) +
+      '</b> 筆　|　該表全部 ' + U.num(result.allCount) + ' 筆（含已結案）' }));
+    if ($('copy-summary-btn')) $('copy-summary-btn').disabled = !state.result;
+  }
+
+  /* -------- 記住上次匯入(localStorage：存整份檔 base64 + 目前選的表) -------- */
+  var STORAGE_KEY = 'vulnDashboard.v2';
+
+  function abToB64(buf) {
+    var bytes = new Uint8Array(buf), bin = '', chunk = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
     }
+    return btoa(bin);
+  }
+  function b64ToAb(b64) {
+    var bin = atob(b64), len = bin.length, bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  function saveWorkbook(buf, fileName) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        v: 2, b64: abToB64(buf), fileName: fileName,
+        activeIdx: state.activeIdx, savedAt: new Date().toISOString(),
+      }));
+    } catch (e) {
+      UI.toast('檔案較大，未能記住（下次需重新匯入）', 'error');
+    }
+  }
+  function saveActiveIdx(i) {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
+      var p = JSON.parse(raw); p.activeIdx = i; localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    } catch (e) {}
   }
   function loadState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       var p = JSON.parse(raw);
-      if (!p || !p.rows || !p.colMap) return null;
-      return p;
+      return (p && p.b64) ? p : null;
     } catch (e) { return null; }
   }
   function clearState() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
@@ -184,41 +242,13 @@
     var saved = loadState();
     if (!saved) return;
     try {
-      applyParsed({
-        rows: saved.rows, colMap: saved.colMap, sheetName: saved.sheetName,
-        requestedSheet: saved.requestedSheet, fileName: saved.fileName,
-      }, false);
+      state.activeIdx = saved.activeIdx || 0;
+      loadWorkbook(b64ToAb(saved.b64), saved.fileName);
       var when = fmtSavedAt(saved.savedAt);
       UI.toast('已還原上次匯入：' + (saved.fileName || '') + (when ? '（' + when + '）' : ''), 'success');
     } catch (e) {
       clearState(); // 還原失敗就清掉，回到上傳畫面
     }
-  }
-
-  function handleParseError(err) {
-    if (err && err.type === 'columns') {
-      var msg = '缺少必要欄位：<b>' + err.missing.map(U.esc).join('、') + '</b><br>' +
-        '<span class="err-sub">請確認工作表標題列包含上述欄位（可調整 config/config.js 的 aliases）。</span><br>' +
-        '<span class="err-sub">目前讀到的標題：' + (err.headers || []).map(U.esc).join('、') + '</span>';
-      showError(msg);
-    } else if (err && err.message) {
-      showError(U.esc(err.message));
-    } else {
-      showError('解析失敗，請確認檔案格式是否正確。');
-    }
-    UI.toast('解析失敗', 'error');
-  }
-
-  /* -------- 渲染 -------- */
-  function renderAll(result, parsed) {
-    $('file-name-tag').textContent = state.fileName +
-      '　(工作表：' + parsed.sheetName +
-      (parsed.sheetName !== parsed.requestedSheet ? '，已改用第一個工作表' : '') + ')';
-    renderQuality(result);
-    global.Dashboard.render(result);
-    global.Tracking.render(result);
-    global.Stats.render(result);
-    global.Search.render(result);
   }
 
   /* 資料品質檢核橫幅(全域，位於分頁上方) */
@@ -271,6 +301,9 @@
   }
   function resetToUpload() {
     state.result = null;
+    state.sheets = null;
+    state.activeIdx = 0;
+    if ($('sheet-nav')) $('sheet-nav').innerHTML = '';
     global.Dashboard.destroyCharts();
     global.Stats.destroyCharts();
     $('main-content').classList.add('hidden');

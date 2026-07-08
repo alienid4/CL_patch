@@ -47,6 +47,12 @@
 
     <!-- ===== 主內容 ===== -->
     <section id="main-content" class="main-content hidden">
+     <div class="workspace">
+      <!-- 左側：工作表導覽 -->
+      <nav id="sheet-nav" class="sheet-nav"></nav>
+
+      <!-- 右側：看板 -->
+      <div class="ws-main">
 
       <div id="quality-banner" class="quality-banner"></div>
       <div id="scope-info" class="scope-info"></div>
@@ -117,6 +123,8 @@
         <div id="search-body" class="search-body"></div>
       </div>
 
+      </div><!-- /.ws-main -->
+     </div><!-- /.workspace -->
     </section>
   </main>
 
@@ -159,9 +167,12 @@
 
   <!-- ===== 應用程式 ===== -->
   <script src="config/config.js"></script>
+  <script src="config/profiles.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/excel.js"></script>
+  <script src="js/sheets.js"></script>
   <script src="js/analysis.js"></script>
+  <script src="js/multi.js"></script>
   <script src="js/reminder.js"></script>
   <script src="js/ui-common.js"></script>
   <script src="js/dashboard.js"></script>
