@@ -28,11 +28,10 @@
 </style>
 </head>
 <body>
-<header><h1>🔎 多表對映檢查工具</h1></header>
+<header><h1>🔎 多表對映檢查工具（自帶版）</h1></header>
 <div class="wrap">
   <div class="warn">
-    這頁只是<strong>檢查用</strong>：丟入 Excel，會顯示 <b>sheets.js</b> 對每張數字表讀到什麼、欄位對到哪、嚴重度/結案怎麼分。<br>
-    看板本體（左側 10 項那個）還沒做（ms-03 之後才有）。此頁不會改到任何資料。
+    這頁<strong>完全自帶邏輯</strong>（只需連網載入試算表函式庫），雙擊即可用。丟入 Excel，會顯示每張數字表讀到什麼、欄位對到哪、嚴重度/結案怎麼分。此頁不會改到任何資料。
   </div>
 
   <div id="drop" class="drop">
@@ -41,7 +40,8 @@
     <input id="file" type="file" accept=".xlsx,.xls" hidden>
     <p class="note">
       · 若檔案正被 Excel 開著可能讀不到，請先<strong>關閉 Excel</strong> 再選。<br>
-      · 大表若只有 1–2 筆，代表該檔那幾張是「稀疏樣本」（真資料少），非程式問題。
+      · 大表若只有 1–2 筆，代表該檔那幾張是「稀疏樣本」（真資料少），非程式問題。<br>
+      · 需連網（載入試算表解析函式庫）。<span id="libstat"></span>
     </p>
   </div>
 
@@ -49,64 +49,123 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="../js/utils.js"></script>
-<script src="../config/profiles.js"></script>
-<script src="../js/sheets.js"></script>
 <script>
+/* ====== 自帶邏輯（鏡射 js/utils.js + config/profiles.js + js/sheets.js） ====== */
 (function(){
-  var U=window.Utils;
-  var fileInput=document.getElementById('file');
-  var drop=document.getElementById('drop');
-  var out=document.getElementById('out');
-  document.getElementById('pick').addEventListener('click',function(){fileInput.click();});
-  fileInput.addEventListener('change',function(e){ if(e.target.files[0]) handle(e.target.files[0]); });
-  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('hover');});});
-  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('hover');});});
-  drop.addEventListener('drop',function(e){ if(e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]); });
+  'use strict';
 
-  function handle(file){
-    out.innerHTML='<p class="note">解析中…</p>';
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      try{
-        var sheets=window.MultiSheet.parseWorkbook(ev.target.result);
-        render(sheets);
-      }catch(err){ out.innerHTML='<div class="warn">解析失敗：'+esc(err.message)+'</div>'; }
-    };
-    reader.onerror=function(){ out.innerHTML='<div class="warn">檔案讀取失敗（可能正被 Excel 鎖住，請先關閉）。</div>'; };
-    reader.readAsArrayBuffer(file);
+  /* ---- utils ---- */
+  function stripTime(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+  function today(){return stripTime(new Date());}
+  function parseDate(v){
+    if(v==null||v==='')return null;
+    if(v instanceof Date)return isNaN(v.getTime())?null:stripTime(v);
+    if(typeof v==='number'&&isFinite(v)){var ms=Math.round((v-25569)*86400*1000);var d=new Date(ms);return isNaN(d.getTime())?null:stripTime(d);}
+    var s=String(v).trim();if(!s)return null;
+    var cm=s.match(/^(\d{3,4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);if(cm)return new Date(+cm[1],+cm[2]-1,+cm[3]);
+    var m=s.match(/^(\d{3,4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);if(m){var y=+m[1];if(y<1911)y+=1911;return new Date(y,+m[2]-1,+m[3]);}
+    var d2=new Date(s);return isNaN(d2.getTime())?null:stripTime(d2);
+  }
+  function daysFromToday(due){if(!due)return null;return Math.round((due.getTime()-today().getTime())/86400000);}
+  function fmtDate(d){if(!d)return '-';var mm=String(d.getMonth()+1).padStart(2,'0');var dd=String(d.getDate()).padStart(2,'0');return d.getFullYear()+'/'+mm+'/'+dd;}
+  function normStr(v){if(v==null)return '';return String(v).replace(/　/g,' ').trim();}
+  function normKey(v){return normStr(v).replace(/\s+/g,'').toLowerCase();}
+
+  /* ---- profiles ---- */
+  var P={
+    numberedSheetPattern:'^\\s*\\d+\\s*[-\\u2013\\uFF0D]',
+    fieldAliases:{
+      unit:['負責單位','部門'], owner:['負責人','負責人員'],
+      host:['Host','內部Host IP','標的IP','IP','網址'],
+      name:['Name','風險項目','發現','標的','Audit Name','外部情資'],
+      pluginId:['Plugin ID'],
+      severity:['發現嚴重性','Finding Severity','Risk Severity','風險等級','Grade','風險'],
+      fixDeadline:['修補期限','改善期限','預計完成日期','改善完成日'],
+      firstExtension:['首次展延上限','首次展延期限'],
+      exceptionApproval:['例外核准期限'],
+      otherDue:['預計完成日','修補完成日'],
+      closeStatus:['結案狀態','改善狀況'], closeDate:['結案日期'], remark:['備註'],
+    },
+    severityMap:{'critical':'Critical','severe':'Critical','嚴重':'Critical','high':'High','material':'High','高':'High','medium':'Medium','moderate':'Medium','中':'Medium','warn':'Medium','low':'Low','minor':'Low','info':'Low','低':'Low'},
+  };
+
+  /* ---- sheets 邏輯 ---- */
+  function resolveField(nh,aliases){
+    var i,h,ak;
+    for(i=0;i<aliases.length;i++){ak=normKey(aliases[i]);for(h=0;h<nh.length;h++)if(nh[h].k===ak)return nh[h].raw;}
+    for(i=0;i<aliases.length;i++){ak=normKey(aliases[i]);for(h=0;h<nh.length;h++)if(nh[h].k.indexOf(ak)===0)return nh[h].raw;}
+    return null;
+  }
+  function resolveProfile(headers){
+    var nh=headers.filter(function(x){return normStr(x)!=='';}).map(function(x){return {raw:x,k:normKey(x)};});
+    var map={};Object.keys(P.fieldAliases).forEach(function(f){map[f]=resolveField(nh,P.fieldAliases[f]);});return map;
+  }
+  function mapSeverity(raw){var s=normStr(raw);if(!s)return 'Unknown';var low=s.toLowerCase();var ks=Object.keys(P.severityMap);for(var i=0;i<ks.length;i++)if(low.indexOf(ks[i])>=0)return P.severityMap[ks[i]];return 'Unknown';}
+  var COUNT_RE=/(嚴重|critical|高|high|中|medium|低|low|info)\s*[\*xX×]\s*(\d+)/gi;
+  function parseCounts(raw){var s=normStr(raw);if(!s)return null;COUNT_RE.lastIndex=0;var m,out=[];while((m=COUNT_RE.exec(s))!==null)out.push({sev:mapSeverity(m[1]),n:parseInt(m[2],10)||0});return out.length?out:null;}
+  function classifyClose(rawStatus,closeDate){var s=normStr(rawStatus);if(s){if(s.indexOf('未結')>=0||s.indexOf('進行中')>=0)return 'open';if(s.indexOf('結案')>=0||s.indexOf('已修補')>=0)return 'closed';return 'other';}return closeDate?'closed':'open';}
+  function pick(row,h){if(!h)return '';var v=row[h];return v===undefined?'':v;}
+  function splitUnitOwner(raw){var s=normStr(raw);var idx=s.indexOf('-');if(idx<0)idx=s.indexOf('–');if(idx<0)return {unit:s,owner:''};return {unit:s.slice(0,idx).trim(),owner:s.slice(idx+1).replace(/[（(].*$/,'').trim()};}
+  function buildRecords(row,map,sheetName){
+    var fix=parseDate(pick(row,map.fixDeadline)),ext=parseDate(pick(row,map.firstExtension)),exc=parseDate(pick(row,map.exceptionApproval)),other=parseDate(pick(row,map.otherDue));
+    var realDue=exc||ext||fix||other||null;var daysLeft=daysFromToday(realDue);
+    var closeDate=parseDate(pick(row,map.closeDate));var closeRaw=normStr(pick(row,map.closeStatus));var closeBucket=classifyClose(closeRaw,closeDate);
+    var unit=normStr(pick(row,map.unit));var owner=map.owner?normStr(pick(row,map.owner)):'';
+    if(!map.owner&&unit.indexOf('-')>=0){var so=splitUnitOwner(unit);unit=so.unit;owner=so.owner;}
+    if(!owner)owner='(未指定)';
+    var base={sheet:sheetName,host:normStr(pick(row,map.host)),name:normStr(pick(row,map.name)),pluginId:normStr(pick(row,map.pluginId)),unit:unit,owner:owner,fixDeadline:fix,firstExtension:ext,exceptionApproval:exc,otherDue:other,realDue:realDue,daysLeft:daysLeft,overdue:(daysLeft!==null&&daysLeft<0),overdueDays:(daysLeft!==null&&daysLeft<0)?-daysLeft:0,closeStatus:closeRaw,closeBucket:closeBucket,closeDate:closeDate,remark:normStr(pick(row,map.remark))};
+    var sevRaw=normStr(pick(row,map.severity));var counts=parseCounts(sevRaw);
+    if(counts){var out=[];counts.forEach(function(c){for(var i=0;i<c.n;i++)out.push(Object.assign({},base,{severity:c.sev,severityRaw:sevRaw,fromCount:true}));});return out.length?out:[Object.assign({},base,{severity:'Unknown',severityRaw:sevRaw})];}
+    base.severity=map.severity?mapSeverity(sevRaw):'Unknown';base.severityRaw=sevRaw;return [base];
+  }
+  function parseSheet(ws,name){
+    var matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
+    if(!matrix.length)return {name:name,headers:[],rawCount:0,records:[],profile:{}};
+    var headers=matrix[0].map(function(h){return normStr(h);});var map=resolveProfile(headers);var records=[],rawCount=0;
+    for(var i=1;i<matrix.length;i++){var arr=matrix[i];if(arr.every(function(c){return normStr(c)==='';}))continue;rawCount++;var obj={};for(var c=0;c<headers.length;c++)obj[headers[c]]=arr[c]===undefined?'':arr[c];buildRecords(obj,map,name).forEach(function(r){records.push(r);});}
+    return {name:name,headers:headers,rawCount:rawCount,records:records,profile:map};
+  }
+  function leadNum(name){var m=String(name).match(/\d+/);return m?parseInt(m[0],10):9999;}
+  function parseWorkbook(buf){
+    var wb=XLSX.read(buf,{type:'array',cellDates:true});var pat=new RegExp(P.numberedSheetPattern);
+    var names=(wb.SheetNames||[]).filter(function(n){return pat.test(n);});names.sort(function(a,b){return leadNum(a)-leadNum(b);});
+    return names.map(function(n,i){var res=parseSheet(wb.Sheets[n],n);res.index=i;return res;});
   }
 
+  /* ====== UI ====== */
+  var fileInput=document.getElementById('file'),drop=document.getElementById('drop'),out=document.getElementById('out');
+  document.getElementById('libstat').textContent=(typeof XLSX!=='undefined')?'（函式庫已載入✓）':'（⚠ 函式庫未載入，請確認可連網）';
+  document.getElementById('pick').addEventListener('click',function(){fileInput.click();});
+  fileInput.addEventListener('change',function(e){if(e.target.files[0])handle(e.target.files[0]);});
+  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('hover');});});
+  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('hover');});});
+  drop.addEventListener('drop',function(e){if(e.dataTransfer.files[0])handle(e.dataTransfer.files[0]);});
+
+  function handle(file){
+    if(typeof XLSX==='undefined'){out.innerHTML='<div class="warn">試算表函式庫未載入（需連網）。</div>';return;}
+    out.innerHTML='<p class="note">解析中…</p>';
+    var reader=new FileReader();
+    reader.onload=function(ev){try{render(parseWorkbook(ev.target.result));}catch(err){out.innerHTML='<div class="warn">解析失敗：'+esc(err.message)+'</div>';}};
+    reader.onerror=function(){out.innerHTML='<div class="warn">檔案讀取失敗（可能正被 Excel 鎖住，請先關閉）。</div>';};
+    reader.readAsArrayBuffer(file);
+  }
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function dist(recs,key){var d={};recs.forEach(function(r){var k=r[key]||'(空)';d[k]=(d[k]||0)+1;});return d;}
-  function pills(obj,cls){return Object.keys(obj).map(function(k){return '<span class="pill '+(cls&&cls(k)||'')+'">'+esc(k)+'：'+obj[k]+'</span>';}).join('');}
+  function pills(obj){return Object.keys(obj).map(function(k){return '<span class="pill">'+esc(k)+'：'+obj[k]+'</span>';}).join('');}
 
   function render(sheets){
-    if(!sheets.length){ out.innerHTML='<div class="warn">找不到「數字-」開頭的工作表。</div>'; return; }
-    var html='';
+    if(!sheets.length){out.innerHTML='<div class="warn">找不到「數字-」開頭的工作表。</div>';return;}
+    var clLabel={open:'未結案',closed:'已結案',other:'其他'};var html='';
     sheets.forEach(function(s){
-      var p=s.profile;
-      var sevD=dist(s.records,'severity');
-      var clD=dist(s.records,'closeBucket');
-      var clLabel={open:'未結案',closed:'已結案',other:'其他'};
+      var p=s.profile,sevD=dist(s.records,'severity'),clD=dist(s.records,'closeBucket');
       var clPills=Object.keys(clD).map(function(k){return '<span class="pill '+(k==='open'?'od':k==='closed'?'ok':'')+'">'+(clLabel[k]||k)+'：'+clD[k]+'</span>';}).join('');
-      html+='<div class="card">';
-      html+='<h3>'+esc(s.name)+'　<span style="font-weight:normal;color:#64748b;font-size:13px;">原始列 '+s.rawCount+' → 標準紀錄 '+s.records.length+'</span></h3>';
-      html+='<div class="kv">';
-      html+='對映　嚴重度欄：<b>'+esc(p.severity||'（無）')+'</b>　｜結案：<b>'+esc(p.closeStatus||('日期判定 '+(p.closeDate||'無')))+'</b>　｜單位：<b>'+esc(p.unit||'（無）')+'</b>　｜負責人：<b>'+esc(p.owner||'（無→特例拆）')+'</b><br>';
-      html+='到期優先序：<b>'+[p.exceptionApproval,p.firstExtension,p.fixDeadline,p.otherDue].filter(Boolean).map(esc).join(' → ')+'</b>';
-      html+='</div>';
-      html+='<div style="margin-top:8px;">嚴重度分布：'+pills(sevD)+'</div>';
-      html+='<div style="margin-top:4px;">結案分布：'+clPills+'</div>';
-      // 前 5 筆樣本
+      html+='<div class="card"><h3>'+esc(s.name)+'　<span style="font-weight:normal;color:#64748b;font-size:13px;">原始列 '+s.rawCount+' → 標準紀錄 '+s.records.length+'</span></h3>';
+      html+='<div class="kv">對映　嚴重度欄：<b>'+esc(p.severity||'（無）')+'</b>　｜結案：<b>'+esc(p.closeStatus||('日期判定 '+(p.closeDate||'無')))+'</b>　｜單位：<b>'+esc(p.unit||'（無）')+'</b>　｜負責人：<b>'+esc(p.owner||'（無→特例拆）')+'</b><br>到期優先序：<b>'+[p.exceptionApproval,p.firstExtension,p.fixDeadline,p.otherDue].filter(Boolean).map(esc).join(' → ')+'</b></div>';
+      html+='<div style="margin-top:8px;">嚴重度分布：'+pills(sevD)+'</div><div style="margin-top:4px;">結案分布：'+clPills+'</div>';
       var samp=s.records.slice(0,5);
-      if(samp.length){
-        html+='<div class="scroll"><table><thead><tr><th>嚴重度</th><th>原值</th><th>單位</th><th>負責人</th><th>主機/標的</th><th>名稱</th><th>真正到期日</th><th>逾期天數</th><th>結案</th></tr></thead><tbody>';
-        samp.forEach(function(r){
-          html+='<tr><td>'+esc(r.severity)+'</td><td>'+esc(r.severityRaw)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.owner)+'</td><td>'+esc(r.host)+'</td><td>'+esc((r.name||'').slice(0,40))+'</td><td>'+esc(U.fmtDate(r.realDue))+'</td><td>'+(r.overdue?r.overdueDays:0)+'</td><td>'+esc(clLabel[r.closeBucket]||r.closeBucket)+'</td></tr>';
-        });
-        html+='</tbody></table></div>';
-      }
+      if(samp.length){html+='<div class="scroll"><table><thead><tr><th>嚴重度</th><th>原值</th><th>單位</th><th>負責人</th><th>主機/標的</th><th>名稱</th><th>真正到期日</th><th>逾期天數</th><th>結案</th></tr></thead><tbody>';
+        samp.forEach(function(r){html+='<tr><td>'+esc(r.severity)+'</td><td>'+esc(r.severityRaw)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.owner)+'</td><td>'+esc(r.host)+'</td><td>'+esc((r.name||'').slice(0,40))+'</td><td>'+esc(fmtDate(r.realDue))+'</td><td>'+(r.overdue?r.overdueDays:0)+'</td><td>'+esc(clLabel[r.closeBucket]||r.closeBucket)+'</td></tr>';});
+        html+='</tbody></table></div>';}
       html+='</div>';
     });
     out.innerHTML=html;
