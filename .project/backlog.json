@@ -21,14 +21,14 @@
     "id": "ms-01-read-sheets",
     "desc": "多表讀取：能列出所有『數字-』開頭工作表並各自解析 rows/headers，不影響現有單表流程",
     "done_when": "可取得 10 張數字表的資料；抽樣每表列數與原檔一致；『資安弱點追蹤窗口』不列入",
-    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "status": "done", "attempts": 0, "created": "2026-07-08",
     "notes": "依 docs/多表欄位對照表_草稿.md。"
   },
   {
     "id": "ms-02-profiles",
     "desc": "每表欄位 profile 對應與值正規化，輸出統一標準紀錄",
     "done_when": "各表產標準 records；抽樣映射正確：表4『中』→Medium、表5『嚴重』→Critical、表3用Finding Severity、表9計數展開、表8拆單位+負責人、結案判定符合 close-rule",
-    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "status": "done", "attempts": 0, "created": "2026-07-08",
     "notes": "決策 severity-unify / sheet3-severity / sheet9-counts / sheet8-split / close-rule。"
   },
   {
