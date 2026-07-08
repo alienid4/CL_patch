@@ -6,7 +6,7 @@
     "status": "todo",
     "attempts": 0,
     "created": "2026-07-08",
-    "notes": "目前寫死於 config.js 的 filter.department，套用於 analysis.js analyze() 的母體過濾。與『多工作表擴充』的 Q2（單位改為可篩選）同一方向。別碰：Excel 讀取/真正到期日邏輯。"
+    "notes": "config.js filter.department + analysis.js analyze() 母體過濾。可獨立於多表先做，之後由 ms-04 整合。"
   },
   {
     "id": "filter-close-status",
@@ -15,6 +15,55 @@
     "status": "todo",
     "attempts": 0,
     "created": "2026-07-08",
-    "notes": "目前寫死於 config.js 的 filter.openStatus，套用於 analysis.js analyze() 的母體過濾。severityRepair 已有結案概念可重用。與『多工作表擴充』的 Q2 同一方向。"
+    "notes": "config.js filter.openStatus + analysis.js analyze()。severityRepair 已有結案概念可重用。"
+  },
+  {
+    "id": "ms-01-read-sheets",
+    "desc": "多表讀取：能列出所有『數字-』開頭工作表並各自解析 rows/headers，不影響現有單表流程",
+    "done_when": "可取得 10 張數字表的資料；抽樣每表列數與原檔一致；『資安弱點追蹤窗口』不列入",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": "依 docs/多表欄位對照表_草稿.md。"
+  },
+  {
+    "id": "ms-02-profiles",
+    "desc": "每表欄位 profile 對應與值正規化，輸出統一標準紀錄",
+    "done_when": "各表產標準 records；抽樣映射正確：表4『中』→Medium、表5『嚴重』→Critical、表3用Finding Severity、表9計數展開、表8拆單位+負責人、結案判定符合 close-rule",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": "決策 severity-unify / sheet3-severity / sheet9-counts / sheet8-split / close-rule。"
+  },
+  {
+    "id": "ms-03-left-nav",
+    "desc": "左側導覽 10 項 + 切表：點選切換載入該表看板",
+    "done_when": "左側列出 10 張數字表、可點選；切換後整個看板換成該表資料；記住目前選的是哪張表",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": "參考截圖左側 sidebar 樣式。"
+  },
+  {
+    "id": "ms-04-filters",
+    "desc": "母體改可篩選：整合 filter-department-all + filter-close-status，套用到多表",
+    "done_when": "每表可選部門(含全部)、結案狀態(未結/已結/全部)；統計即時更新、可對帳；取代寫死的資訊架構部+未結案",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": "決策 filter-parameterized。含上面兩個 filter 待辦。"
+  },
+  {
+    "id": "ms-05-adaptive-panels",
+    "desc": "面板自適應：依 profile 有無對應欄，自動顯示/隱藏面板",
+    "done_when": "表6/7 隱藏例外/展延面板；表8 最精簡（無嚴重度/無負責人面板）；表10 無嚴重度面板；表1/2 完整",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": ""
+  },
+  {
+    "id": "ms-06-carryover",
+    "desc": "記憶/匯出/催辦在多表下沿用",
+    "done_when": "localStorage 記住上次選的表與資料、重開還原；各表可匯出 CSV、可催辦（表8無負責人時合理降級）",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": ""
+  },
+  {
+    "id": "ms-07-verify-deliver",
+    "desc": "逐表驗證與交付：數字對帳、checks 全過、更新使用說明",
+    "done_when": "10 張表各跑一次無錯；抽樣數字對帳一致；python .project/checks.py 全 PASS；docs 使用說明更新",
+    "status": "todo", "attempts": 0, "created": "2026-07-08",
+    "notes": ""
   }
 ]

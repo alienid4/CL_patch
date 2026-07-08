@@ -1,1 +1,13 @@
-{ "decisions": [], "doc_scan_ignore": [] }
+{
+  "decisions": [
+    { "id": "multi-sheet-scope", "choice": "10 張數字表各一左側項；範本+每表profile+面板自適應（Q1=A）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "filter-parameterized", "choice": "母體不鎖單位；單位與結案狀態改為可篩選（含全部）（Q2）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "severity-unify", "choice": "中/英/BitSight 一律映射 Critical/High/Medium/Low，保留原值（Q4）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "sheet3-severity", "choice": "表3嚴重度取『發現嚴重性 Finding Severity』（E1）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "sheet9-counts", "choice": "表9風險計數『中*4 低*2』解析彙總成嚴重度統計（E2）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "sheet8-split", "choice": "表8單位欄拆成 單位+負責人（E3）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "close-rule", "choice": "未結/進行中=未結案；結案/已結案/已修補且無『未』=已結案；表8用結案日期（E4）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] },
+    { "id": "search-window-sheet", "choice": "先各表各查；『資安弱點追蹤窗口』表當參考不做分頁（Q6）", "status": "confirmed", "date": "2026-07-08", "contradicts": [] }
+  ],
+  "doc_scan_ignore": []
+}
