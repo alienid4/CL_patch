@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多表對映檢查工具</title>
+<style>
+  body{font-family:"Segoe UI","Microsoft JhengHei",sans-serif;margin:0;background:#f4f6fa;color:#1f2937;}
+  header{background:#1e4b8f;color:#fff;padding:14px 20px;}
+  header h1{margin:0;font-size:18px;}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px;}
+  .drop{background:#fff;border:2px dashed #b6c2d6;border-radius:12px;padding:28px;text-align:center;margin-bottom:18px;}
+  .drop.hover{border-color:#1e4b8f;background:#eef4fc;}
+  .note{color:#64748b;font-size:13px;line-height:1.8;}
+  .card{background:#fff;border:1px solid #e2e8f0;border-left:5px solid #1e4b8f;border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+  .card h3{margin:0 0 8px;font-size:16px;}
+  .kv{font-size:13px;color:#475569;line-height:1.9;}
+  .kv b{color:#1e4b8f;}
+  .pill{display:inline-block;background:#eef2f7;border-radius:20px;padding:2px 10px;margin:2px 4px 2px 0;font-size:12px;}
+  .pill.od{background:#fdecea;color:#b71c1c;}
+  .pill.ok{background:#e7f5e8;color:#2e7d32;}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:8px;white-space:nowrap;}
+  .scroll{overflow-x:auto;}
+  th,td{border-bottom:1px solid #eef1f5;padding:6px 9px;text-align:left;}
+  th{background:#eef2f7;}
+  .warn{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;color:#7a5b00;font-size:13px;margin-bottom:14px;}
+  button{background:#1e4b8f;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:15px;cursor:pointer;}
+</style>
+</head>
+<body>
+<header><h1>🔎 多表對映檢查工具</h1></header>
+<div class="wrap">
+  <div class="warn">
+    這頁只是<strong>檢查用</strong>：丟入 Excel，會顯示 <b>sheets.js</b> 對每張數字表讀到什麼、欄位對到哪、嚴重度/結案怎麼分。<br>
+    看板本體（左側 10 項那個）還沒做（ms-03 之後才有）。此頁不會改到任何資料。
+  </div>
+
+  <div id="drop" class="drop">
+    <p>拖放或選擇「弱點彙總報告」Excel</p>
+    <button id="pick">選擇檔案</button>
+    <input id="file" type="file" accept=".xlsx,.xls" hidden>
+    <p class="note">
+      · 若檔案正被 Excel 開著可能讀不到，請先<strong>關閉 Excel</strong> 再選。<br>
+      · 大表若只有 1–2 筆，代表該檔那幾張是「稀疏樣本」（真資料少），非程式問題。
+    </p>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../config/profiles.js"></script>
+<script src="../js/sheets.js"></script>
+<script>
+(function(){
+  var U=window.Utils;
+  var fileInput=document.getElementById('file');
+  var drop=document.getElementById('drop');
+  var out=document.getElementById('out');
+  document.getElementById('pick').addEventListener('click',function(){fileInput.click();});
+  fileInput.addEventListener('change',function(e){ if(e.target.files[0]) handle(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('hover');});});
+  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('hover');});});
+  drop.addEventListener('drop',function(e){ if(e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]); });
+
+  function handle(file){
+    out.innerHTML='<p class="note">解析中…</p>';
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var sheets=window.MultiSheet.parseWorkbook(ev.target.result);
+        render(sheets);
+      }catch(err){ out.innerHTML='<div class="warn">解析失敗：'+esc(err.message)+'</div>'; }
+    };
+    reader.onerror=function(){ out.innerHTML='<div class="warn">檔案讀取失敗（可能正被 Excel 鎖住，請先關閉）。</div>'; };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function dist(recs,key){var d={};recs.forEach(function(r){var k=r[key]||'(空)';d[k]=(d[k]||0)+1;});return d;}
+  function pills(obj,cls){return Object.keys(obj).map(function(k){return '<span class="pill '+(cls&&cls(k)||'')+'">'+esc(k)+'：'+obj[k]+'</span>';}).join('');}
+
+  function render(sheets){
+    if(!sheets.length){ out.innerHTML='<div class="warn">找不到「數字-」開頭的工作表。</div>'; return; }
+    var html='';
+    sheets.forEach(function(s){
+      var p=s.profile;
+      var sevD=dist(s.records,'severity');
+      var clD=dist(s.records,'closeBucket');
+      var clLabel={open:'未結案',closed:'已結案',other:'其他'};
+      var clPills=Object.keys(clD).map(function(k){return '<span class="pill '+(k==='open'?'od':k==='closed'?'ok':'')+'">'+(clLabel[k]||k)+'：'+clD[k]+'</span>';}).join('');
+      html+='<div class="card">';
+      html+='<h3>'+esc(s.name)+'　<span style="font-weight:normal;color:#64748b;font-size:13px;">原始列 '+s.rawCount+' → 標準紀錄 '+s.records.length+'</span></h3>';
+      html+='<div class="kv">';
+      html+='對映　嚴重度欄：<b>'+esc(p.severity||'（無）')+'</b>　｜結案：<b>'+esc(p.closeStatus||('日期判定 '+(p.closeDate||'無')))+'</b>　｜單位：<b>'+esc(p.unit||'（無）')+'</b>　｜負責人：<b>'+esc(p.owner||'（無→特例拆）')+'</b><br>';
+      html+='到期優先序：<b>'+[p.exceptionApproval,p.firstExtension,p.fixDeadline,p.otherDue].filter(Boolean).map(esc).join(' → ')+'</b>';
+      html+='</div>';
+      html+='<div style="margin-top:8px;">嚴重度分布：'+pills(sevD)+'</div>';
+      html+='<div style="margin-top:4px;">結案分布：'+clPills+'</div>';
+      // 前 5 筆樣本
+      var samp=s.records.slice(0,5);
+      if(samp.length){
+        html+='<div class="scroll"><table><thead><tr><th>嚴重度</th><th>原值</th><th>單位</th><th>負責人</th><th>主機/標的</th><th>名稱</th><th>真正到期日</th><th>逾期天數</th><th>結案</th></tr></thead><tbody>';
+        samp.forEach(function(r){
+          html+='<tr><td>'+esc(r.severity)+'</td><td>'+esc(r.severityRaw)+'</td><td>'+esc(r.unit)+'</td><td>'+esc(r.owner)+'</td><td>'+esc(r.host)+'</td><td>'+esc((r.name||'').slice(0,40))+'</td><td>'+esc(U.fmtDate(r.realDue))+'</td><td>'+(r.overdue?r.overdueDays:0)+'</td><td>'+esc(clLabel[r.closeBucket]||r.closeBucket)+'</td></tr>';
+        });
+        html+='</tbody></table></div>';
+      }
+      html+='</div>';
+    });
+    out.innerHTML=html;
+  }
+})();
+</script>
+</body>
+</html>
