@@ -74,8 +74,34 @@
       UI.toast('已清除記住的資料', 'success');
     });
 
+    // 複製指標摘要(整理成一段可讀文字 → 剪貼簿，方便貼進 email)
+    var copyBtn = $('copy-summary-btn');
+    if (copyBtn) copyBtn.addEventListener('click', function () {
+      if (!state.result) return;
+      UI.copyText(buildSummaryText(state.result));
+    });
+
     // 還原上次匯入(若有)
     tryRestore();
+  }
+
+  /* 把關鍵指標整理成一段可讀文字(數字取自與指標卡相同來源) */
+  function buildSummaryText(result) {
+    var s = result.summary;
+    var dept = (global.APP_CONFIG && global.APP_CONFIG.filter && global.APP_CONFIG.filter.department) || '';
+    var repairRate = (result.severityRepair && result.severityRepair.totals)
+      ? Math.round(result.severityRepair.totals.rate * 1000) / 10 : 0;
+    var today = new Date();
+    function p(n) { return String(n).padStart(2, '0'); }
+    var dateStr = today.getFullYear() + '/' + p(today.getMonth() + 1) + '/' + p(today.getDate());
+
+    var lines = [];
+    lines.push('【資安弱點指標摘要】' + (dept ? '（' + dept + '）' : '') + '　' + dateStr);
+    lines.push('未結案 ' + U.num(s.total) + ' 筆；其中已逾期 ' + U.num(s.bands.overdue) +
+               ' 筆、30 天內到期 ' + U.num(s.bands.d30) + ' 筆。');
+    lines.push('高風險：Critical ' + U.num(s.critical) + ' 筆、High ' + U.num(s.high) + ' 筆。');
+    lines.push('整體修復率：' + repairRate + '%。');
+    return lines.join('\n');
   }
 
   /* -------- 檔案處理 -------- */
@@ -240,6 +266,7 @@
     $('main-content').classList.remove('hidden');
     $('reload-btn').classList.remove('hidden');
     if ($('clear-btn')) $('clear-btn').classList.remove('hidden');
+    if ($('copy-summary-btn')) $('copy-summary-btn').disabled = !state.result;
     switchTab('dashboard');
   }
   function resetToUpload() {
@@ -250,6 +277,7 @@
     $('upload-section').classList.remove('hidden');
     $('reload-btn').classList.add('hidden');
     if ($('clear-btn')) $('clear-btn').classList.add('hidden');
+    if ($('copy-summary-btn')) $('copy-summary-btn').disabled = true;
     $('file-name-tag').textContent = '';
     hideError();
   }

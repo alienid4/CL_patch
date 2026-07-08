@@ -69,6 +69,7 @@ html, body {
   text-decoration: none; transition: all .15s ease; white-space: nowrap;
 }
 .btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
 .btn-primary { background: var(--c-primary); color: #fff; }
 .btn-primary:hover { background: var(--c-primary-dark); }
 .btn-secondary { background: #eef2f7; color: var(--c-text); border-color: var(--c-border); }
