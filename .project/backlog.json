@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "filter-department-all",
+    "desc": "部門查詢範圍：從寫死『資訊架構部』改為可選任一部門，並提供『全部部門』選項",
+    "done_when": "畫面有部門篩選（下拉/分頁），可選任一部門或『全部部門』；選定後所有統計/清單/催辦/圖表只反映該範圍；切換即時更新且數字可對帳一致；預設值可設定",
+    "status": "todo",
+    "attempts": 0,
+    "created": "2026-07-08",
+    "notes": "目前寫死於 config.js 的 filter.department，套用於 analysis.js analyze() 的母體過濾。與『多工作表擴充』的 Q2（單位改為可篩選）同一方向。別碰：Excel 讀取/真正到期日邏輯。"
+  },
+  {
+    "id": "filter-close-status",
+    "desc": "結案狀態篩選：從預設只看『未結案』改為可切換查詢『未結案』『已結案』（或全部）",
+    "done_when": "畫面有結案狀態篩選，可選 未結案／已結案／全部；切換後統計與清單即時對應；預設維持『未結案』但可切換；已結案項目的到期/逾期呈現需合理（例如以結案日呈現）",
+    "status": "todo",
+    "attempts": 0,
+    "created": "2026-07-08",
+    "notes": "目前寫死於 config.js 的 filter.openStatus，套用於 analysis.js analyze() 的母體過濾。severityRepair 已有結案概念可重用。與『多工作表擴充』的 Q2 同一方向。"
+  }
+]
