@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vuln-dashboard",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8778", "--directory", "C:\\Users\\leea6\\OneDrive\\2025 Data\\AI LAB\\CL_patch"],
+      "port": 8778
+    }
+  ]
+}
