@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>弱點彙總 Dashboard</title>
-  <link rel="stylesheet" href="css/style.css?v=1.07">
+  <link rel="stylesheet" href="css/style.css?v=1.08">
 </head>
 <body>
 
@@ -70,6 +70,12 @@
 
       <!-- 右側：看板 -->
       <div class="ws-main">
+
+      <!-- 主管總覽首頁 -->
+      <div id="summary-view" class="summary-view"></div>
+
+      <!-- 各項目(工作表)細項 -->
+      <div id="sheet-view" class="hidden">
 
       <div id="quality-banner" class="quality-banner"></div>
 
@@ -152,6 +158,7 @@
         <div id="search-body" class="search-body"></div>
       </div>
 
+      </div><!-- /#sheet-view -->
       </div><!-- /.ws-main -->
      </div><!-- /.workspace -->
     </section>
@@ -183,24 +190,25 @@
   </footer>
 
   <!-- ===== 相依函式庫：本機載入，離線(無網路)也能用，不依賴 CDN ===== -->
-  <script src="assets/vendor/xlsx.full.min.js?v=1.07"></script>
-  <script src="assets/vendor/chart.umd.min.js?v=1.07"></script>
+  <script src="assets/vendor/xlsx.full.min.js?v=1.08"></script>
+  <script src="assets/vendor/chart.umd.min.js?v=1.08"></script>
 
   <!-- ===== 應用程式 ===== -->
-  <script src="config/version.js?v=1.07"></script>
-  <script src="config/config.js?v=1.07"></script>
-  <script src="config/profiles.js?v=1.07"></script>
-  <script src="js/utils.js?v=1.07"></script>
-  <script src="js/excel.js?v=1.07"></script>
-  <script src="js/sheets.js?v=1.07"></script>
-  <script src="js/analysis.js?v=1.07"></script>
-  <script src="js/multi.js?v=1.07"></script>
-  <script src="js/reminder.js?v=1.07"></script>
-  <script src="js/ui-common.js?v=1.07"></script>
-  <script src="js/dashboard.js?v=1.07"></script>
-  <script src="js/tracking.js?v=1.07"></script>
-  <script src="js/stats.js?v=1.07"></script>
-  <script src="js/search.js?v=1.07"></script>
-  <script src="js/main.js?v=1.07"></script>
+  <script src="config/version.js?v=1.08"></script>
+  <script src="config/config.js?v=1.08"></script>
+  <script src="config/profiles.js?v=1.08"></script>
+  <script src="js/utils.js?v=1.08"></script>
+  <script src="js/excel.js?v=1.08"></script>
+  <script src="js/sheets.js?v=1.08"></script>
+  <script src="js/analysis.js?v=1.08"></script>
+  <script src="js/multi.js?v=1.08"></script>
+  <script src="js/reminder.js?v=1.08"></script>
+  <script src="js/ui-common.js?v=1.08"></script>
+  <script src="js/dashboard.js?v=1.08"></script>
+  <script src="js/tracking.js?v=1.08"></script>
+  <script src="js/stats.js?v=1.08"></script>
+  <script src="js/search.js?v=1.08"></script>
+  <script src="js/summary.js?v=1.08"></script>
+  <script src="js/main.js?v=1.08"></script>
 </body>
 </html>

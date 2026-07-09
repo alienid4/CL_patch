@@ -8,7 +8,7 @@
   var U = global.Utils;
   var UI = global.UI;
 
-  var state = { result: null, fileName: '', sheets: null, activeIdx: 0 };
+  var state = { result: null, fileName: '', sheets: null, activeIdx: 0, mode: 'summary' };
 
   function $(id) { return document.getElementById(id); }
 
@@ -106,16 +106,39 @@
     if ($('filter-dept')) $('filter-dept').addEventListener('change', applyFilters);
     if ($('filter-close')) $('filter-close').addEventListener('change', applyFilters);
 
-    // 常駐查詢框
-    if ($('global-search-input')) $('global-search-input').addEventListener('input', function () { global.Search.onInput(); });
+    // 常駐查詢框（若在總覽，先進入目前項目再查）
+    if ($('global-search-input')) $('global-search-input').addEventListener('input', function () {
+      if (state.mode === 'summary' && state.sheets) selectSheet(state.activeIdx);
+      global.Search.onInput();
+    });
     if ($('global-search-clear')) $('global-search-clear').addEventListener('click', function () { global.Search.clear(); });
 
     // 還原上次匯入(若有)
     tryRestore();
   }
 
+  function todayStr() {
+    var d = new Date();
+    function p(n) { return String(n).padStart(2, '0'); }
+    return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate());
+  }
+
   /* 把關鍵指標整理成一段可讀文字(數字取自與指標卡相同來源) */
   function buildSummaryText(result) {
+    // 總覽模式：全部項目彙總
+    if (state.mode === 'summary' && state.sheets && global.Summary) {
+      var o = global.Summary.overall(state.sheets);
+      var t = o.totals;
+      var hot = o.rows.filter(function (r) { return r.overdue > 0; })
+        .sort(function (a, b) { return b.overdue - a.overdue; }).slice(0, 5)
+        .map(function (r) { return r.name + '（逾期 ' + r.overdue + '）'; });
+      var L = [];
+      L.push('【弱點追蹤總覽】　' + todayStr());
+      L.push('全部 ' + state.sheets.length + ' 個項目：未結案 ' + U.num(t.open) + ' 筆、已逾期 ' + U.num(t.overdue) +
+             ' 筆、近期到期 ' + U.num(t.soon) + ' 筆、高風險未結 ' + U.num(t.high) + ' 筆，整體結案率 ' + t.rate + '%。');
+      if (hot.length) L.push('逾期集中：' + hot.join('、') + '。');
+      return L.join('\n');
+    }
     var s = result.summary;
     var dept = (state.sheets && state.sheets[state.activeIdx]) ? state.sheets[state.activeIdx].name : '';
     var repairRate = (result.severityRepair && result.severityRepair.totals)
@@ -169,25 +192,32 @@
     });
   }
 
-  /* buf → 建各表 result、渲染左側導覽、選第一張 */
+  /* buf → 建各表 result、渲染左側導覽、預設落在「總覽」首頁 */
   function loadWorkbook(buf, fileName) {
     var sheets = global.Multi.buildAll(buf);
     if (!sheets.length) { showError('找不到「數字-」開頭的工作表。'); throw new Error('無數字工作表'); }
     state.sheets = sheets;
     state.fileName = fileName || state.fileName;
     if (state.activeIdx >= sheets.length) state.activeIdx = 0;
+    state.result = sheets[state.activeIdx].result;   // 供查詢/複製摘要有預設對象
     renderSheetNav();
-    selectSheet(state.activeIdx);
     showDashboard();
+    showSummary();                                   // 主管首頁：預設看總覽
   }
 
-  /* -------- 左側工作表導覽 -------- */
+  /* -------- 左側導覽：總覽 + 各項目 -------- */
   function renderSheetNav() {
     var nav = $('sheet-nav');
     nav.innerHTML = '';
+    // 總覽（全部）置頂
+    nav.appendChild(U.el('button', {
+      class: 'sheet-item nav-summary' + (state.mode === 'summary' ? ' active' : ''),
+      onclick: showSummary,
+    }, [U.el('span', { class: 'sheet-name', text: '總覽（全部）' })]));
+    // 各項目
     state.sheets.forEach(function (s, i) {
       var item = U.el('button', {
-        class: 'sheet-item' + (i === state.activeIdx ? ' active' : ''),
+        class: 'sheet-item' + (state.mode === 'sheet' && i === state.activeIdx ? ' active' : ''),
         title: s.name,
         onclick: (function (idx) { return function () { selectSheet(idx); saveActiveIdx(idx); }; })(i),
       }, [
@@ -198,12 +228,36 @@
     });
   }
 
+  function setNavActive() {
+    var nav = $('sheet-nav'); if (!nav) return;
+    var sum = nav.querySelector('.nav-summary');
+    if (sum) sum.classList.toggle('active', state.mode === 'summary');
+    var sheetItems = nav.querySelectorAll('.sheet-item:not(.nav-summary)');
+    Array.prototype.forEach.call(sheetItems, function (el, idx) {
+      el.classList.toggle('active', state.mode === 'sheet' && idx === state.activeIdx);
+    });
+  }
+
+  /* 顯示總覽首頁 */
+  function showSummary() {
+    state.mode = 'summary';
+    $('summary-view').classList.remove('hidden');
+    $('sheet-view').classList.add('hidden');
+    setNavActive();
+    global.Summary.render(state.sheets, function (i) { selectSheet(i); saveActiveIdx(i); });
+    if ($('file-name-tag')) $('file-name-tag').textContent = state.fileName + '　(總覽)';
+    if ($('copy-summary-btn')) $('copy-summary-btn').disabled = !state.sheets;
+  }
+
+  /* 進入某項目(工作表)細項 */
   function selectSheet(i) {
+    state.mode = 'sheet';
     state.activeIdx = i;
     var s = state.sheets[i];
-    // nav active
-    var items = document.querySelectorAll('#sheet-nav .sheet-item');
-    Array.prototype.forEach.call(items, function (el, idx) { el.classList.toggle('active', idx === i); });
+    global.Summary.destroyChart();
+    $('summary-view').classList.add('hidden');
+    $('sheet-view').classList.remove('hidden');
+    setNavActive();
     // 填部門選項 + 重設篩選為預設(全部部門 / 未結案)
     populateDeptOptions(s);
     if ($('filter-close')) $('filter-close').value = 'open';
@@ -378,7 +432,10 @@
     state.result = null;
     state.sheets = null;
     state.activeIdx = 0;
+    state.mode = 'summary';
     if ($('sheet-nav')) $('sheet-nav').innerHTML = '';
+    if ($('summary-view')) $('summary-view').innerHTML = '';
+    global.Summary.destroyChart();
     global.Dashboard.destroyCharts();
     global.Stats.destroyCharts();
     $('main-content').classList.add('hidden');
