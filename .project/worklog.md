@@ -9,6 +9,10 @@
 
 ---
 
+## 2026-07-08 V1.03 側欄單行化 ✅ 完成
+- 改：左側工作表項目 雙行→單行(flex，名稱省略號+未結數同列)，item 33px、10項共 360px 一眼看完；長名 hover 顯全名。
+- 驗：V1.03、單行、同列、截斷、無錯。
+
 ## 2026-07-08 V1.02 離線函式庫（修 XLSX is not defined）✅ 完成
 - 問題：CDN 抓 SheetJS，硬重新整理+Wi-Fi 斷 → XLSX 未載入 → 解析失敗。教訓：改版後沒測「離線/硬重整」路徑。
 - 修：把 xlsx/chart 下載進 assets/vendor/、index.html 改本機載入(不依賴 CDN)；handleFile 加 XLSX 未載入的友善提示；checks.py 白名單 vendor 檔(minified 誤判 token)。

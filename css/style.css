@@ -120,25 +120,30 @@ html, body {
 /* ---------- 工作區：左側工作表導覽 + 右側看板 ---------- */
 .workspace { display: flex; gap: 16px; align-items: flex-start; }
 .sheet-nav {
-  flex: 0 0 190px; display: flex; flex-direction: column; gap: 6px;
+  flex: 0 0 210px; display: flex; flex-direction: column; gap: 3px;
   position: sticky; top: 78px; max-height: calc(100vh - 96px); overflow-y: auto;
 }
+/* 每項一行：名稱(過長省略) + 未結數，同一列 */
 .sheet-item {
+  display: flex; align-items: baseline; gap: 6px;
   text-align: left; background: var(--c-surface); border: 1px solid var(--c-border);
-  border-left: 4px solid transparent; border-radius: var(--radius-sm);
-  padding: 9px 12px; cursor: pointer; font-family: inherit; transition: all .12s ease;
+  border-left: 3px solid transparent; border-radius: var(--radius-sm);
+  padding: 5px 9px; cursor: pointer; font-family: inherit; transition: all .12s ease;
 }
 .sheet-item:hover { border-color: var(--c-primary); background: #f6f9fd; }
 .sheet-item.active { border-left-color: var(--c-primary); background: var(--c-primary-soft); }
-.sheet-name { display: block; font-weight: 600; font-size: 13px; color: var(--c-text); line-height: 1.35; }
+.sheet-name {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600; font-size: 12.5px; color: var(--c-text); line-height: 1.7;
+}
 .sheet-item.active .sheet-name { color: var(--c-primary-dark); }
-.sheet-count { display: block; font-size: 11px; color: var(--c-text-soft); margin-top: 2px; }
+.sheet-count { flex: none; font-size: 11px; color: var(--c-text-soft); white-space: nowrap; }
 .ws-main { flex: 1; min-width: 0; }
 
 @media (max-width: 900px) {
   .workspace { flex-direction: column; }
   .sheet-nav { flex: none; width: 100%; position: static; max-height: none; flex-direction: row; flex-wrap: wrap; }
-  .sheet-item { flex: 1 1 auto; }
+  .sheet-item { flex: 1 1 auto; min-width: 150px; }
 }
 
 /* ---------- 篩選列（部門 / 結案狀態） ---------- */

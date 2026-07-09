@@ -170,6 +170,7 @@
     state.sheets.forEach(function (s, i) {
       var item = U.el('button', {
         class: 'sheet-item' + (i === state.activeIdx ? ' active' : ''),
+        title: s.name,
         onclick: (function (idx) { return function () { selectSheet(idx); saveActiveIdx(idx); }; })(i),
       }, [
         U.el('span', { class: 'sheet-name', text: s.name }),
