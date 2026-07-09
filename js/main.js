@@ -67,23 +67,37 @@
       if (e.key === 'Escape') UI.closeModal();
     });
 
+    // 「其他功能」下拉選單
+    function closeMore() { var d = $('more-dropdown'); if (d) d.classList.add('hidden'); }
+    if ($('more-btn')) $('more-btn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      $('more-dropdown').classList.toggle('hidden');
+    });
+    document.addEventListener('click', function (e) {
+      var d = $('more-dropdown'), b = $('more-btn');
+      if (d && !d.classList.contains('hidden') && !d.contains(e.target) && e.target !== b) closeMore();
+    });
+
     // 換一個檔案(保留記憶，匯入新檔才覆蓋)
     $('reload-btn').addEventListener('click', function () {
+      closeMore();
       $('file-input').value = '';
       resetToUpload();
     });
     // 清除記憶(移除 localStorage 並回上傳畫面)
     var clearBtn = $('clear-btn');
     if (clearBtn) clearBtn.addEventListener('click', function () {
+      closeMore();
       clearState();
       $('file-input').value = '';
       resetToUpload();
-      UI.toast('已清除記住的資料', 'success');
+      UI.toast('已清除暫存資料', 'success');
     });
 
     // 複製指標摘要(整理成一段可讀文字 → 剪貼簿，方便貼進 email)
     var copyBtn = $('copy-summary-btn');
     if (copyBtn) copyBtn.addEventListener('click', function () {
+      closeMore();
       if (!state.result) return;
       UI.copyText(buildSummaryText(state.result));
     });
@@ -355,8 +369,8 @@
   function showDashboard() {
     $('upload-section').classList.add('hidden');
     $('main-content').classList.remove('hidden');
-    $('reload-btn').classList.remove('hidden');
-    if ($('clear-btn')) $('clear-btn').classList.remove('hidden');
+    if ($('more-btn')) $('more-btn').classList.remove('hidden');
+    if ($('header-search')) $('header-search').classList.remove('hidden');
     if ($('copy-summary-btn')) $('copy-summary-btn').disabled = !state.result;
     switchTab('dashboard');
   }
@@ -369,8 +383,9 @@
     global.Stats.destroyCharts();
     $('main-content').classList.add('hidden');
     $('upload-section').classList.remove('hidden');
-    $('reload-btn').classList.add('hidden');
-    if ($('clear-btn')) $('clear-btn').classList.add('hidden');
+    if ($('more-btn')) $('more-btn').classList.add('hidden');
+    if ($('header-search')) $('header-search').classList.add('hidden');
+    if ($('more-dropdown')) $('more-dropdown').classList.add('hidden');
     if ($('copy-summary-btn')) $('copy-summary-btn').disabled = true;
     $('file-name-tag').textContent = '';
     hideError();

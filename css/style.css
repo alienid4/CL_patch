@@ -155,13 +155,29 @@ html, body {
 }
 .filter-bar select:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-soft); }
 
-/* ---------- 常駐查詢框（首頁明顯處） ---------- */
-.home-search {
-  display: flex; gap: 8px; align-items: center; margin-bottom: 14px;
-  background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
-  padding: 10px 12px; box-shadow: var(--shadow);
+/* ---------- 頁首查詢框（藍底中央） ---------- */
+.header-search { flex: 1; max-width: 620px; display: flex; gap: 8px; align-items: center; }
+.header-search.hidden { display: none; }
+.header-search .search-input { flex: 1; }
+
+/* ---------- 「其他功能」下拉 ---------- */
+.more-menu { position: relative; }
+.more-dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg); min-width: 230px; padding: 8px;
 }
-.home-search .search-input { flex: 1; }
+.more-dropdown.hidden { display: none; }
+.more-info { font-size: 12.5px; color: var(--c-text-soft); padding: 3px 8px; line-height: 1.6; }
+.more-info .file-tag { color: var(--c-text); opacity: 1; max-width: none; white-space: normal; overflow: visible; }
+.more-divider { height: 1px; background: var(--c-border); margin: 6px 4px; }
+.more-item {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit;
+  font-size: 14px; color: var(--c-text);
+}
+.more-item:hover { background: var(--c-primary-soft); }
+.more-item:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---------- 分頁 ---------- */
 .tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--c-border); margin-bottom: 22px; }

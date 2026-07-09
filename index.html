@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>弱點彙總 Dashboard</title>
-  <link rel="stylesheet" href="css/style.css?v=1.06">
+  <link rel="stylesheet" href="css/style.css?v=1.07">
 </head>
 <body>
 
@@ -22,12 +22,24 @@
           <p class="brand-sub">弱點追蹤管理</p>
         </div>
       </div>
+      <div id="header-search" class="header-search hidden">
+        <input id="global-search-input" type="search" class="search-input"
+               placeholder="查詢：負責人／主機／弱點名稱／Plugin ID…（可空格分隔多字）">
+        <button id="global-search-clear" class="btn btn-secondary btn-sm">清除</button>
+      </div>
+
       <div class="header-actions">
-        <span id="app-version" class="app-version" title="目前版本"></span>
-        <span id="file-name-tag" class="file-tag"></span>
-        <button id="copy-summary-btn" class="btn btn-ghost" disabled>複製指標摘要</button>
-        <button id="reload-btn" class="btn btn-ghost hidden">重新選擇檔案</button>
-        <button id="clear-btn" class="btn btn-ghost hidden">清除暫存資料</button>
+        <div class="more-menu">
+          <button id="more-btn" class="btn btn-ghost hidden">其他功能 ▾</button>
+          <div id="more-dropdown" class="more-dropdown hidden">
+            <div class="more-info">檔案：<span id="file-name-tag" class="file-tag"></span></div>
+            <div class="more-info">版本：<span id="app-version"></span></div>
+            <div class="more-divider"></div>
+            <button id="copy-summary-btn" class="more-item" disabled>複製指標摘要</button>
+            <button id="reload-btn" class="more-item">重新選擇檔案</button>
+            <button id="clear-btn" class="more-item">清除暫存資料</button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -76,13 +88,6 @@
       </div>
 
       <div id="scope-info" class="scope-info"></div>
-
-      <!-- 查詢（常駐首頁明顯處） -->
-      <div id="home-search" class="home-search">
-        <input id="global-search-input" type="search" class="search-input"
-               placeholder="查詢：負責人／主機／弱點名稱／Plugin ID…（可空格分隔多字）">
-        <button id="global-search-clear" class="btn btn-secondary">清除</button>
-      </div>
 
       <!-- 分頁列 -->
       <nav class="tabs">
@@ -178,24 +183,24 @@
   </footer>
 
   <!-- ===== 相依函式庫：本機載入，離線(無網路)也能用，不依賴 CDN ===== -->
-  <script src="assets/vendor/xlsx.full.min.js?v=1.06"></script>
-  <script src="assets/vendor/chart.umd.min.js?v=1.06"></script>
+  <script src="assets/vendor/xlsx.full.min.js?v=1.07"></script>
+  <script src="assets/vendor/chart.umd.min.js?v=1.07"></script>
 
   <!-- ===== 應用程式 ===== -->
-  <script src="config/version.js?v=1.06"></script>
-  <script src="config/config.js?v=1.06"></script>
-  <script src="config/profiles.js?v=1.06"></script>
-  <script src="js/utils.js?v=1.06"></script>
-  <script src="js/excel.js?v=1.06"></script>
-  <script src="js/sheets.js?v=1.06"></script>
-  <script src="js/analysis.js?v=1.06"></script>
-  <script src="js/multi.js?v=1.06"></script>
-  <script src="js/reminder.js?v=1.06"></script>
-  <script src="js/ui-common.js?v=1.06"></script>
-  <script src="js/dashboard.js?v=1.06"></script>
-  <script src="js/tracking.js?v=1.06"></script>
-  <script src="js/stats.js?v=1.06"></script>
-  <script src="js/search.js?v=1.06"></script>
-  <script src="js/main.js?v=1.06"></script>
+  <script src="config/version.js?v=1.07"></script>
+  <script src="config/config.js?v=1.07"></script>
+  <script src="config/profiles.js?v=1.07"></script>
+  <script src="js/utils.js?v=1.07"></script>
+  <script src="js/excel.js?v=1.07"></script>
+  <script src="js/sheets.js?v=1.07"></script>
+  <script src="js/analysis.js?v=1.07"></script>
+  <script src="js/multi.js?v=1.07"></script>
+  <script src="js/reminder.js?v=1.07"></script>
+  <script src="js/ui-common.js?v=1.07"></script>
+  <script src="js/dashboard.js?v=1.07"></script>
+  <script src="js/tracking.js?v=1.07"></script>
+  <script src="js/stats.js?v=1.07"></script>
+  <script src="js/search.js?v=1.07"></script>
+  <script src="js/main.js?v=1.07"></script>
 </body>
 </html>
