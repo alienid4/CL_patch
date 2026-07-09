@@ -14,6 +14,13 @@
 
   /* -------- 入口綁定 -------- */
   function init() {
+    // 版本號(右上角)
+    var vEl = $('app-version');
+    if (vEl && global.APP_VERSION) {
+      vEl.textContent = global.APP_VERSION;
+      if (global.APP_VERSION_DATE) vEl.title = '版本 ' + global.APP_VERSION + '（' + global.APP_VERSION_DATE + '）';
+    }
+
     // 檢查相依函式庫
     if (typeof XLSX === 'undefined') {
       showError('缺少 SheetJS(XLSX) 函式庫，請確認網路可連 CDN，或依 assets/vendor/README 放置離線檔。');
