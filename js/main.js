@@ -92,6 +92,10 @@
     if ($('filter-dept')) $('filter-dept').addEventListener('change', applyFilters);
     if ($('filter-close')) $('filter-close').addEventListener('change', applyFilters);
 
+    // 常駐查詢框
+    if ($('global-search-input')) $('global-search-input').addEventListener('input', function () { global.Search.onInput(); });
+    if ($('global-search-clear')) $('global-search-clear').addEventListener('click', function () { global.Search.clear(); });
+
     // 還原上次匯入(若有)
     tryRestore();
   }
