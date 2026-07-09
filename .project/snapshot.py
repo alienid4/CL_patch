@@ -83,14 +83,15 @@ try:
     wl = (ROOT / ".project" / "worklog.md").read_text(encoding="utf-8").splitlines()
 except Exception:
     wl = []
-# 取「範本」段之前的實際內容尾巴(避免把範本當現況)
+# 最新在最上：從說明區(第一個 ---)之後、到「## 範本」之前，取最上面(最新)幾條
+start = next((i for i, ln in enumerate(wl) if ln.strip() == "---"), -1) + 1
 cut = next((i for i, ln in enumerate(wl) if ln.startswith("## 範本")), len(wl))
-tail = [ln for ln in wl[:cut]]
-tail = tail[-24:] if len(tail) > 24 else tail
-lines.append("## 工作筆記 worklog（最近；斷在半路就看這段接手）")
+wl_head = [ln for ln in wl[start:cut]]
+wl_head = wl_head[:28] if len(wl_head) > 28 else wl_head
+lines.append("## 工作筆記 worklog（最新在最上；斷在半路就看這段接手）")
 lines.append("")
 lines.append("```")
-lines.extend(tail if tail else ["(worklog 為空)"])
+lines.extend(wl_head if wl_head else ["(worklog 為空)"])
 lines.append("```")
 lines.append("")
 
