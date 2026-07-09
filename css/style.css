@@ -120,7 +120,7 @@ html, body {
 /* ---------- 工作區：左側工作表導覽 + 右側看板 ---------- */
 .workspace { display: flex; gap: 16px; align-items: flex-start; }
 .sheet-nav {
-  flex: 0 0 210px; display: flex; flex-direction: column; gap: 3px;
+  flex: 0 0 288px; display: flex; flex-direction: column; gap: 3px;
   position: sticky; top: 78px; max-height: calc(100vh - 96px); overflow-y: auto;
 }
 /* 每項一行：名稱(過長省略) + 未結數，同一列 */
