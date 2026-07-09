@@ -57,7 +57,7 @@
     "id": "ms-05-adaptive-panels",
     "desc": "面板自適應：依 profile 有無對應欄，自動顯示/隱藏面板",
     "done_when": "表6/7 隱藏例外/展延面板；表8 最精簡（無嚴重度/無負責人面板）；表10 無嚴重度面板；表1/2 完整",
-    "status": "todo",
+    "status": "done",
     "attempts": 0,
     "created": "2026-07-08",
     "notes": ""

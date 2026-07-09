@@ -27,6 +27,12 @@
   };
 
   function render(result) {
+    // 面板自適應：該表無例外/展延欄 → 此分頁不適用(主控已隱藏分頁鈕)，不渲染
+    if (result.caps && result.caps.stagePanel === false) {
+      destroyCharts();
+      ['stage-grid', 'gov-radar', 'stats-scope'].forEach(function (id) { var el = document.getElementById(id); if (el) el.innerHTML = ''; });
+      return;
+    }
     var ss = result.stageStats;
     var records = result.records;
     var F = global.Analysis.Filters;

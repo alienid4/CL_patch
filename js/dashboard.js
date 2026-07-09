@@ -38,14 +38,16 @@
       }
     });
 
-    return [
+    var groups = [
       { title: '總覽', cards: [{ label: '未結案（總）', value: s.total, cls: 'm-total', filter: function () { return true; } }] },
       { title: '到期時間帶（互斥 · 相加＝未結案）', cards: A.BANDS.map(function (b) {
           return { label: b.label, value: s.bands[b.key], cls: bandCls[b.key] || 'm-info',
             filter: (function (key) { return function (r) { return A.bandOf(r) === key; }; })(b.key) };
         }) },
-      { title: '嚴重度', cards: sevCards },
     ];
+    // 面板自適應：該表無嚴重度欄則不放嚴重度卡
+    if (!(result.caps && result.caps.severity === false)) groups.push({ title: '嚴重度', cards: sevCards });
+    return groups;
   }
 
   function render(result) {
@@ -97,7 +99,11 @@
 
     /* ---- 圖表 ---- */
     destroyCharts();
-    renderSeverityChart(s);
+    var noSev = (result.caps && result.caps.severity === false);
+    var sevCanvas = document.getElementById('chart-severity');
+    var sevCard = sevCanvas && sevCanvas.closest ? sevCanvas.closest('.chart-card') : null;
+    if (sevCard) sevCard.style.display = noSev ? 'none' : '';
+    if (!noSev) renderSeverityChart(s);
     renderDueChart(s);
   }
 
@@ -106,6 +112,9 @@
     var box = document.getElementById('sev-repair');
     if (!box) return;
     box.innerHTML = '';
+    // 面板自適應：無嚴重度欄則整塊不顯示
+    if (result.caps && result.caps.severity === false) { box.style.display = 'none'; return; }
+    box.style.display = '';
     var sr = result.severityRepair;
 
     box.appendChild(U.el('div', { class: 'panel-bar' }, [

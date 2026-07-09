@@ -189,6 +189,7 @@
     var deptFiltered = (deptSel === '__all__') ? recs : recs.filter(function (r) { return (r.unit || '(未填)') === deptSel; });
     var scoped = (closeSel === 'all') ? deptFiltered : deptFiltered.filter(function (r) { return r.closeBucket === closeSel; });
     var result = global.Analysis.assembleResult(deptFiltered, scoped, { allCount: recs.length });
+    result.caps = s.caps;
     state.result = result;
     renderResult(result, s.name, { dept: deptSel, close: closeSel, deptCount: deptFiltered.length });
   }
@@ -209,6 +210,13 @@
 
   function renderResult(result, sheetName, opts) {
     opts = opts || {};
+    var caps = result.caps || {};
+    // 面板自適應：無例外/展延 → 隱藏「例外/展延統計」分頁
+    var statsBtn = document.querySelector('.tab-btn[data-tab="stats"]');
+    if (statsBtn) {
+      statsBtn.style.display = caps.stagePanel === false ? 'none' : '';
+      if (caps.stagePanel === false && statsBtn.classList.contains('active')) switchTab('dashboard');
+    }
     $('file-name-tag').textContent = state.fileName + '　(工作表：' + sheetName + ')';
     renderQuality(result);
     global.Dashboard.render(result);
