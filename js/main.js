@@ -121,6 +121,11 @@
       UI.toast('請選擇 Excel 檔（.xlsx / .xls / .csv）', 'error');
       return;
     }
+    if (typeof XLSX === 'undefined') {
+      showError('試算表函式庫未載入。請確認 <b>assets/vendor/xlsx.full.min.js</b> 存在，然後重新整理（Ctrl+F5）。');
+      UI.toast('函式庫未載入', 'error');
+      return;
+    }
     state.fileName = file.name;
     setLoading(true);
     hideError();

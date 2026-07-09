@@ -9,6 +9,11 @@
 
 ---
 
+## 2026-07-08 V1.02 離線函式庫（修 XLSX is not defined）✅ 完成
+- 問題：CDN 抓 SheetJS，硬重新整理+Wi-Fi 斷 → XLSX 未載入 → 解析失敗。教訓：改版後沒測「離線/硬重整」路徑。
+- 修：把 xlsx/chart 下載進 assets/vendor/、index.html 改本機載入(不依賴 CDN)；handleFile 加 XLSX 未載入的友善提示；checks.py 白名單 vendor 檔(minified 誤判 token)。
+- 驗：XLSX/Chart 皆從本機載入、圖表可畫、V1.02、匯入正常、無 console 錯、checks PASS。
+
 ## 2026-07-08 版本號顯示 ✅ 完成（V1.0）
 - 成果：config/version.js(window.APP_VERSION='V1.0')；右上角顯示、hover 顯日期；驗過。
 - **紀律：之後每次 App 變更都要 bump config/version.js（小版 +0.01），回報時講版號。** 目前基準 V1.0＝多表擴充完工。

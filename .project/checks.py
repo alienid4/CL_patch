@@ -26,7 +26,8 @@ SECRET_PATTERNS = [
     (r'(?i)(api[_-]?key|secret|access[_-]?token|token)\s*[:=]\s*["\'][^"\']{6,}["\']', "疑似寫死金鑰/Token"),
     (r"-----BEGIN [A-Z ]*PRIVATE KEY-----", "私鑰內容"),
 ]
-SECRET_ALLOW = {".env.example"}
+# 第三方 vendored 函式庫（minified 常誤判為 token），以確切檔名白名單，不影響自家程式碼掃描
+SECRET_ALLOW = {".env.example", "xlsx.full.min.js", "chart.umd.min.js"}
 
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess:
