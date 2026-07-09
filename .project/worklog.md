@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-08 ms-04 部門＋結案狀態篩選 ✅ 完成
+- 成果：filter-bar 兩個下拉（部門=該表distinct單位+全部；結案=未結案/已結案/全部），預設 全部部門+未結案；change→applyFilters 重算重繪。
+- 實作：main.js applyFilters()（deptFiltered→scoped→Analysis.assembleResult）、populateDeptOptions()、renderResult()；index.html filter-bar；css。
+- 驗過(表9)：部門選項加總136、未結16/已結120/全部136、選單一部門數字縮到該部門、scope 反映、無 console 錯。
+- 下一件：ms-05 面板自適應（缺欄就隱藏該面板，如表6/7無例外面板、表8最精簡）。
+
 ## 2026-07-08 目前狀態（乾淨落點）
 
 - 分支：`work/multi-sheet`

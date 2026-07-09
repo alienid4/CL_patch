@@ -136,6 +136,15 @@ html, body {
   .sheet-item { flex: 1 1 auto; }
 }
 
+/* ---------- 篩選列（部門 / 結案狀態） ---------- */
+.filter-bar { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.filter-bar label { font-size: 13px; font-weight: 600; color: var(--c-text-soft); display: inline-flex; align-items: center; gap: 6px; }
+.filter-bar select {
+  font-family: inherit; font-size: 13.5px; padding: 7px 10px; border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm); background: var(--c-surface); color: var(--c-text); cursor: pointer; max-width: 260px;
+}
+.filter-bar select:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-soft); }
+
 /* ---------- 分頁 ---------- */
 .tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--c-border); margin-bottom: 22px; }
 .tab-btn {

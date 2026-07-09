@@ -81,6 +81,10 @@
       UI.copyText(buildSummaryText(state.result));
     });
 
+    // 篩選：部門 / 結案狀態
+    if ($('filter-dept')) $('filter-dept').addEventListener('change', applyFilters);
+    if ($('filter-close')) $('filter-close').addEventListener('change', applyFilters);
+
     // 還原上次匯入(若有)
     tryRestore();
   }
@@ -166,27 +170,59 @@
   function selectSheet(i) {
     state.activeIdx = i;
     var s = state.sheets[i];
-    state.result = s.result;
     // nav active
     var items = document.querySelectorAll('#sheet-nav .sheet-item');
     Array.prototype.forEach.call(items, function (el, idx) { el.classList.toggle('active', idx === i); });
-    renderActive(s);
+    // 填部門選項 + 重設篩選為預設(全部部門 / 未結案)
+    populateDeptOptions(s);
+    if ($('filter-close')) $('filter-close').value = 'open';
+    applyFilters();
   }
 
-  function renderActive(s) {
-    var result = s.result;
-    $('file-name-tag').textContent = state.fileName + '　(工作表：' + s.name + ')';
+  /* 依目前選的表 + 兩個篩選，重算母體並重繪 */
+  function applyFilters() {
+    if (!state.sheets) return;
+    var s = state.sheets[state.activeIdx];
+    var deptSel = $('filter-dept') ? $('filter-dept').value : '__all__';
+    var closeSel = $('filter-close') ? $('filter-close').value : 'open';
+    var recs = s.records;
+    var deptFiltered = (deptSel === '__all__') ? recs : recs.filter(function (r) { return (r.unit || '(未填)') === deptSel; });
+    var scoped = (closeSel === 'all') ? deptFiltered : deptFiltered.filter(function (r) { return r.closeBucket === closeSel; });
+    var result = global.Analysis.assembleResult(deptFiltered, scoped, { allCount: recs.length });
+    state.result = result;
+    renderResult(result, s.name, { dept: deptSel, close: closeSel, deptCount: deptFiltered.length });
+  }
+
+  function populateDeptOptions(s) {
+    var sel = $('filter-dept'); if (!sel) return;
+    sel.innerHTML = '';
+    var units = {};
+    s.records.forEach(function (r) { var u = r.unit || '(未填)'; units[u] = (units[u] || 0) + 1; });
+    var all = document.createElement('option');
+    all.value = '__all__'; all.textContent = '全部部門 (' + s.records.length + ')';
+    sel.appendChild(all);
+    Object.keys(units).sort().forEach(function (u) {
+      var o = document.createElement('option'); o.value = u; o.textContent = u + ' (' + units[u] + ')'; sel.appendChild(o);
+    });
+    sel.value = '__all__';
+  }
+
+  function renderResult(result, sheetName, opts) {
+    opts = opts || {};
+    $('file-name-tag').textContent = state.fileName + '　(工作表：' + sheetName + ')';
     renderQuality(result);
     global.Dashboard.render(result);
     global.Tracking.render(result);
     global.Stats.render(result);
     global.Search.render(result);
-    // scope-info 改為多表版
+    // scope-info 反映目前篩選
+    var deptLabel = (opts.dept && opts.dept !== '__all__') ? opts.dept : '全部部門';
+    var closeLabel = { open: '未結案', closed: '已結案', all: '全部狀態' }[opts.close || 'open'];
     var scope = $('scope-info');
     scope.innerHTML = '';
     scope.appendChild(U.el('span', { html:
-      '<b>' + U.esc(s.name) + '</b>　·　全部部門 · 未結案 <b>' + U.num(result.summary.total) +
-      '</b> 筆　|　該表全部 ' + U.num(result.allCount) + ' 筆（含已結案）' }));
+      '<b>' + U.esc(sheetName) + '</b>　·　部門：<b>' + U.esc(deptLabel) + '</b>　·　狀態：<b>' + closeLabel +
+      '</b>　|　顯示 <b>' + U.num(result.summary.total) + '</b> 筆（該部門全部 ' + U.num(opts.deptCount != null ? opts.deptCount : result.allCount) + ' 筆）' }));
     if ($('copy-summary-btn')) $('copy-summary-btn').disabled = !state.result;
   }
 

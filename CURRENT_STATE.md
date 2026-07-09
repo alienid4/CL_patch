@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `791b0b3`
+- 目前 HEAD: `20bfd38`
 
 ## 強制層檢查即時結果
 
@@ -34,18 +34,18 @@
 
 ## 待辦進度（backlog.json）
 
-- 完成 3｜待做 6｜卡住 0
-- **下一件：`filter-department-all` — 部門查詢範圍：從寫死『資訊架構部』改為可選任一部門，並提供『全部部門』選項**
-  - 怎樣算對：畫面有部門篩選（下拉/分頁），可選任一部門或『全部部門』；選定後所有統計/清單/催辦/圖表只反映該範圍；切換即時更新且數字可對帳一致；預設值可設定
+- 完成 6｜待做 3｜卡住 0
+- **下一件：`ms-05-adaptive-panels` — 面板自適應：依 profile 有無對應欄，自動顯示/隱藏面板**
+  - 怎樣算對：表6/7 隱藏例外/展延面板；表8 最精簡（無嚴重度/無負責人面板）；表10 無嚴重度面板；表1/2 完整
 
 | 狀態 | id | 要做什麼 |
 |---|---|---|
-| todo | filter-department-all | 部門查詢範圍：從寫死『資訊架構部』改為可選任一部門，並提供『全部部門』選項 |
-| todo | filter-close-status | 結案狀態篩選：從預設只看『未結案』改為可切換查詢『未結案』『已結案』（或全部） |
+| done | filter-department-all | 部門查詢範圍：從寫死『資訊架構部』改為可選任一部門，並提供『全部部門』選項 |
+| done | filter-close-status | 結案狀態篩選：從預設只看『未結案』改為可切換查詢『未結案』『已結案』（或全部） |
 | done | ms-01-read-sheets | 多表讀取：能列出所有『數字-』開頭工作表並各自解析 rows/headers，不影響現有單表流程 |
 | done | ms-02-profiles | 每表欄位 profile 對應與值正規化，輸出統一標準紀錄 |
 | done | ms-03-left-nav | 左側導覽 10 項 + 切表：點選切換載入該表看板 |
-| todo | ms-04-filters | 母體改可篩選：整合 filter-department-all + filter-close-status，套用到多表 |
+| done | ms-04-filters | 母體改可篩選：整合 filter-department-all + filter-close-status，套用到多表 |
 | todo | ms-05-adaptive-panels | 面板自適應：依 profile 有無對應欄，自動顯示/隱藏面板 |
 | todo | ms-06-carryover | 記憶/匯出/催辦在多表下沿用 |
 | todo | ms-07-verify-deliver | 逐表驗證與交付：數字對帳、checks 全過、更新使用說明 |
@@ -53,16 +53,18 @@
 ## 工作筆記 worklog（最近；斷在半路就看這段接手）
 
 ```
-# 工作筆記 worklog — 邊做邊寫，斷線先讀這個
-
-> 用途：防「Wi-Fi 隨時斷」。切片做到一半斷了，下個 AI 讀這裡就知道**接哪一步**，不用重讀程式猜、不用重撈重想。
-> 規矩：
 > ① 開一個切片**前**，先寫「要做什麼 / 怎樣算對 / 計畫步驟」——**先寫意圖再動手**。
 > ② 過程中每完成一小塊就更新「已驗到哪 / 剛發現的事實」並**存檔**（硬斷線只有磁碟上的活得下來）。
 > ③ 切片 commit 完，把該段收斂成一行結論。
 > ④ 最新的寫在**最上面**。（`snapshot.py` 會把本檔最後幾行帶進 `CURRENT_STATE.md`）
 
 ---
+
+## 2026-07-08 ms-04 部門＋結案狀態篩選 ✅ 完成
+- 成果：filter-bar 兩個下拉（部門=該表distinct單位+全部；結案=未結案/已結案/全部），預設 全部部門+未結案；change→applyFilters 重算重繪。
+- 實作：main.js applyFilters()（deptFiltered→scoped→Analysis.assembleResult）、populateDeptOptions()、renderResult()；index.html filter-bar；css。
+- 驗過(表9)：部門選項加總136、未結16/已結120/全部136、選單一部門數字縮到該部門、scope 反映、無 console 錯。
+- 下一件：ms-05 面板自適應（缺欄就隱藏該面板，如表6/7無例外面板、表8最精簡）。
 
 ## 2026-07-08 目前狀態（乾淨落點）
 
@@ -80,6 +82,7 @@
 ## 最近 10 筆 commit
 
 ```
+20bfd38 強化隨時斷線的接手：加 worklog(邊做邊寫)＋多表結構快取(免重撈)＋snapshot 帶出 worklog 尾巴＋SOP 勤commit規範
 791b0b3 加接手/續作機制：新增 接手指南.md（含續作提示詞、SOP、踩雷筆記）＋ snapshot 自動帶出待辦進度與下一件
 d80ac43 左側 10 表導覽 + 切表（ms-03）：多表載入、點選切換整個看板、記住檔案與所選表
 981c78c 檢查頁改為完全自帶邏輯：不再依賴外部 .js（避開 OneDrive 未下載/file:// 擋載入），雙擊即可用
