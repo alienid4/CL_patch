@@ -125,6 +125,7 @@
     // 嚴重度：表9 計數字串 → 展開多筆；否則單筆
     var sevRaw = U.normStr(pick(row, map.severity));
     var counts = parseCounts(sevRaw);
+    base.risk = sevRaw; // Risk 欄/CSV 顯示原始嚴重度值
     if (counts) {
       var out = [];
       counts.forEach(function (c) {

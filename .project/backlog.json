@@ -66,7 +66,7 @@
     "id": "ms-06-carryover",
     "desc": "記憶/匯出/催辦在多表下沿用",
     "done_when": "localStorage 記住上次選的表與資料、重開還原；各表可匯出 CSV、可催辦（表8無負責人時合理降級）",
-    "status": "todo",
+    "status": "done",
     "attempts": 0,
     "created": "2026-07-08",
     "notes": ""
@@ -75,7 +75,7 @@
     "id": "ms-07-verify-deliver",
     "desc": "逐表驗證與交付：數字對帳、checks 全過、更新使用說明",
     "done_when": "10 張表各跑一次無錯；抽樣數字對帳一致；python .project/checks.py 全 PASS；docs 使用說明更新",
-    "status": "todo",
+    "status": "done",
     "attempts": 0,
     "created": "2026-07-08",
     "notes": ""

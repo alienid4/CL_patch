@@ -9,6 +9,11 @@
 
 ---
 
+## 2026-07-08 ms-06 記憶/匯出/催辦 + ms-07 逐表驗證交付 ✅ 完成（多表擴充全數完工）
+- ms-06：記憶(base64)還原OK；r.risk=severityRaw 讓 Risk 欄/CSV 有值；CSV(6.5KB)/單人+批次催辦 都驗過；無 console 錯。
+- ms-07：10 表逐一切換無錯、抽樣數字對帳一致；README 補多表說明；checks 全 PASS。
+- **多表擴充 ms-01～ms-07 全部完成**。下一步：合併 work/multi-sheet → main（等 USER 點頭）。
+
 ## 2026-07-08 ms-05 面板自適應 ✅ 完成
 - 成果：multi.js computeCaps→s.caps；main 依 caps.stagePanel 切「例外/展延統計」分頁鈕；dashboard 依 caps.severity 隱藏 嚴重度group/圓餅/修復表；stats 依 stagePanel early-return。
 - 驗過：表1/9 完整；表6 有嚴重度但無 TAB3；表8 全精簡(無嚴重度無TAB3)；表10 無嚴重度但有 TAB3。無 console 錯。
