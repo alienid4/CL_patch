@@ -51,6 +51,34 @@ lines.append("|---|---|---|---|")
 for d in data.get("decisions", []):
     lines.append(f"| {d.get('id', '')} | {d.get('choice', '')} | {d.get('status', '')} | {d.get('note', '')} |")
 lines.append("")
+try:
+    backlog = json.loads((ROOT / ".project" / "backlog.json").read_text(encoding="utf-8"))
+    if not isinstance(backlog, list):
+        backlog = []
+except Exception:
+    backlog = []
+
+done = [b for b in backlog if b.get("status") == "done"]
+todo = [b for b in backlog if b.get("status") in (None, "todo", "doing")]
+blocked = [b for b in backlog if b.get("status") == "blocked"]
+nxt = todo[0] if todo else None
+
+lines.append("## 待辦進度（backlog.json）")
+lines.append("")
+lines.append(f"- 完成 {len(done)}｜待做 {len(todo)}｜卡住 {len(blocked)}")
+if nxt:
+    lines.append(f"- **下一件：`{nxt.get('id', '')}` — {nxt.get('desc', '')}**")
+    lines.append(f"  - 怎樣算對：{nxt.get('done_when', '')}")
+if blocked:
+    for b in blocked:
+        lines.append(f"- 🛑 卡住：`{b.get('id', '')}` {b.get('desc', '')}（試 {b.get('attempts', 0)} 次）")
+lines.append("")
+lines.append("| 狀態 | id | 要做什麼 |")
+lines.append("|---|---|---|")
+for b in backlog:
+    lines.append(f"| {b.get('status', 'todo')} | {b.get('id', '')} | {b.get('desc', '')} |")
+lines.append("")
+
 lines.append("## 最近 10 筆 commit")
 lines.append("")
 lines.append("```")
