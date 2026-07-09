@@ -79,6 +79,21 @@ for b in backlog:
     lines.append(f"| {b.get('status', 'todo')} | {b.get('id', '')} | {b.get('desc', '')} |")
 lines.append("")
 
+try:
+    wl = (ROOT / ".project" / "worklog.md").read_text(encoding="utf-8").splitlines()
+except Exception:
+    wl = []
+# 取「範本」段之前的實際內容尾巴(避免把範本當現況)
+cut = next((i for i, ln in enumerate(wl) if ln.startswith("## 範本")), len(wl))
+tail = [ln for ln in wl[:cut]]
+tail = tail[-24:] if len(tail) > 24 else tail
+lines.append("## 工作筆記 worklog（最近；斷在半路就看這段接手）")
+lines.append("")
+lines.append("```")
+lines.extend(tail if tail else ["(worklog 為空)"])
+lines.append("```")
+lines.append("")
+
 lines.append("## 最近 10 筆 commit")
 lines.append("")
 lines.append("```")
