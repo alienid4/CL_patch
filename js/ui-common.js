@@ -63,7 +63,6 @@
     { h: '例外核准期限', cls: '', disp: function (r) { return U.fmtDate(r.exceptionApproval); }, sortVal: function (r) { return ts(r.exceptionApproval); } },
     { h: '真正到期日', cls: 'col-due', disp: function (r) { return U.fmtDate(r.realDue); }, sortVal: function (r) { return ts(r.realDue); } },
     { h: '逾期天數', cls: '', overdue: true, disp: function (r) { return r.realDue === null ? '-' : (r.daysLeft < 0 ? String(r.overdueDays) : '0'); }, sortVal: overdueSortVal },
-    { h: '備註', cls: 'col-remark', disp: function (r) { return r.remark; }, sortVal: function (r) { return (r.remark || '').toLowerCase(); } },
   ];
 
   function cmp(a, b) {
@@ -92,7 +91,7 @@
       return U.el('div', {}, [U.el('p', { class: 'empty-hint', text: '無符合條件的資料。' })]);
     }
     var cols = DETAIL_COLUMNS;
-    var count = U.el('p', { class: 'detail-count', text: '共 ' + records.length + ' 筆（點欄位標題可排序）' });
+    var count = U.el('p', { class: 'detail-count', text: '共 ' + records.length + ' 筆' });
 
     var table = U.el('table', { class: 'detail-table sortable' });
     var thead = U.el('thead');
@@ -161,7 +160,7 @@
   function openDetail(title, records) {
     var content = buildDetailTable(records);
     var footer = U.el('div', { class: 'reminder-actions' }, [
-      U.el('button', { class: 'btn btn-secondary', text: '🗔 另開新分頁', onclick: function () { popOutTable(title, records); } }),
+      U.el('button', { class: 'btn btn-secondary', text: '另開新分頁', onclick: function () { popOutTable(title, records); } }),
       U.el('button', { class: 'btn btn-secondary', text: '匯出此清單 (CSV)', onclick: function () { exportCSV(records, title); } }),
     ]);
     openModal(title, content, { footer: footer });
@@ -234,14 +233,14 @@
   /* -------- 匯出 CSV(drill-down 清單) -------- */
   function exportCSV(records, title) {
     var headers = ['Host', 'Name', 'Risk', 'Severity', 'Plugin ID', '修補期限',
-      '首次展延上限', '例外核准期限', '真正到期日', '逾期天數', '負責人', '備註'];
+      '首次展延上限', '例外核准期限', '真正到期日', '逾期天數', '負責人'];
     var rows = records.map(function (r) {
       return [
         r.host, r.name, r.risk, r.severity, r.pluginId,
         U.fmtDate(r.fixDeadline), U.fmtDate(r.firstExtension), U.fmtDate(r.exceptionApproval),
         U.fmtDate(r.realDue),
         (r.realDue === null ? '' : (r.daysLeft < 0 ? r.overdueDays : 0)),
-        r.owner, r.remark,
+        r.owner,
       ];
     });
     var csv = [headers].concat(rows).map(function (arr) {

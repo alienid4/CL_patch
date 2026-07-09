@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>弱點彙總 Dashboard</title>
-  <link rel="stylesheet" href="css/style.css?v=1.04">
+  <link rel="stylesheet" href="css/style.css?v=1.05">
 </head>
 <body>
 
@@ -19,15 +19,15 @@
         <span class="brand-logo">🛡️</span>
         <div>
           <h1>弱點彙總 Dashboard</h1>
-          <p class="brand-sub">資訊架構部 · 未結案弱點追蹤</p>
+          <p class="brand-sub">弱點追蹤管理</p>
         </div>
       </div>
       <div class="header-actions">
         <span id="app-version" class="app-version" title="目前版本"></span>
         <span id="file-name-tag" class="file-tag"></span>
-        <button id="copy-summary-btn" class="btn btn-ghost" disabled>📋 複製指標摘要</button>
-        <button id="reload-btn" class="btn btn-ghost hidden">換一個檔案</button>
-        <button id="clear-btn" class="btn btn-ghost hidden">🗑 清除記憶</button>
+        <button id="copy-summary-btn" class="btn btn-ghost" disabled>複製指標摘要</button>
+        <button id="reload-btn" class="btn btn-ghost hidden">重新選擇檔案</button>
+        <button id="clear-btn" class="btn btn-ghost hidden">清除暫存資料</button>
       </div>
     </div>
   </header>
@@ -79,10 +79,10 @@
 
       <!-- 分頁列 -->
       <nav class="tabs">
-        <button class="tab-btn active" data-tab="dashboard">📈 Dashboard</button>
-        <button class="tab-btn" data-tab="tracking">👥 人員追蹤</button>
-        <button class="tab-btn" data-tab="stats">📋 例外/展延統計</button>
-        <button class="tab-btn" data-tab="search">🔍 查詢</button>
+        <button class="tab-btn active" data-tab="dashboard">總覽</button>
+        <button class="tab-btn" data-tab="tracking">人員追蹤</button>
+        <button class="tab-btn" data-tab="stats">例外／展延統計</button>
+        <button class="tab-btn" data-tab="search">查詢</button>
       </nav>
 
       <!-- TAB1 Dashboard -->
@@ -109,7 +109,6 @@
       <div id="tab-tracking" class="tab-panel">
         <div class="panel-head">
           <h3>各負責人未結案追蹤</h3>
-          <p class="panel-sub">數字可點擊查看明細；每人可「產生催辦內容」。</p>
         </div>
         <div id="tracking-body" class="tracking-body"></div>
       </div>
@@ -117,8 +116,7 @@
       <!-- TAB3 例外/展延統計 -->
       <div id="tab-stats" class="tab-panel">
         <div class="panel-head">
-          <h3>例外管理 / 首次展延 統計</h3>
-          <p class="panel-sub">依處置階段分類；數字可點擊查看明細。供主管快速掌握處置分布與快到期件數。</p>
+          <h3>例外管理／首次展延統計</h3>
         </div>
         <div id="stats-scope" class="scope-info"></div>
         <div id="stage-grid" class="stage-grid"></div>
@@ -137,8 +135,7 @@
       <!-- TAB4 查詢 -->
       <div id="tab-search" class="tab-panel">
         <div class="panel-head">
-          <h3>全文查詢</h3>
-          <p class="panel-sub">關鍵字搜尋 + 快速篩選；結果可排序、匯出、另開新分頁。例：查某負責人所有 CASE，或點「六個月到期」看未來半年到期清單。</p>
+          <h3>查詢</h3>
         </div>
         <div id="search-body" class="search-body"></div>
       </div>
@@ -174,24 +171,24 @@
   </footer>
 
   <!-- ===== 相依函式庫：本機載入，離線(無網路)也能用，不依賴 CDN ===== -->
-  <script src="assets/vendor/xlsx.full.min.js?v=1.04"></script>
-  <script src="assets/vendor/chart.umd.min.js?v=1.04"></script>
+  <script src="assets/vendor/xlsx.full.min.js?v=1.05"></script>
+  <script src="assets/vendor/chart.umd.min.js?v=1.05"></script>
 
   <!-- ===== 應用程式 ===== -->
-  <script src="config/version.js?v=1.04"></script>
-  <script src="config/config.js?v=1.04"></script>
-  <script src="config/profiles.js?v=1.04"></script>
-  <script src="js/utils.js?v=1.04"></script>
-  <script src="js/excel.js?v=1.04"></script>
-  <script src="js/sheets.js?v=1.04"></script>
-  <script src="js/analysis.js?v=1.04"></script>
-  <script src="js/multi.js?v=1.04"></script>
-  <script src="js/reminder.js?v=1.04"></script>
-  <script src="js/ui-common.js?v=1.04"></script>
-  <script src="js/dashboard.js?v=1.04"></script>
-  <script src="js/tracking.js?v=1.04"></script>
-  <script src="js/stats.js?v=1.04"></script>
-  <script src="js/search.js?v=1.04"></script>
-  <script src="js/main.js?v=1.04"></script>
+  <script src="config/version.js?v=1.05"></script>
+  <script src="config/config.js?v=1.05"></script>
+  <script src="config/profiles.js?v=1.05"></script>
+  <script src="js/utils.js?v=1.05"></script>
+  <script src="js/excel.js?v=1.05"></script>
+  <script src="js/sheets.js?v=1.05"></script>
+  <script src="js/analysis.js?v=1.05"></script>
+  <script src="js/multi.js?v=1.05"></script>
+  <script src="js/reminder.js?v=1.05"></script>
+  <script src="js/ui-common.js?v=1.05"></script>
+  <script src="js/dashboard.js?v=1.05"></script>
+  <script src="js/tracking.js?v=1.05"></script>
+  <script src="js/stats.js?v=1.05"></script>
+  <script src="js/search.js?v=1.05"></script>
+  <script src="js/main.js?v=1.05"></script>
 </body>
 </html>

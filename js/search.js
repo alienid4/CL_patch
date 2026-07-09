@@ -15,7 +15,7 @@
   var QUICK = [
     { key: 'all',            label: '全部' },
     { key: 'overdue',        label: '已逾期' },
-    { key: 'soon',           label: '快到期' },
+    { key: 'soon',           label: '近期到期' },
     { key: 'todayTrack',     label: '今日待追蹤' },
     { key: 'sixMonths',      label: '六個月到期' },
     { key: 'critical',       label: 'Critical' },
@@ -23,15 +23,15 @@
     { key: 'medium',         label: 'Medium' },
     { key: 'stageException', label: '例外管理中' },
     { key: 'stageExtension', label: '首次展延中' },
-    { key: 'safeException',  label: '安全名單' },
-    { key: 'chronic',        label: '慢性風險' },
+    { key: 'safeException',  label: '例外核准未到期' },
+    { key: 'chronic',        label: '反覆展延／例外' },
   ];
 
   /* 把一筆紀錄攤平成可搜尋字串 */
   function recordText(r) {
     return [
       r.host, r.owner, r.name, r.pluginId, r.risk, r.severity,
-      r.remark, r.systemCategory, r.assetName, r.protocol, r.port, r.year,
+      r.systemCategory, r.assetName, r.protocol, r.port, r.year,
       U.fmtDate(r.fixDeadline), U.fmtDate(r.firstExtension),
       U.fmtDate(r.exceptionApproval), U.fmtDate(r.realDue),
     ].join(' ').toLowerCase();
@@ -46,7 +46,7 @@
     /* 搜尋列 */
     var input = U.el('input', {
       type: 'search', class: 'search-input',
-      placeholder: '輸入關鍵字（可空格分隔多字，AND）：負責人 / 主機 / 弱點名稱 / Plugin ID / 備註…',
+      placeholder: '輸入關鍵字（可空格分隔多字）：負責人／主機／弱點名稱／Plugin ID…',
       value: state.text,
     });
     input.addEventListener('input', function () { state.text = input.value; run(); });
@@ -96,7 +96,7 @@
         (terms.length ? '（關鍵字：' + terms.join(' ') + '）' : '');
       var bar = U.el('div', { class: 'search-resultbar' }, [
         U.el('span', { class: 'search-count', text: '共 ' + list.length + ' 筆' }),
-        U.el('button', { class: 'btn btn-secondary btn-sm', text: '🗔 另開新分頁',
+        U.el('button', { class: 'btn btn-secondary btn-sm', text: '另開新分頁',
           onclick: function () { UI.popOutTable(title, list); }, disabled: list.length ? null : 'disabled' }),
         U.el('button', { class: 'btn btn-secondary btn-sm', text: '匯出 CSV',
           onclick: function () { UI.exportCSV(list, title); }, disabled: list.length ? null : 'disabled' }),

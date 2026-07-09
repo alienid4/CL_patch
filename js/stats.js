@@ -42,8 +42,7 @@
     var info = document.getElementById('stats-scope');
     info.innerHTML = '';
     info.appendChild(U.el('span', { html:
-      '未結案 <b>' + U.num(ss.total) + '</b> 筆，依目前處置階段分類統計。' +
-      '「快到期」= ' + soon + ' 天內到期（未逾期）；「安全名單」= 例外管理中且例外核准期限尚未到。' }));
+      '未結案 <b>' + U.num(ss.total) + '</b> 筆，依處置階段分類。' }));
 
     /* ---- 階段卡片 ---- */
     var grid = document.getElementById('stage-grid');
@@ -53,12 +52,11 @@
     var safe = ss.safeList;
     var safeCard = U.el('div', {
       class: 'stage-card stage-safe',
-      onclick: function () { UI.openDetail('安全名單（例外保護中，' + safe.length + ' 筆）', safe); },
+      onclick: function () { UI.openDetail('例外核准未到期（' + safe.length + ' 筆）', safe); },
     }, [
-      U.el('div', { class: 'stage-title', text: '🛡️ 安全名單（例外保護中）' }),
+      U.el('div', { class: 'stage-title', text: '例外核准未到期' }),
       U.el('div', { class: 'stage-big', text: U.num(safe.length) }),
-      U.el('div', { class: 'stage-sub', text: '例外核准期限尚未到，暫免催辦' }),
-      U.el('div', { class: 'metric-hint', text: '點擊看明細' }),
+      U.el('div', { class: 'stage-sub', text: '例外核准期限尚未到' }),
     ]);
     grid.appendChild(safeCard);
 
@@ -91,8 +89,8 @@
         return chip;
       }
       subs.appendChild(subChip('已逾期', st.overdue, F.overdue, 'chip-overdue'));
-      subs.appendChild(subChip('快到期', st.soon, F.soon, 'chip-soon'));
-      subs.appendChild(subChip('尚安全', st.safe, function (r) { return r.realDue && r.daysLeft > soon; }, 'chip-safe'));
+      subs.appendChild(subChip('近期到期', st.soon, F.soon, 'chip-soon'));
+      subs.appendChild(subChip('尚未到期', st.safe, function (r) { return r.realDue && r.daysLeft > soon; }, 'chip-safe'));
       if (st.noDue > 0) subs.appendChild(subChip('無到期日', st.noDue, function (r) { return !r.realDue; }, ''));
 
       // 整卡(標題/總數)點擊 → 該階段全部
@@ -123,8 +121,7 @@
     var records = result.records;
 
     box.appendChild(U.el('div', { class: 'panel-bar' }, [
-      U.el('h3', { text: '🛰️ 例外治理雷達' }),
-      U.el('span', { class: 'panel-bar-note', text: '例外是「風險延後」不是「風險消失」，這裡盯浮濫與慢性風險' }),
+      U.el('h3', { text: '例外與展延概況' }),
     ]));
 
     /* 上排：覆蓋率 / 例外破口 / 到期預警 */
@@ -135,23 +132,22 @@
     row.appendChild(U.el('div', { class: 'gov-box' }, [
       U.el('div', { class: 'gov-num', text: covPct + '%' }),
       U.el('div', { class: 'gov-label', text: '例外覆蓋率' }),
-      U.el('div', { class: 'gov-sub', text: g.exCount + ' / ' + g.total + ' 筆靠例外撐住' }),
+      U.el('div', { class: 'gov-sub', text: g.exCount + ' / ' + g.total + ' 筆' }),
     ]));
 
     // 例外破口(例外中卻已逾期)
     var breachBox = U.el('div', { class: 'gov-box gov-breach' + (g.expired.length ? ' clickable' : '') }, [
       U.el('div', { class: 'gov-num', text: U.num(g.expired.length) }),
-      U.el('div', { class: 'gov-label', text: '例外破口（例外中卻已逾期）' }),
-      U.el('div', { class: 'gov-sub', text: '例外核准期限已過，須立即修補或重簽' }),
+      U.el('div', { class: 'gov-label', text: '例外核准已逾期' }),
     ]);
     if (g.expired.length) breachBox.addEventListener('click', function () {
-      UI.openDetail('例外破口（例外中卻已逾期，' + g.expired.length + ' 筆）', g.expired);
+      UI.openDetail('例外核准已逾期（' + g.expired.length + ' 筆）', g.expired);
     });
     row.appendChild(breachBox);
 
     // 到期預警(分級 chips)
     var warnBox = U.el('div', { class: 'gov-box' });
-    warnBox.appendChild(U.el('div', { class: 'gov-label', text: '例外到期預警（未逾期）' }));
+    warnBox.appendChild(U.el('div', { class: 'gov-label', text: '例外核准即將到期' }));
     var chips = U.el('div', { class: 'gov-chips' });
     g.expiry.forEach(function (e) {
       var chip = U.el('div', { class: 'gov-chip' + (e.records.length ? ' clickable' : '') }, [
@@ -171,8 +167,7 @@
     /* 慢性風險清單 */
     var chronicWrap = U.el('div', { class: 'gov-chronic' });
     chronicWrap.appendChild(U.el('div', { class: 'gov-chronic-head' }, [
-      U.el('h4', { html: '🔁 慢性風險（反覆展延/例外 ≥ ' + (CFG.chronicThreshold || 2) + ' 次）　<span class="count-pill">' + g.chronic.length + '</span>' }),
-      U.el('span', { class: 'panel-bar-note', text: '同一弱點被一延再延、始終未修，風險長期累積' }),
+      U.el('h4', { html: '反覆展延／例外（≥ ' + (CFG.chronicThreshold || 2) + ' 次）　<span class="count-pill">' + g.chronic.length + '</span>' }),
     ]));
 
     if (!g.chronic.length) {
@@ -204,8 +199,8 @@
       });
       table.appendChild(tbody);
       chronicWrap.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
-      chronicWrap.appendChild(U.el('button', { class: 'btn btn-secondary btn-sm', text: '匯出慢性風險清單 (CSV)',
-        onclick: function () { UI.exportCSV(g.chronic, '慢性風險清單'); } }));
+      chronicWrap.appendChild(U.el('button', { class: 'btn btn-secondary btn-sm', text: '匯出清單 (CSV)',
+        onclick: function () { UI.exportCSV(g.chronic, '反覆展延或例外清單'); } }));
     }
     box.appendChild(chronicWrap);
   }

@@ -40,7 +40,7 @@
 
     var groups = [
       { title: '總覽', cards: [{ label: '未結案（總）', value: s.total, cls: 'm-total', filter: function () { return true; } }] },
-      { title: '到期時間帶（互斥 · 相加＝未結案）', cards: A.BANDS.map(function (b) {
+      { title: '到期時間帶（互斥）', cards: A.BANDS.map(function (b) {
           return { label: b.label, value: s.bands[b.key], cls: bandCls[b.key] || 'm-info',
             filter: (function (key) { return function (r) { return A.bandOf(r) === key; }; })(b.key) };
         }) },
@@ -118,8 +118,8 @@
     var sr = result.severityRepair;
 
     box.appendChild(U.el('div', { class: 'panel-bar' }, [
-      U.el('h3', { text: '🩺 嚴重度 × 修復狀態' }),
-      U.el('span', { class: 'panel-bar-note', text: '含全部（未結案＋結案）：' + U.esc(CFG.filter.department) + ' 共 ' + U.num(sr.totals.total) + ' 筆　·　數字可點開明細' }),
+      U.el('h3', { text: '嚴重度 × 結案狀態' }),
+      U.el('span', { class: 'panel-bar-note', text: '含未結案與已結案，共 ' + U.num(sr.totals.total) + ' 筆' }),
     ]));
 
     if (!sr.rows.length) { box.appendChild(U.el('p', { class: 'empty-hint', text: '無資料。' })); return; }
@@ -127,9 +127,9 @@
     var showOther = sr.hasOther;
     var table = U.el('table', { class: 'tracking-table sevrepair-table' });
     var thead = U.el('thead'); var htr = U.el('tr');
-    var heads = ['嚴重度', '未修復', '已修復'];
+    var heads = ['嚴重度', '未結案', '已結案'];
     if (showOther) heads.push('其他');
-    heads = heads.concat(['合計', '修復率']);
+    heads = heads.concat(['合計', '結案率']);
     heads.forEach(function (h, i) { htr.appendChild(U.el('th', { class: i === 0 ? '' : 'num-cell', text: h })); });
     thead.appendChild(htr); table.appendChild(thead);
 
@@ -151,8 +151,8 @@
     sr.rows.forEach(function (r) {
       var tr = U.el('tr');
       tr.appendChild(U.el('td', { class: 'owner-cell' }, [U.el('span', { class: 'sev-badge sev-' + r.sev, text: r.sev })]));
-      tr.appendChild(cell(r.openN, r.open, r.sev + ' 未修復', 'has-overdue'));
-      tr.appendChild(cell(r.closedN, r.closed, r.sev + ' 已修復', 'rep-done'));
+      tr.appendChild(cell(r.openN, r.open, r.sev + ' 未結案', 'has-overdue'));
+      tr.appendChild(cell(r.closedN, r.closed, r.sev + ' 已結案', 'rep-done'));
       if (showOther) tr.appendChild(cell(r.otherN, r.other, r.sev + ' 其他狀態', ''));
       tr.appendChild(U.el('td', { class: 'num-cell total-cell', text: U.num(r.total) }));
       tr.appendChild(rateBar(r.rate));
@@ -163,8 +163,8 @@
     var t = sr.totals;
     var tfoot = U.el('tfoot'); var ftr = U.el('tr', { class: 'total-row' });
     ftr.appendChild(U.el('td', { class: 'owner-cell', text: '合計' }));
-    ftr.appendChild(cell(t.openN, t.open, '全部 未修復', 'has-overdue'));
-    ftr.appendChild(cell(t.closedN, t.closed, '全部 已修復', 'rep-done'));
+    ftr.appendChild(cell(t.openN, t.open, '全部 未結案', 'has-overdue'));
+    ftr.appendChild(cell(t.closedN, t.closed, '全部 已結案', 'rep-done'));
     if (showOther) ftr.appendChild(cell(t.otherN, t.other, '全部 其他狀態', ''));
     ftr.appendChild(U.el('td', { class: 'num-cell total-cell', text: U.num(t.total) }));
     ftr.appendChild(rateBar(t.rate));
@@ -178,8 +178,8 @@
     if (r.realDue === null) return '無到期日';
     if (r.daysLeft < 0) return '逾期 ' + r.overdueDays + ' 天';
     if (r.daysLeft === 0) return '今日到期';
-    if (r.stage === 'exception') return '例外 ' + r.daysLeft + ' 天內到期';
-    return '尚餘 ' + r.daysLeft + ' 天';
+    if (r.stage === 'exception') return '例外核准 ' + r.daysLeft + ' 天內到期';
+    return '距到期 ' + r.daysLeft + ' 天';
   }
 
   function sevBadge(r) {
@@ -193,17 +193,16 @@
     var list = result.todayActions || [];
 
     var head = U.el('div', { class: 'panel-bar' }, [
-      U.el('h3', { html: '🔥 今日行動清單　<span class="count-pill">' + list.length + '</span>' }),
-      U.el('span', { class: 'panel-bar-note', text: '逾期 + 今日到期 + 例外即將到期，依風險排序' }),
+      U.el('h3', { html: '優先處理清單　<span class="count-pill">' + list.length + '</span>' }),
     ]);
     box.appendChild(head);
 
     if (!list.length) {
-      box.appendChild(U.el('p', { class: 'empty-hint', text: '🎉 今日無須立即處理的項目。' }));
+      box.appendChild(U.el('p', { class: 'empty-hint', text: '目前無須立即處理的項目。' }));
       return;
     }
 
-    var cols = ['', '負責人', '嚴重度', '弱點', '主機', '真正到期日', '狀態', '風險分'];
+    var cols = ['', '負責人', '嚴重度', '弱點', '主機', '真正到期日', '狀態', '風險分數'];
     var table = U.el('table', { class: 'mini-table' });
     var thead = U.el('thead'); var htr = U.el('tr');
     cols.forEach(function (c) { htr.appendChild(U.el('th', { text: c })); });
@@ -225,15 +224,15 @@
     box.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
 
     var actions = U.el('div', { class: 'panel-actions' }, [
-      U.el('button', { class: 'btn btn-secondary btn-sm', text: '看全部（' + list.length + ' 筆）',
-        onclick: function () { UI.openDetail('今日行動清單（' + list.length + ' 筆）', list); } }),
-      U.el('button', { class: 'btn btn-primary btn-sm', text: '📨 產生全部催辦',
+      U.el('button', { class: 'btn btn-secondary btn-sm', text: '查看全部（' + list.length + ' 筆）',
+        onclick: function () { UI.openDetail('優先處理清單（' + list.length + ' 筆）', list); } }),
+      U.el('button', { class: 'btn btn-primary btn-sm', text: '產生全部催辦',
         onclick: function () { global.Tracking && document.querySelector('[data-tab="tracking"]').click();
           // 直接開批次
           var m = global.Reminder.buildAll(result.owners);
           openMail('批次催辦（' + m.included + ' 人）', m); } }),
     ]);
-    if (list.length > 20) box.appendChild(U.el('p', { class: 'detail-count', text: '（表格僅顯示前 20 筆，點「看全部」查看完整清單）' }));
+    if (list.length > 20) box.appendChild(U.el('p', { class: 'detail-count', text: '僅顯示前 20 筆，可點「查看全部」檢視完整清單' }));
     box.appendChild(actions);
   }
 
@@ -260,13 +259,12 @@
     box.innerHTML = '';
     var list = result.riskRanking || [];
     var head = U.el('div', { class: 'panel-bar' }, [
-      U.el('h3', { html: '📊 風險加權排行　Top ' + list.length }),
-      U.el('span', { class: 'panel-bar-note', text: '分數 = 嚴重度權重 × 急迫倍數（逾期越久越高）' }),
+      U.el('h3', { html: '風險排序（前 ' + list.length + ' 名）' }),
     ]);
     box.appendChild(head);
     if (!list.length) { box.appendChild(U.el('p', { class: 'empty-hint', text: '無資料。' })); return; }
 
-    var cols = ['#', '風險分', '嚴重度', '弱點', '主機', '負責人', '真正到期日', '狀態'];
+    var cols = ['#', '風險分數', '嚴重度', '弱點', '主機', '負責人', '真正到期日', '狀態'];
     var table = U.el('table', { class: 'mini-table' });
     var thead = U.el('thead'); var htr = U.el('tr');
     cols.forEach(function (c) { htr.appendChild(U.el('th', { text: c })); });
@@ -334,7 +332,7 @@
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          title: { display: true, text: '到期時間帶分布（互斥，相加＝未結案）', font: { size: 14 } },
+          title: { display: true, text: '到期時間帶分布', font: { size: 14 } },
         },
         scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
       },

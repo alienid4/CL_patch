@@ -27,10 +27,9 @@
     var toolbar = U.el('div', { class: 'track-toolbar' }, [
       U.el('button', {
         class: 'btn btn-primary btn-sm',
-        text: '📨 產生全部催辦（' + needRemind + ' 人）',
+        text: '產生全部催辦（' + needRemind + ' 人）',
         onclick: function () { openBatch(owners); },
       }),
-      U.el('span', { class: 'toolbar-note', text: '批次彙整所有「有逾期/快到期」的負責人，一次複製。' }),
     ]);
     container.appendChild(toolbar);
 
@@ -122,8 +121,8 @@
     if (!dm) return;
 
     container.appendChild(U.el('div', { class: 'matrix-head' }, [
-      U.el('h3', { text: '📅 未來六個月到期（人員 × 月）' }),
-      U.el('span', { class: 'panel-bar-note', text: '期間 ' + dm.rangeLabel + '　·　只計未逾期、真正到期日落在此區間者　·　數字可點開明細' }),
+      U.el('h3', { text: '未來六個月到期（人員 × 月）' }),
+      U.el('span', { class: 'panel-bar-note', text: '期間 ' + dm.rangeLabel }),
     ]));
 
     if (!dm.rows.length) {

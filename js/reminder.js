@@ -39,14 +39,13 @@
 
     function line(idx, r) {
       var status = r.overdue ? ('已逾期 ' + r.overdueDays + ' 天')
-                 : (r.daysLeft === 0 ? '今日到期' : ('尚餘 ' + r.daysLeft + ' 天'));
-      var stageTag = r.stage === 'exception' ? '（例外管理中，例外核准期限將到）'
+                 : (r.daysLeft === 0 ? '今日到期' : ('距到期 ' + r.daysLeft + ' 天'));
+      var stageTag = r.stage === 'exception' ? '（例外管理中）'
                    : r.stage === 'extension' ? '（首次展延中）' : '';
       return idx + '. [' + (r.severity || '-') + '] ' + (r.name || '(無名稱)') +
              '\n     主機：' + (r.host || '-') +
              '　Plugin ID：' + (r.pluginId || '-') +
-             '\n     真正到期日：' + U.fmtDate(r.realDue) + '（' + status + '）' + stageTag +
-             (r.remark ? ('\n     備註：' + r.remark) : '');
+             '\n     真正到期日：' + U.fmtDate(r.realDue) + '（' + status + '）' + stageTag;
     }
 
     if (focusCount === 0) {

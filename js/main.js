@@ -111,7 +111,7 @@
     lines.push('未結案 ' + U.num(s.total) + ' 筆；其中已逾期 ' + U.num(s.bands.overdue) +
                ' 筆、30 天內到期 ' + U.num(s.bands.d30) + ' 筆。');
     lines.push('高風險：Critical ' + U.num(s.critical) + ' 筆、High ' + U.num(s.high) + ' 筆。');
-    lines.push('整體修復率：' + repairRate + '%。');
+    lines.push('整體結案率：' + repairRate + '%。');
     return lines.join('\n');
   }
 
