@@ -5,3 +5,9 @@ node_modules/
 # 打包產物（build_dist.sh 產生，不進版控）
 dist/
 *.zip
+
+# 真實弱點資料檔（絕不進版控／不上 GitHub）
+*.xlsx
+
+# 個人本機設定（不上 GitHub）
+.claude/settings.local.json
