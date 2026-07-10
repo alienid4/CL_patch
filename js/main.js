@@ -349,10 +349,17 @@
       statsBtn.style.display = caps.stagePanel === false ? 'none' : '';
       if (caps.stagePanel === false && statsBtn.classList.contains('active')) switchTab('dashboard');
     }
+    // 面板自適應：無嚴重度欄 → 隱藏「交叉分析」分頁(嚴重度軸無意義)
+    var matrixBtn = document.querySelector('.tab-btn[data-tab="matrix"]');
+    if (matrixBtn) {
+      matrixBtn.style.display = caps.severity === false ? 'none' : '';
+      if (caps.severity === false && matrixBtn.classList.contains('active')) switchTab('dashboard');
+    }
     $('file-name-tag').textContent = state.fileName + '　(工作表：' + sheetName + ')';
     renderQuality(result);
     global.Dashboard.render(result);
     global.Tracking.render(result);
+    global.Matrix.render(result);
     global.Stats.render(result);
     global.Search.render(result);
     // scope-info 反映目前篩選

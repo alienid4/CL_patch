@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.15 交叉分析分頁：嚴重度 × 到期時間帶 逐層過濾（第一版）✅ 完成
+- 需求(使用者)：把「嚴重度×結案狀態」「負責人×到期」兩張表的維度交叉 → 一張「嚴重度 × 到期時間帶」矩陣（Critical 且 30天內幾筆？31–90天？…）；並要「逐層點選過濾」技巧：每個分類攤成可點選項，點一個就往下縮，慢慢篩出最後想看的清單。方案採甲(只 嚴重度×到期 兩維)、母體=未結案(跟現有篩選走)、嚴重度分數暫放明細欄(Risk/Severity)非第三軸。
+- 成果：新增分頁「交叉分析」(tab-matrix，介於人員追蹤與例外統計之間)。js/matrix.js：Matrix.render(result) 讀 result.records，畫 嚴重度(列)×A.BANDS(欄) 矩陣+列/欄/總合計；點格=鎖 sev+band、點列首=只鎖 sev、點欄首=只鎖 band、再點取消、清除鈕；下方即時 UI.buildDetailTable(篩選後) + 另開新分頁/匯出CSV(reuse popOutTable/exportCSV)。main.js renderResult 加 Matrix.render 與「無嚴重度欄(caps.severity===false)則隱藏此分頁」自適應。css 加 .xf-* 樣式(reuse --c-* 與 .matrix-table/.sev-badge/.num-cell)。index.html 加 tab 鈕+panel+script。
+- 驗(預覽 http.server 載範例資料)：表1(7筆)矩陣 Critical 已逾2/30天1/91–180天1=4、Medium 已逾2/31–90天1=3，欄合計 4/1/1/1/0/0、總計7，與使用者截圖一致；互動:點Medium列首→2筆/cond「Medium」、再點已逾期欄首→2筆/cond「Medium × 已逾期」、清除→7筆、點Critical×30天內格→cond更新+清單同步；表10(4筆)矩陣同步正確；console 無錯；V1.15；index.html ?v 全 1.15。
+- 待辦/可續：若使用者要「真漏斗」再加 部門/負責人 facet(方案乙)；嚴重度分數若要當軸再議；A5 一頁列印、A4 弱點聚合、Email 寄送仍在 backlog。
+
 ## 2026-07-10 V1.14 再掃畫面殘留「括號說明字」全清 ✅ 完成
 - 背景：使用者截圖指「到期時間帶（互斥）」等括號小備註不該出現(長期偏好 no-ui-annotation-text)。全站再掃一次。
 - 清掉(會顯示在畫面的自創解釋字)：dashboard.js 指標卡標題「未結案（總）→未結案」「到期時間帶（互斥）→到期時間帶」；summary.js 總覽KPI「高風險未結（C+H）→高風險未結」；stats.js 堆疊圖標題「到期時間帶 × 處置階段（堆疊）→…（去堆疊）」；analysis.js 品質異常清單「缺少到期日（修補/展延/例外皆空）」「…（邏輯矛盾）」×2 去括號。
