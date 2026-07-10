@@ -65,7 +65,7 @@
     var arr = load();
     box.appendChild(U.el('div', { class: 'panel-bar' }, [U.el('h3', { text: '趨勢（跟上次比）' })]));
     if (!arr.length) {
-      box.appendChild(U.el('p', { class: 'empty-hint', text: '尚無歷史；之後每次「匯入檔案」會自動記錄一期。' }));
+      box.appendChild(U.el('p', { class: 'empty-hint', text: '尚無歷史資料。' }));
       return;
     }
     var cur = arr[arr.length - 1], prev = arr.length >= 2 ? arr[arr.length - 2] : null;
@@ -85,7 +85,7 @@
       wrap.appendChild(deltaCard('未結淨變化', (net > 0 ? '+' : '') + U.num(net), net > 0 ? 'up-bad' : (net < 0 ? 'down-good' : 'flat'), null));
       wrap.appendChild(U.el('div', { class: 'trend-cmp-note', text: '本期 ' + cur.date + '　vs　上期 ' + prev.date }));
     } else {
-      wrap.appendChild(U.el('div', { class: 'trend-cmp-note', text: '目前只有 1 期（' + cur.date + '）；下次匯入即可比較。' }));
+      wrap.appendChild(U.el('div', { class: 'trend-cmp-note', text: '目前只有 1 期（' + cur.date + '）' }));
     }
     box.appendChild(wrap);
 

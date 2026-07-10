@@ -116,7 +116,7 @@
 
     var wrap = U.el('div', { class: 'xf-matrix-wrap' });
     if (!visSevs.length || !visBands.length) {
-      wrap.appendChild(U.el('p', { class: 'empty-hint', text: '已隱藏全部，改按上方「清除全部」復原。' }));
+      wrap.appendChild(U.el('p', { class: 'empty-hint', text: '已隱藏全部。' }));
       return wrap;
     }
 

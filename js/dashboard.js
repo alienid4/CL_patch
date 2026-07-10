@@ -73,7 +73,6 @@
       g.cards.forEach(function (m) {
         var card = U.el('div', {
           class: 'metric-card ' + m.cls,
-          title: '點擊看明細',
           onclick: function () {
             var list = records.filter(m.filter);
             UI.openDetail(m.label + '　明細（' + list.length + ' 筆）', list);
@@ -166,7 +165,7 @@
       tr.appendChild(cell(r.openN, r.open, r.sev + ' 未結案', 'has-overdue'));
       tr.appendChild(cell(r.closedN, r.closed, r.sev + ' 已結案', 'rep-done'));
       if (showOther) tr.appendChild(cell(r.otherN, r.other, r.sev + ' 其他狀態', ''));
-      tr.appendChild(U.el('td', { class: 'num-cell total-cell', text: U.num(r.total) }));
+      tr.appendChild(cell(r.total, r.records, r.sev + ' 全部', 'total-cell'));
       tr.appendChild(rateBar(r.rate));
       tbody.appendChild(tr);
     });
@@ -178,7 +177,7 @@
     ftr.appendChild(cell(t.openN, t.open, '全部 未結案', 'has-overdue'));
     ftr.appendChild(cell(t.closedN, t.closed, '全部 已結案', 'rep-done'));
     if (showOther) ftr.appendChild(cell(t.otherN, t.other, '全部 其他狀態', ''));
-    ftr.appendChild(U.el('td', { class: 'num-cell total-cell', text: U.num(t.total) }));
+    ftr.appendChild(cell(t.total, t.open.concat(t.closed).concat(t.other), '全部（含各狀態）', 'total-cell'));
     ftr.appendChild(rateBar(t.rate));
     tfoot.appendChild(ftr); table.appendChild(tfoot);
 
@@ -244,7 +243,6 @@
           var m = global.Reminder.buildAll(result.owners);
           openMail('批次催辦（' + m.included + ' 人）', m); } }),
     ]);
-    if (list.length > 20) box.appendChild(U.el('p', { class: 'detail-count', text: '僅顯示前 20 筆，可點「查看全部」檢視完整清單' }));
     box.appendChild(actions);
   }
 
