@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.17 交叉分析：篩掉的列/欄整個消失（不淡化）＋去說明備註 ✅ 完成
+- 需求(使用者，看 V1.16 截圖)：①選了 Critical，Medium 那列不該只是淡化(區分度不夠)，要「整列消失」；點欄首/格子同理，非選中的欄也要消失。②畫面還有說明備註(「點格子＝…」教學句與各 tooltip)，人類自己會判讀，像 Word/Excel 點每格都沒備註 → 全部拿掉。
+- 成果(js/matrix.js)：buildMatrix 改 visSevs/visBands：state.sev→只留該列、state.band→只留該欄，其餘整列/整欄不 render(取代舊 .dim 淡化)。合計只在「多列/多欄」時顯示(單列或單欄時合計=本身，冗餘故隱藏)；rowTot/colTot/grand 依可見範圍算。移除 .xf-hint 教學句、移除矩陣所有 title tooltip(cell/列首/欄首/cond-tag)。條件列無篩選時整條不顯示(去掉「未套用篩選(顯示全部)」字)。
+- 驗(預覽表1 7筆)：初始無條件列/無 hint、矩陣2列6欄+合計、7筆；點Critical列首→Medium整列消失(只剩Critical列)、無底部合計列、4筆；點已逾期欄首→只剩已逾期欄(其他欄消失)、兩列在、4筆；點Critical×91–180天格→只剩單列單欄單格「1」、無合計、cond[Critical,91–180天]、1筆；矩陣內 title 元素=0；console 無錯；V1.17；?v 全1.17。(剩餘 14 個 title 在明細表 Name/Host 資料格=既有共用元件的過長 hover 全文，非自創備註，不動。)
+- 註：切嚴重度需先取消現選(sev 無 facet chip，只在矩陣列首)；若日後嫌切換麻煩再加 sev facet 或別的切法。
+
 ## 2026-07-10 V1.16 交叉分析升級「真漏斗」：多維度可疊加 cross-filter ✅ 完成
 - 需求(使用者)：V1.15 第一版看了「對對對，我就是要真漏斗」→ 升級成方案乙。矩陣(嚴重度×到期)照舊，再加 部門／負責人 facet chips，任意維度疊點，每點一次矩陣格/facet 計數/清單全部即時重算。
 - 成果(改寫 js/matrix.js)：狀態 {sev,band,dept,owner}；DIMS 取值函式；matchesExcept(r,exceptKeys) 做「除了某維度外其他都符合」的交叉統計核心。矩陣改吃 matrixRecords()(套 dept/owner 後再拆 sev×band)→選部門/負責人後矩陣跟著縮。facet：部門/負責人各一排 chip(reuse .search-chip)，每 chip 計數=「其他維度都符合下」該值筆數(標準 faceted count)；單一值且未選的維度自動隱藏(範例資料同部門→部門排不出現)。條件列改成可點的 tag(點 tag 移除該維度)＋清除全部。清單/標題/匯出沿用。css 加 .xf-cond-tag/.xf-facet/.xf-chip。

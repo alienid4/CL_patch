@@ -56,7 +56,8 @@
       host.appendChild(U.el('p', { class: 'empty-hint', text: '目前母體無資料可交叉。' }));
       return;
     }
-    host.appendChild(buildConditionBar());
+    var cond = buildConditionBar();
+    if (cond) host.appendChild(cond);
     host.appendChild(buildMatrix());
     host.appendChild(buildFacets());
     host.appendChild(buildResult());
@@ -75,16 +76,15 @@
     { key: 'owner', name: '負責人' },
   ];
   function buildConditionBar() {
+    var tags = COND_ORDER.filter(function (d) { return state[d.key] !== null; });
+    if (!tags.length) return null;   // 無篩選 → 不顯示條件列
     var bar = U.el('div', { class: 'xf-condition' });
     bar.appendChild(U.el('span', { class: 'xf-cond-label', text: '目前條件' }));
-    var tags = COND_ORDER.filter(function (d) { return state[d.key] !== null; });
-    if (!tags.length) {
-      bar.appendChild(U.el('span', { class: 'xf-cond-val', text: '未套用篩選（顯示全部）' }));
-    } else {
+    {
       tags.forEach(function (d) {
         var val = d.fmt ? d.fmt(state[d.key]) : state[d.key];
         bar.appendChild(U.el('button', {
-          class: 'xf-cond-tag', title: '移除此條件',
+          class: 'xf-cond-tag',
           html: '<b>' + U.esc(d.name) + '</b>：' + U.esc(val) + ' ✕',
           onclick: (function (k) { return function () { state[k] = null; draw(); }; })(d.key),
         }));
@@ -97,54 +97,63 @@
     return bar;
   }
 
-  /* -------- 矩陣：嚴重度 × 到期時間帶（依 dept/owner 篩選後重算） -------- */
+  /* -------- 矩陣：嚴重度 × 到期時間帶（依 dept/owner 篩選後重算） --------
+   * 已選的維度 → 只留該列/該欄，其餘整列/整欄消失（非淡化）。 */
   function buildMatrix() {
     var recs = matrixRecords();
     var set = {}; recs.forEach(function (r) { set[DIMS.sev(r)] = 1; });
-    var sevs = SEV_ORDER.filter(function (s) { return set[s]; });
-    // 目前若已選 sev 但被 dept/owner 篩掉，仍保留該列可見(以便取消)
-    if (state.sev && sevs.indexOf(state.sev) < 0) sevs.push(state.sev);
+    var allSevs = SEV_ORDER.filter(function (s) { return set[s]; });
+    if (state.sev && allSevs.indexOf(state.sev) < 0) allSevs.push(state.sev);
 
-    var g = {}, bandTotals = {}, grand = 0;
-    A.BANDS.forEach(function (b) { bandTotals[b.key] = 0; });
-    sevs.forEach(function (s) { g[s] = { _t: 0 }; A.BANDS.forEach(function (b) { g[s][b.key] = 0; }); });
+    // 可見的列(嚴重度) / 欄(時間帶)：選了就只留那一個
+    var visSevs = state.sev ? [state.sev] : allSevs;
+    var visBands = state.band ? A.BANDS.filter(function (b) { return b.key === state.band; }) : A.BANDS;
+
+    // 統計(全量)
+    var g = {};
+    visSevs.forEach(function (s) { g[s] = {}; A.BANDS.forEach(function (b) { g[s][b.key] = 0; }); });
     recs.forEach(function (r) {
       var s = DIMS.sev(r); if (!g[s]) return;
-      var bk = DIMS.band(r); g[s][bk]++; g[s]._t++; bandTotals[bk]++; grand++;
+      var bk = DIMS.band(r); if (g[s][bk] !== undefined) g[s][bk]++;
     });
+
+    // 只有多列/多欄時才顯示合計(單列或單欄時合計等於本身，屬冗餘)
+    var showRowTotal = visBands.length > 1;   // 每列右側「合計」欄
+    var showColTotal = visSevs.length > 1;    // 底部「合計」列
+    function rowTot(s) { var t = 0; visBands.forEach(function (b) { t += g[s][b.key]; }); return t; }
+    function colTot(bk) { var t = 0; visSevs.forEach(function (s) { t += g[s][bk]; }); return t; }
+    var grand = 0; visSevs.forEach(function (s) { grand += rowTot(s); });
 
     var wrap = U.el('div', { class: 'xf-matrix-wrap' });
     var table = U.el('table', { class: 'matrix-table xf-matrix' });
 
     var thead = U.el('thead'), htr = U.el('tr');
     htr.appendChild(U.el('th', { class: 'xf-corner', text: '嚴重度＼到期' }));
-    A.BANDS.forEach(function (b) {
+    visBands.forEach(function (b) {
       htr.appendChild(U.el('th', {
         class: 'xf-col-head' + (state.band === b.key ? ' col-on' : ''),
-        title: '只看「' + b.label + '」', text: b.label,
+        text: b.label,
         onclick: function () { toggle('band', b.key); },
       }));
     });
-    htr.appendChild(U.el('th', { class: 'xf-col-total', text: '合計' }));
+    if (showRowTotal) htr.appendChild(U.el('th', { class: 'xf-col-total', text: '合計' }));
     thead.appendChild(htr); table.appendChild(thead);
 
     var tbody = U.el('tbody');
-    sevs.forEach(function (s) {
+    visSevs.forEach(function (s) {
       var tr = U.el('tr', { class: state.sev === s ? 'row-on' : '' });
       tr.appendChild(U.el('th', {
         class: 'xf-row-head' + (state.sev === s ? ' row-on' : ''),
-        title: '只看「' + s + '」',
         onclick: function () { toggle('sev', s); },
       }, [U.el('span', { class: 'sev-badge sev-' + s, text: s })]));
-      A.BANDS.forEach(function (b) {
+      visBands.forEach(function (b) {
         var n = g[s][b.key];
-        var active = (!state.sev || state.sev === s) && (!state.band || state.band === b.key);
         var picked = state.sev === s && state.band === b.key;
-        var td = U.el('td', { class: 'xf-cell' + (picked ? ' picked' : '') + (active ? '' : ' dim') });
+        var td = U.el('td', { class: 'xf-cell' + (picked ? ' picked' : '') });
         if (n) {
           td.appendChild(U.el('span', {
             class: 'num-cell clickable' + (b.key === 'overdue' ? ' has-overdue' : ''),
-            text: U.num(n), title: s + ' × ' + b.label + '：' + n + ' 筆',
+            text: U.num(n),
             onclick: function () { pickCell(s, b.key); },
           }));
         } else {
@@ -152,19 +161,20 @@
         }
         tr.appendChild(td);
       });
-      tr.appendChild(U.el('td', { class: 'total-cell', text: U.num(g[s]._t) }));
+      if (showRowTotal) tr.appendChild(U.el('td', { class: 'total-cell', text: U.num(rowTot(s)) }));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
 
-    var tfoot = U.el('tfoot'), ftr = U.el('tr', { class: 'total-row' });
-    ftr.appendChild(U.el('th', { class: 'xf-row-head', text: '合計' }));
-    A.BANDS.forEach(function (b) { ftr.appendChild(U.el('td', { class: 'total-cell', text: U.num(bandTotals[b.key]) })); });
-    ftr.appendChild(U.el('td', { class: 'total-cell', text: U.num(grand) }));
-    tfoot.appendChild(ftr); table.appendChild(tfoot);
+    if (showColTotal) {
+      var tfoot = U.el('tfoot'), ftr = U.el('tr', { class: 'total-row' });
+      ftr.appendChild(U.el('th', { class: 'xf-row-head', text: '合計' }));
+      visBands.forEach(function (b) { ftr.appendChild(U.el('td', { class: 'total-cell', text: U.num(colTot(b.key)) })); });
+      if (showRowTotal) ftr.appendChild(U.el('td', { class: 'total-cell', text: U.num(grand) }));
+      tfoot.appendChild(ftr); table.appendChild(tfoot);
+    }
 
     wrap.appendChild(table);
-    wrap.appendChild(U.el('p', { class: 'xf-hint', text: '點格子＝同時鎖「該嚴重度＋該時間帶」；點嚴重度列首或到期欄首＝只鎖一個維度；再點一次取消。' }));
     return wrap;
   }
 
