@@ -9,6 +9,19 @@
 
 ---
 
+## 2026-07-10 V1.13 內建「載入範例資料（天龍八部）」按鈕 ✅ 完成
+- 背景：使用者要看假資料但一直載到舊真實檔(其他功能→檔案顯示 弱點彙總報告(New)_V20260702 的TEST.xlsx)。用 computer-use 讀取層看到其畫面：版本已是 V1.12(對)，純粹載錯檔。Claude Chrome 擴充未連(list_connected_browsers 空)→無法替他點 Chrome(唯讀層)。故改用「內建範例資料一鍵載入」根治。
+- 成果：assets/sample-data.js(把 docs/測試假資料_天龍八部.xlsx 轉 base64 內嵌，約21KB)；index.html 掛該檔＋「載入範例資料（天龍八部）」按鈕兩處(其他功能選單 #sample-btn＋上傳頁 #sample-btn-2)；main.js loadSample() 讀內建 b64→走既有 loadWorkbook/saveWorkbook。免選檔、離線可用(file:// 也行，不需 fetch)。
+- 驗(預覽)：清空 localStorage→上傳頁→點按鈕→測試假資料_天龍八部.xlsx 載入、10表66筆、KPI 55/16/17/27/16.7%、負責人段正淳等天龍八部名、console 無錯、V1.13。
+
+### 接手狀態（給新 session）
+- App 版本 **V1.13**。使用者實機：Windows 11 + Chrome，用 **file://** 開 `C:\Users\leea6\OneDrive\2025 Data\AI LAB\CL_patch\index.html`。**Claude Chrome 擴充未連**→Claude 無法直接操作其瀏覽器；要嘛請他連擴充，要嘛靠「載入範例資料」按鈕/口頭指引。
+- **測試資料**：`docs/測試假資料_天龍八部.xlsx`(66筆全『資訊架構部』、天龍八部人名、逾期/例外/展延齊、每項6-7筆) 與舊真實檔 `docs/弱點彙總報告(New)_V20260702 的TEST.xlsx` 皆**未進版控**(測試檔)。是否加 .gitignore 使用者尚未定(上次 dismiss)。
+- **Email(E2 手動寄 ps1 / E3 排程自動)**：暫停中(backlog email-send-script)，等使用者要開發再做；開發前先問環境(能否跑.ps1 / relay 主機:埠 / Excel / 排程時間)。Email 設定介面 V1.11 已完成。
+- **第一批剩餘**：A4 弱點聚合(同 Plugin ID 跨主機收合)、A5 一頁列印/PDF。
+- 使用者長期偏好(已存 memory no-ui-annotation-text)：畫面不放說明/備註/自創解釋字。
+- 環境雷：本機 `python` 是 Windows Store stub(壞，exit 49/9009)，一律用 **`py`** 跑 .project/checks.py、snapshot.py。
+
 ## 2026-07-10 V1.12 我的部門(全站記憶) ＋ 版面收窄放大 ✅ 完成
 - 需求(使用者)：①左側白邊太多→放大/往左移，中間字放大；②沒有部門想看全部，要能選自己部門且「下次進來預設就是我的部門」，不用每次重選。
 - 我的部門：部門控制從「每張表 filter-dept」升級為左側全站選擇器 #my-dept-select(在導覽頂端)；選擇存 localStorage『vulnDashboard.dept』跨檔沿用；總覽標題/KPI/狀態表/未結數/逾期橫幅/複製摘要/Email 內容全部吃 state.myDept；此檔無該部門→自動退回全部部門。移除表內 filter-dept 與 populateDeptOptions；filter-bar 只留結案狀態。summary.js agg/overall/collectOverdue/render 加 dept 參數；email.js scopedRecords 依 myDept。
