@@ -94,28 +94,6 @@
       UI.toast('已清除暫存資料', 'success');
     });
 
-    // 載入內建範例資料（天龍八部）— 一鍵載入，免選檔（選單 + 上傳頁兩處都可）
-    function loadSample() {
-      closeMore();
-      if (!global.SAMPLE_XLSX_B64) { UI.toast('找不到內建範例資料', 'error'); return; }
-      try {
-        setLoading(true);
-        hideError();
-        var buf = b64ToAb(global.SAMPLE_XLSX_B64);
-        state.fileName = global.SAMPLE_XLSX_NAME || '範例資料.xlsx';
-        loadWorkbook(buf, state.fileName);
-        saveWorkbook(buf, state.fileName);
-        setLoading(false);
-        UI.toast('已載入範例資料（' + state.sheets.length + ' 張表）', 'success');
-      } catch (e) {
-        setLoading(false);
-        showError('載入範例資料失敗：' + U.esc(e && e.message || e));
-        UI.toast('載入失敗', 'error');
-      }
-    }
-    if ($('sample-btn')) $('sample-btn').addEventListener('click', loadSample);
-    if ($('sample-btn-2')) $('sample-btn-2').addEventListener('click', loadSample);
-
     // 功能開關（其他功能 → 設定面板）
     if ($('features-btn')) $('features-btn').addEventListener('click', function () {
       closeMore();
