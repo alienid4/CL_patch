@@ -201,6 +201,11 @@
     ]));
     renderChart(rows, onSelect);
 
+    /* 趨勢（跟上次比；可於「功能開關」關閉） */
+    if ((!global.Features || global.Features.isOn('panel-trend')) && global.History) {
+      global.History.renderTrend(box, sheets);
+    }
+
     /* SLA 達成率（跨全部項目；可於「功能開關」關閉） */
     if (!global.Features || global.Features.isOn('panel-sla')) {
       renderSLA(box, sheets, dept);

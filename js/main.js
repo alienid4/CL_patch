@@ -150,6 +150,11 @@
     function p(n) { return String(n).padStart(2, '0'); }
     return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate());
   }
+  function todayKey() {
+    var d = new Date();
+    function p(n) { return String(n).padStart(2, '0'); }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
 
   /* 把關鍵指標整理成一段可讀文字(數字取自與指標卡相同來源) */
   function buildSummaryText(result) {
@@ -202,6 +207,8 @@
     readArrayBuffer(file).then(function (buf) {
       loadWorkbook(buf, file.name);
       saveWorkbook(buf, file.name);
+      // 每次「匯入檔案」自動記一份歷史快照(自動還原/範例載入不記；同檔同日覆蓋)
+      if (global.History) global.History.record(state.sheets, file.name, todayKey());
       setLoading(false);
       UI.toast('解析完成：' + file.name + '（' + state.sheets.length + ' 張表）', 'success');
     }).catch(function (err) {
@@ -343,6 +350,7 @@
     state.activeIdx = i;
     var s = state.sheets[i];
     global.Summary.destroyChart();
+    if (global.History) global.History.destroyChart();
     $('summary-view').classList.add('hidden');
     $('sheet-view').classList.remove('hidden');
     setNavActive();
@@ -513,6 +521,7 @@
     if ($('sheet-nav')) $('sheet-nav').innerHTML = '';
     if ($('summary-view')) $('summary-view').innerHTML = '';
     global.Summary.destroyChart();
+    if (global.History) global.History.destroyChart();
     global.Dashboard.destroyCharts();
     global.Stats.destroyCharts();
     $('main-content').classList.add('hidden');

@@ -601,6 +601,19 @@ body.modal-open { overflow: hidden; }
 .rank-table tbody tr.row-clean { background: #f0f9f1; }
 .rank-table tbody tr.row-clean:hover { background: #e6f4e8; }
 
+/* ---------- 趨勢（跟上次比） ---------- */
+.trend-delta { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; margin-bottom: 14px; }
+.trend-card { flex: 0 1 160px; background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 14px 16px; border-top: 3px solid var(--c-border); }
+.trend-card.clickable { cursor: pointer; transition: background .12s ease; }
+.trend-card.clickable:hover { background: #f6f9fd; }
+.trend-card .tc-val { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.trend-card .tc-label { font-size: 13px; color: var(--c-text-soft); margin-top: 2px; font-weight: 600; }
+.trend-card.up-bad { border-top-color: var(--c-overdue); } .trend-card.up-bad .tc-val { color: var(--c-overdue); }
+.trend-card.down-good { border-top-color: var(--c-low); } .trend-card.down-good .tc-val { color: var(--c-low); }
+.trend-card.flat { border-top-color: var(--c-text-soft); }
+.trend-cmp-note { align-self: center; font-size: 12.5px; color: var(--c-text-soft); }
+
 /* ---------- SLA 達成率 ---------- */
 .sla-table { max-width: 640px; }
 .sla-table td { padding: 11px 14px; }

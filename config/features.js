@@ -14,6 +14,7 @@ window.APP_FEATURES = [
   { id: 'tab-stats',           group: '分頁',           label: '例外／展延統計',        default: true },
   { id: 'tab-search',          group: '分頁',           label: '查詢',                  default: true },
 
+  { id: 'panel-trend',         group: '總覽（首頁）',   label: '趨勢（跟上次比）',      default: true },
   { id: 'panel-red-list',      group: '總覽（首頁）',   label: '部門／負責人紅黑榜',    default: true },
   { id: 'panel-sla',           group: '總覽（首頁）',   label: 'SLA 達成率',            default: true },
 

@@ -9,6 +9,13 @@
 
 ---
 
+## 2026-07-10 V1.25 趨勢「跟上次比」＋歷史快照（第三個新模組，三個新功能收官）✅ 完成
+- 需求(使用者)：每次匯入=一份快照，比對本次vs上次。確認採 A(自動記+去重)。
+- 架構：js/history.js 新模組。record(sheets,fileName,dateStr) 存輕量快照(不存整份Excel，只存 open/overdue/closed/high/total/rate + 未結弱點指紋 openKeys=host||pluginId)；去重=同檔名同日覆蓋；localStorage『vulnDashboard.history』留最近 12 期。只在 handleFile(真實匯入)記；tryRestore(自動還原)/loadSample(範例)不記，免污染。main.js 加 todayKey(YYYY-MM-DD)、handleFile 成功後 record、selectSheet/resetToUpload 加 History.destroyChart。
+- 趨勢畫面(總覽首頁最上，可開關 panel-trend)：本次vs上次三張卡「新增未結(紅,可點看實際筆數)／結案消失(綠,可點看指紋清單)／未結淨變化」＋對照期別；≥2期畫未結/逾期趨勢線(Chart.js line)。新增用目前檔案 open 且 key 在新增集→openDetail；消失只有指紋→openModal 列 host/pluginId。註冊 config/features.js panel-trend(群組總覽首頁,置頂)。css .trend-*。
+- 驗(預覽,直接呼叫 History.record 模擬兩次匯入)：首份 open55/overdue16/46指紋；同檔同日再記→仍1期(去重OK)；塞前後兩期(前期多2假key少3key)→新增3(紅可點=3筆實際)、消失2(綠可點=指紋清單FAKEHOST 2列)、淨變化+10、對照『本期2026-06-15 vs 上期2026-06-01』、趨勢線 Chart 實例存在；關趨勢開關→趨勢消失且SLA仍在；console 無錯；V1.25;?v全1.25。
+- 註：新增/消失以(host+pluginID)指紋計(同弱點同主機算一件)、淨變化以未結筆數計，單位略不同屬合理。趨勢為全部部門(歷史不分部門)。真實 record 只在使用者選檔匯入時觸發(範例/自動還原不記)。三個新功能(紅黑榜/SLA/趨勢)全數完成，皆掛功能開關。
+
 ## 2026-07-10 V1.24 SLA 達成率（第二個新模組，掛功能開關）✅ 完成
 - 需求(使用者)：各嚴重度 SLA 政策 Critical7/High30/Medium90/Low180。查資料無「發現日/掃描日」欄(profiles 只有 name 別名含『發現』是弱點名非日期)→無法算真正時效。決定：達成率＝各嚴重度「未結案中未逾期」比率；政策天數當目標對照，放 config.sla(可改)。日後 Excel 有發現日再升級真時效。
 - 成果：config.js 加 sla:{Critical:7,High:30,Medium:90,Low:180}。summary.js slaStats(sheets,dept)：各嚴重度統計 open/overdue(存 records)，rate=(open-overdue)/open(open=0→null顯示—)。renderSLA 出表：嚴重度｜政策(天)｜未結案｜逾期｜達成率(長條+百分比，≥90綠/70-90黃/<70紅)；未結/逾期數可點 drill。加 module 級 drillTd 共用。config/features.js 註冊 panel-sla(群組『總覽（首頁）』)。css .sla-*。
