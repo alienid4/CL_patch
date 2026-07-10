@@ -274,6 +274,22 @@
     toast('已匯出 CSV', 'success');
   }
 
+  /* -------- 圖表鑽取：綁到 Chart.js options（點圖元素→drill、hover→手指游標） --------
+   * resolve(index, datasetIndex) 由呼叫端自行決定動作(通常 openDetail 或切表)。
+   */
+  function drillEvents(resolve) {
+    return {
+      onHover: function (evt, els) {
+        var t = evt && evt.native && evt.native.target;
+        if (t) t.style.cursor = (els && els.length) ? 'pointer' : 'default';
+      },
+      onClick: function (evt, els) {
+        if (!els || !els.length) return;
+        resolve(els[0].index, els[0].datasetIndex);
+      },
+    };
+  }
+
   global.UI = {
     toast: toast,
     openModal: openModal,
@@ -283,5 +299,6 @@
     popOutTable: popOutTable,
     copyText: copyText,
     exportCSV: exportCSV,
+    drillEvents: drillEvents,
   };
 })(window);

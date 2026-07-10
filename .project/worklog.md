@@ -9,6 +9,17 @@
 
 ---
 
+## 2026-07-10 V1.18 全站圖表/百分比可鑽取（核心原則：是數字就能點看實際筆數）✅ 完成
+- 需求(使用者)：不管什麼東西點下去都要能追到實際筆數。明指:圓餅圖、堆疊長條圖、28.6% 例外覆蓋率、7/14/30天內 chip、例外核准逾期。「全部只要是數字，都要可以點進去看，包括長條圖」。
+- 現況盤點:stats 分頁的階段卡/子chip/例外核准已逾期/到期預警chip 早已可點；缺的是四張圖表本身與覆蓋率百分比。
+- 成果:ui-common.js 加共用 UI.drillEvents(resolve)→回傳 {onClick,onHover} 綁 Chart.js(hover 變手指、點圖元素觸發 resolve)。套用:
+  · dashboard.js 嚴重度圓餅(點扇區→該嚴重度清單)、到期長條(點柱→該時間帶清單)
+  · stats.js 處置階段圓餅(點扇區→該階段)、到期×階段堆疊長條(點段→該階段×時間帶)、例外覆蓋率 gov-box 改可點(→例外管理中實際筆數)
+  · summary.js 總覽堆疊長條(點某項目柱→切進該項目細項 onSelect)
+  · css .gov-box.clickable hover 樣式
+- 驗(預覽表1 直接呼叫各 chart.options.onClick 觸發):嚴重度圓餅 index0=Critical 4筆、到期長條=已逾期4筆、階段圓餅=例外管理中2筆、堆疊長條=例外管理中×已逾期1筆、覆蓋率box=例外管理中2筆(=2/7 對 28.6%)、總覽長條點項目→mode summary→sheet；6 個 drill 全開正確彈窗、筆數對；console 無錯;V1.18;?v 全1.18。
+- 待清(下次可做，非本次範圍):summary.js 仍有 tr.title「點擊進入…」tooltip 與表頭「高風險(未結)」括號字，屬使用者不要的說明備註，之後順手清。
+
 ## 2026-07-10 V1.17 交叉分析：篩掉的列/欄整個消失（不淡化）＋去說明備註 ✅ 完成
 - 需求(使用者，看 V1.16 截圖)：①選了 Critical，Medium 那列不該只是淡化(區分度不夠)，要「整列消失」；點欄首/格子同理，非選中的欄也要消失。②畫面還有說明備註(「點格子＝…」教學句與各 tooltip)，人類自己會判讀，像 Word/Excel 點每格都沒備註 → 全部拿掉。
 - 成果(js/matrix.js)：buildMatrix 改 visSevs/visBands：state.sev→只留該列、state.band→只留該欄，其餘整列/整欄不 render(取代舊 .dim 淡化)。合計只在「多列/多欄」時顯示(單列或單欄時合計=本身，冗餘故隱藏)；rowTot/colTot/grand 依可見範圍算。移除 .xf-hint 教學句、移除矩陣所有 title tooltip(cell/列首/欄首/cond-tag)。條件列無篩選時整條不顯示(去掉「未套用篩選(顯示全部)」字)。

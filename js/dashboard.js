@@ -103,8 +103,8 @@
     var sevCanvas = document.getElementById('chart-severity');
     var sevCard = sevCanvas && sevCanvas.closest ? sevCanvas.closest('.chart-card') : null;
     if (sevCard) sevCard.style.display = noSev ? 'none' : '';
-    if (!noSev) renderSeverityChart(s);
-    renderDueChart(s);
+    if (!noSev) renderSeverityChart(s, result.records);
+    renderDueChart(s, result.records);
   }
 
   /* 嚴重度 × 修復狀態（給主管：哪些已修復 / 未修復 + 修復率） */
@@ -286,7 +286,7 @@
     box.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
   }
 
-  function renderSeverityChart(s) {
+  function renderSeverityChart(s, records) {
     var canvas = document.getElementById('chart-severity');
     if (!canvas || typeof Chart === 'undefined') return;
     var order = CFG.severityOrder;
@@ -304,11 +304,17 @@
     });
     if (!data.length) { labels = ['無資料']; data = [1]; colors = ['#cfd8dc']; }
 
+    var drill = UI.drillEvents(function (i) {
+      var sev = labels[i];
+      var list = (records || []).filter(function (r) { return (r.severity || 'Unknown') === sev; });
+      if (list.length) UI.openDetail('嚴重度 ' + sev + '（' + list.length + ' 筆）', list);
+    });
     charts.severity = new Chart(canvas.getContext('2d'), {
       type: 'doughnut',
       data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: drill.onClick, onHover: drill.onHover,
         plugins: {
           legend: { position: 'right' },
           title: { display: true, text: '嚴重度分布', font: { size: 14 } },
@@ -317,7 +323,7 @@
     });
   }
 
-  function renderDueChart(s) {
+  function renderDueChart(s, records) {
     var canvas = document.getElementById('chart-due');
     if (!canvas || typeof Chart === 'undefined') return;
     var A = global.Analysis;
@@ -325,11 +331,17 @@
     var data = A.BANDS.map(function (b) { return s.bands[b.key]; });
     var colors = ['#b71c1c', '#e64a19', '#f9a825', '#1976d2', '#546e7a', '#b0bec5'];
 
+    var drill = UI.drillEvents(function (i) {
+      var band = A.BANDS[i]; if (!band) return;
+      var list = (records || []).filter(function (r) { return A.bandOf(r) === band.key; });
+      if (list.length) UI.openDetail('到期時間帶：' + band.label + '（' + list.length + ' 筆）', list);
+    });
     charts.due = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: { labels: labels, datasets: [{ label: '筆數', data: data, backgroundColor: colors, borderRadius: 6 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: drill.onClick, onHover: drill.onHover,
         plugins: {
           legend: { display: false },
           title: { display: true, text: '到期時間帶分布', font: { size: 14 } },

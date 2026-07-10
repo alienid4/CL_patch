@@ -154,14 +154,15 @@
     box.appendChild(U.el('div', { class: 'chart-card summary-chart-card' }, [
       U.el('div', { class: 'chart-wrap' }, [U.el('canvas', { id: 'summary-chart' })]),
     ]));
-    renderChart(rows);
+    renderChart(rows, onSelect);
   }
 
-  function renderChart(rows) {
+  function renderChart(rows, onSelect) {
     if (chart) { chart.destroy(); chart = null; }
     var canvas = document.getElementById('summary-chart');
     if (!canvas || typeof Chart === 'undefined') return;
     var labels = rows.map(function (r) { var m = r.name.match(/^\d+/); return m ? m[0] : r.name; });
+    var drill = global.UI.drillEvents(function (i) { if (onSelect && rows[i]) onSelect(i); });
     chart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: {
@@ -173,6 +174,7 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: drill.onClick, onHover: drill.onHover,
         plugins: { legend: { position: 'top' }, title: { display: false } },
         scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
       },

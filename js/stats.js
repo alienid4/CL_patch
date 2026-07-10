@@ -105,8 +105,8 @@
 
     /* ---- 圖表 ---- */
     destroyCharts();
-    renderStagePie(ss);
-    renderBandChart(ss);
+    renderStagePie(ss, records);
+    renderBandChart(ss, records);
 
     /* ---- 例外治理雷達 ---- */
     renderGovernance(result);
@@ -128,12 +128,17 @@
     var covPct = Math.round(g.coverage * 1000) / 10;
     var row = U.el('div', { class: 'gov-row' });
 
-    // 覆蓋率
-    row.appendChild(U.el('div', { class: 'gov-box' }, [
+    // 覆蓋率（點 → 看被例外覆蓋的實際筆數＝例外管理中）
+    var covList = records.filter(function (r) { return r.stage === 'exception'; });
+    var covBox = U.el('div', { class: 'gov-box' + (covList.length ? ' clickable' : '') }, [
       U.el('div', { class: 'gov-num', text: covPct + '%' }),
       U.el('div', { class: 'gov-label', text: '例外覆蓋率' }),
       U.el('div', { class: 'gov-sub', text: g.exCount + ' / ' + g.total + ' 筆' }),
-    ]));
+    ]);
+    if (covList.length) covBox.addEventListener('click', function () {
+      UI.openDetail('例外覆蓋（例外管理中 ' + covList.length + ' 筆）', covList);
+    });
+    row.appendChild(covBox);
 
     // 例外破口(例外中卻已逾期)
     var breachBox = U.el('div', { class: 'gov-box gov-breach' + (g.expired.length ? ' clickable' : '') }, [
@@ -205,44 +210,57 @@
     box.appendChild(chronicWrap);
   }
 
-  function renderStagePie(ss) {
+  function renderStagePie(ss, records) {
     var canvas = document.getElementById('chart-stage-pie');
     if (!canvas || typeof Chart === 'undefined') return;
-    var labels = [], data = [], colors = [];
+    var labels = [], data = [], colors = [], keys = [];
     ss.stages.forEach(function (st) {
-      if (st.total > 0) { labels.push(st.label); data.push(st.total); colors.push(STAGE_COLORS[st.key]); }
+      if (st.total > 0) { labels.push(st.label); data.push(st.total); colors.push(STAGE_COLORS[st.key]); keys.push(st.key); }
     });
-    if (!data.length) { labels = ['無資料']; data = [1]; colors = ['#cfd8dc']; }
+    if (!data.length) { labels = ['無資料']; data = [1]; colors = ['#cfd8dc']; keys = [null]; }
+    var drill = UI.drillEvents(function (i) {
+      var key = keys[i]; if (!key) return;
+      var list = (records || []).filter(function (r) { return r.stage === key; });
+      if (list.length) UI.openDetail(labels[i] + '（' + list.length + ' 筆）', list);
+    });
     charts.pie = new Chart(canvas.getContext('2d'), {
       type: 'doughnut',
       data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: drill.onClick, onHover: drill.onHover,
         plugins: { legend: { position: 'right' }, title: { display: true, text: '處置階段占比', font: { size: 14 } } },
       },
     });
   }
 
-  function renderBandChart(ss) {
+  function renderBandChart(ss, records) {
     var canvas = document.getElementById('chart-stage-band');
     if (!canvas || typeof Chart === 'undefined') return;
+    var A = global.Analysis;
     var bands = ss.bands;
     var labels = bands.map(function (b) { return BAND_LABELS[b]; });
-    var datasets = ss.stages
-      .filter(function (st) { return st.total > 0; })
-      .map(function (st) {
-        return {
-          label: st.label,
-          data: bands.map(function (b) { return ss.bandMatrix[st.key][b]; }),
-          backgroundColor: STAGE_COLORS[st.key],
-          borderRadius: 4,
-        };
-      });
+    var activeStages = ss.stages.filter(function (st) { return st.total > 0; });
+    var datasets = activeStages.map(function (st) {
+      return {
+        label: st.label,
+        data: bands.map(function (b) { return ss.bandMatrix[st.key][b]; }),
+        backgroundColor: STAGE_COLORS[st.key],
+        borderRadius: 4,
+      };
+    });
+    var drill = UI.drillEvents(function (bandIdx, dsIdx) {
+      var st = activeStages[dsIdx]; var bandKey = bands[bandIdx];
+      if (!st || !bandKey) return;
+      var list = (records || []).filter(function (r) { return r.stage === st.key && A.bandOf(r) === bandKey; });
+      if (list.length) UI.openDetail(st.label + ' × ' + BAND_LABELS[bandKey] + '（' + list.length + ' 筆）', list);
+    });
     charts.band = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: { labels: labels, datasets: datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: drill.onClick, onHover: drill.onHover,
         plugins: { legend: { position: 'top' }, title: { display: true, text: '到期時間帶 × 處置階段', font: { size: 14 } } },
         scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
       },
