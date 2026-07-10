@@ -9,6 +9,14 @@
 
 ---
 
+## 2026-07-11 V1.29 總覽 KPI 可鑽取 ＋ 明細寬表抓取拖曳捲動(拉把) ✅ 完成
+- 使用者回報(總覽頁)：①上排 KPI(未結案/已逾期/近期到期/高風險未結)不能點；②展開的寬明細表拉到最右很難拉，要個「拉把」。
+- 成果：
+  · summary.js KPI 卡加 collect(pred) 跨全部項目彙整該類未結案紀錄→onclick UI.openDetail；未結案/已逾期/近期到期/高風險未結 可點，整體結案率不可點。css .summary-kpis .metric-card:not(.clickable) 取消 pointer/hover(不裝可點)。
+  · ui-common.js enableDragScroll(el)：在捲動容器 mousedown 抓住拖曳→平移 scrollLeft/scrollTop(門檻3px、不攔表頭排序/按鈕/可點數字、move/up 綁 document 用完即移除)；buildDetailTable 的 .detail-viewport 套用並 export UI.enableDragScroll。css .drag-scroll{cursor:grab}/.dragging{grabbing+no-select}；.detail-viewport 捲軸加粗成明顯「拉把」(14px、有色 thumb、hover 變主色)。
+- 驗(預覽 XLSX 造真檔 render 總覽；注意 severity 欄名要用 profiles 別名『風險等級』非『Severity』否則 Unknown)：KPI 未結案3/已逾期1(已結案排除)/近期0/高風險2/結案率25%不可點；點高風險→明細2筆；.detail-viewport 有 drag-scroll、直接設 scrollLeft 可捲(sw900)、合成 clientX 拖曳 x400→150 scrollLeft=250、dragging class 上/下正確；console 無錯；V1.29;?v 全1.29。
+- 註：拉把目前套在 drill 明細表(.detail-viewport)——即使用者展開的寬表。若要人員追蹤/紅黑榜等常駐寬表也能拖，呼叫 UI.enableDragScroll 即可(未來延伸)。
+
 ## 2026-07-11 V1.28 修 bug：已結案不再判逾期 ✅ 完成
 - 使用者回報：不少「已結案」卻顯示「已逾期」。原因：overdue 只看到期日(daysLeft<0)，沒管 closeBucket。
 - 修法(已結案一律不再用到期日判斷)：

@@ -236,6 +236,9 @@ html, body {
   flex: 0 0 auto; min-width: 92px;
 }
 .metric-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+/* 總覽 KPI：不可點的(整體結案率)不裝可點 */
+.summary-kpis .metric-card:not(.clickable) { cursor: default; }
+.summary-kpis .metric-card:not(.clickable):hover { transform: none; box-shadow: none; }
 .metric-value { font-size: 26px; font-weight: 800; line-height: 1.1; }
 .metric-label { font-size: 13px; color: var(--c-text-soft); margin-top: 1px; font-weight: 600; white-space: nowrap; }
 /* 總覽的「未結案」卡稍微放大強調 */
@@ -328,6 +331,18 @@ html, body {
 
 /* ---------- 明細表：可排序 + 固定高度捲動視窗 ---------- */
 .detail-viewport { max-height: 62vh; overflow: auto; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
+
+/* 抓取拖曳捲動：滑鼠可直接抓住表格左右/上下拉 */
+.drag-scroll { cursor: grab; }
+.drag-scroll.dragging { cursor: grabbing; user-select: none; }
+.drag-scroll.dragging * { cursor: grabbing !important; }
+
+/* 明顯的捲軸「拉把」（比預設粗、有顏色，好拉） */
+.detail-viewport::-webkit-scrollbar { width: 14px; height: 14px; }
+.detail-viewport::-webkit-scrollbar-track { background: #eef2f7; border-radius: 8px; }
+.detail-viewport::-webkit-scrollbar-thumb { background: #9aa9c2; border-radius: 8px; border: 3px solid #eef2f7; }
+.detail-viewport::-webkit-scrollbar-thumb:hover { background: var(--c-primary); }
+.detail-viewport { scrollbar-color: #9aa9c2 #eef2f7; }   /* Firefox */
 th.th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
 .detail-table.sortable th.th-sort:hover { background: #e2e8f0; }
 .detail-table.sortable th.sorted { color: var(--c-primary); background: #e6eef9; }

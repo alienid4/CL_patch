@@ -94,17 +94,32 @@
       ]));
     }
 
-    /* KPI 合計 */
+    /* KPI 合計（可點鑽取：跨全部項目彙整該類未結案紀錄） */
+    var soon = CFG.soonDays || 30;
+    function collect(pred) {
+      var out = [];
+      (sheets || []).forEach(function (s) {
+        (s.records || []).forEach(function (r) {
+          if (r.closeBucket === 'open' && inDept(r, dept) && (!pred || pred(r))) out.push(r);
+        });
+      });
+      return out;
+    }
     var kpis = [
-      { label: '未結案', value: t.open, cls: 'm-total' },
-      { label: '已逾期', value: t.overdue, cls: 'm-overdue' },
-      { label: '近期到期', value: t.soon, cls: 'm-warn' },
-      { label: '高風險未結', value: t.high, cls: 'm-critical' },
+      { label: '未結案', value: t.open, cls: 'm-total', recs: function () { return collect(null); } },
+      { label: '已逾期', value: t.overdue, cls: 'm-overdue', recs: function () { return collect(function (r) { return r.overdue; }); } },
+      { label: '近期到期', value: t.soon, cls: 'm-warn', recs: function () { return collect(function (r) { return r.realDue && r.daysLeft >= 0 && r.daysLeft <= soon; }); } },
+      { label: '高風險未結', value: t.high, cls: 'm-critical', recs: function () { return collect(function (r) { return r.severity === 'Critical' || r.severity === 'High'; }); } },
       { label: '整體結案率', value: t.rate + '%', cls: 'm-info' },
     ];
     var kgrid = U.el('div', { class: 'summary-kpis' });
     kpis.forEach(function (k) {
-      kgrid.appendChild(U.el('div', { class: 'metric-card ' + k.cls }, [
+      var attrs = { class: 'metric-card ' + k.cls + (k.recs ? ' clickable' : '') };
+      if (k.recs) attrs.onclick = function () {
+        var list = k.recs();
+        if (list.length) global.UI.openDetail(k.label + '（' + list.length + ' 筆）', list);
+      };
+      kgrid.appendChild(U.el('div', attrs, [
         U.el('div', { class: 'metric-value', text: (typeof k.value === 'number' ? U.num(k.value) : k.value) }),
         U.el('div', { class: 'metric-label', text: k.label }),
       ]));

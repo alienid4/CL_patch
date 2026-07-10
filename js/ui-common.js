@@ -157,7 +157,34 @@
     renderBody();
 
     var viewport = U.el('div', { class: 'detail-viewport' }, [table]);
+    enableDragScroll(viewport);   // 可用滑鼠「抓住拖曳」左右/上下捲動
     return U.el('div', {}, [count, viewport]);
+  }
+
+  /* -------- 抓取拖曳捲動：在捲動容器上按住拖曳即可平移(寬表好拉) --------
+   * 不攔截表頭排序/按鈕/可點數字；移動超過門檻才視為拖曳。 */
+  function enableDragScroll(el) {
+    if (!el) return;
+    el.classList.add('drag-scroll');
+    el.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      if (e.target.closest('th, button, a, input, select, .clickable, .num-cell')) return;
+      var startX = e.pageX, startY = e.pageY, sl = el.scrollLeft, st = el.scrollTop, moved = false;
+      el.classList.add('dragging');
+      function move(ev) {
+        var dx = ev.pageX - startX, dy = ev.pageY - startY;
+        if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) moved = true;
+        el.scrollLeft = sl - dx; el.scrollTop = st - dy;
+        if (moved) ev.preventDefault();
+      }
+      function up() {
+        el.classList.remove('dragging');
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+      }
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    });
   }
 
   /* 開啟 drill-down modal(含 匯出 / 新分頁開啟)
@@ -300,5 +327,6 @@
     copyText: copyText,
     exportCSV: exportCSV,
     drillEvents: drillEvents,
+    enableDragScroll: enableDragScroll,
   };
 })(window);
