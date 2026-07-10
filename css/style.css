@@ -601,6 +601,22 @@ body.modal-open { overflow: hidden; }
 .rank-table tbody tr.row-clean { background: #f0f9f1; }
 .rank-table tbody tr.row-clean:hover { background: #e6f4e8; }
 
+/* ---------- SLA 達成率 ---------- */
+.sla-table { max-width: 640px; }
+.sla-table td { padding: 11px 14px; }
+.sla-rate-cell { min-width: 200px; }
+.sla-rate-cell { display: flex; align-items: center; gap: 10px; justify-content: flex-start; }
+.sla-bar { flex: 1; height: 10px; background: #eef2f7; border-radius: 6px; overflow: hidden; min-width: 90px; }
+.sla-bar i { display: block; height: 100%; border-radius: 6px; }
+.sla-bar i.sla-ok { background: var(--c-low); }
+.sla-bar i.sla-warn { background: var(--c-medium); }
+.sla-bar i.sla-bad { background: var(--c-overdue); }
+.sla-pct { font-weight: 800; font-variant-numeric: tabular-nums; flex: none; }
+.sla-pct.sla-ok { color: var(--c-low); }
+.sla-pct.sla-warn { color: #b8860b; }
+.sla-pct.sla-bad { color: var(--c-overdue); }
+.sla-na { color: var(--c-text-soft); }
+
 /* ---------- 功能開關設定面板 ---------- */
 .feature-settings { display: flex; flex-direction: column; gap: 2px; min-width: 320px; }
 .feature-group-title { font-size: 12.5px; font-weight: 700; color: var(--c-text-soft); margin: 16px 0 4px; }

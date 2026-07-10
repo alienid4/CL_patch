@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.24 SLA 達成率（第二個新模組，掛功能開關）✅ 完成
+- 需求(使用者)：各嚴重度 SLA 政策 Critical7/High30/Medium90/Low180。查資料無「發現日/掃描日」欄(profiles 只有 name 別名含『發現』是弱點名非日期)→無法算真正時效。決定：達成率＝各嚴重度「未結案中未逾期」比率；政策天數當目標對照，放 config.sla(可改)。日後 Excel 有發現日再升級真時效。
+- 成果：config.js 加 sla:{Critical:7,High:30,Medium:90,Low:180}。summary.js slaStats(sheets,dept)：各嚴重度統計 open/overdue(存 records)，rate=(open-overdue)/open(open=0→null顯示—)。renderSLA 出表：嚴重度｜政策(天)｜未結案｜逾期｜達成率(長條+百分比，≥90綠/70-90黃/<70紅)；未結/逾期數可點 drill。加 module 級 drillTd 共用。config/features.js 註冊 panel-sla(群組『總覽（首頁）』)。css .sla-*。
+- 驗(預覽範例)：Critical 7天/未結16/逾期6/62.5%(=(16-6)/16)、High 30/11/0/100%、Medium 90/15/10/33.3%、Low 180/9/0/100%，數字對帳；點 Critical 逾期→彈窗6筆；關 SLA 開關→SLA表消失且紅黑榜仍在(獨立)；console 無錯；V1.24;?v 全1.24。
+- 剩最後一個：#1 跟上次比的趨勢(每次匯入=一份輕量快照，存 localStorage，比對本次vs上次；設計待使用者確認 auto+dedupe 後再做)。
+
 ## 2026-07-10 V1.23 部門／負責人紅黑榜（第一個掛進功能開關的新模組）✅ 完成
 - 需求(使用者)：主管要一眼知道「哪個部門/誰逾期最多、結案率最差」→ 找誰談。做成模組、掛在功能開關。
 - 成果：summary.js 加 rankBy(sheets,dept,keyFn) 跨全部項目彙整(部門=r.unit、負責人=r.owner)，算 未結/已逾期/高風險未結/已結/結案率，並存各子集 records 供 drill；預設按已逾期多者在前。renderRankings 在總覽首頁(圖表下方)出兩張表(部門排行/負責人排行)；makeSortableTable 通用可排序表(欄首可排序、數字欄首點=大到小)。每個數字可點→UI.openDetail 看實際筆數。紅黑視覺：有逾期列 row-overdue(紅)、全數結案列 row-clean(綠, css #f0f9f1)。config/features.js 註冊 panel-red-list(群組『總覽（首頁）』, 預設開)；summary.render 用 Features.isOn 包起來。css .rank-wrap/.rank-block/.rank-table。

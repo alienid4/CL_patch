@@ -201,10 +201,79 @@
     ]));
     renderChart(rows, onSelect);
 
+    /* SLA 達成率（跨全部項目；可於「功能開關」關閉） */
+    if (!global.Features || global.Features.isOn('panel-sla')) {
+      renderSLA(box, sheets, dept);
+    }
+
     /* 部門／負責人紅黑榜（跨全部項目彙整；可於「功能開關」關閉） */
     if (!global.Features || global.Features.isOn('panel-red-list')) {
       renderRankings(box, sheets, dept);
     }
+  }
+
+  /* 可點的數字格：val>0 → 點開該批實際筆數 */
+  function drillTd(val, title, recs, extraCls) {
+    var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
+    if (val > 0) {
+      return U.el('td', { class: cls + ' clickable', text: U.num(val),
+        onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+    }
+    return U.el('td', { class: cls, text: U.num(val) });
+  }
+
+  /* SLA 達成率：各嚴重度「未結案中未逾期」的比率（政策天數為目標對照） */
+  function slaStats(sheets, dept) {
+    var order = ['Critical', 'High', 'Medium', 'Low'];   // 只對有政策的四級
+    var pol = CFG.sla || {};
+    var acc = {};
+    order.forEach(function (k) { acc[k] = { sev: k, days: pol[k], open: 0, overdue: 0, openRecords: [], overdueRecords: [] }; });
+    (sheets || []).forEach(function (s) {
+      (s.records || []).forEach(function (r) {
+        if (!inDept(r, dept)) return;
+        var a = acc[r.severity]; if (!a) return;
+        if (r.closeBucket !== 'open') return;
+        a.open++; a.openRecords.push(r);
+        if (r.overdue) { a.overdue++; a.overdueRecords.push(r); }
+      });
+    });
+    return order.map(function (k) { var a = acc[k]; a.rate = a.open ? (a.open - a.overdue) / a.open : null; return a; });
+  }
+
+  function renderSLA(box, sheets, dept) {
+    var stats = slaStats(sheets, dept);
+    box.appendChild(U.el('div', { class: 'panel-bar' }, [U.el('h3', { text: 'SLA 達成率' })]));
+
+    var table = U.el('table', { class: 'tracking-table sla-table' });
+    var thead = U.el('thead'), htr = U.el('tr');
+    ['嚴重度', '政策(天)', '未結案', '逾期', '達成率'].forEach(function (h) { htr.appendChild(U.el('th', { text: h })); });
+    thead.appendChild(htr); table.appendChild(thead);
+
+    var tbody = U.el('tbody');
+    stats.forEach(function (a) {
+      var tr = U.el('tr', { class: a.overdue > 0 ? 'row-overdue' : '' });
+      var sevTd = U.el('td'); sevTd.appendChild(U.el('span', { class: 'sev-badge sev-' + a.sev, text: a.sev }));
+      tr.appendChild(sevTd);
+      tr.appendChild(U.el('td', { class: 'num-cell', text: (a.days != null ? a.days : '-') }));
+      tr.appendChild(drillTd(a.open, a.sev + '　未結案', a.openRecords));
+      tr.appendChild(drillTd(a.overdue, a.sev + '　逾期未結', a.overdueRecords, a.overdue > 0 ? 'has-overdue' : ''));
+      // 達成率格：長條 + 百分比
+      var rateTd = U.el('td', { class: 'sla-rate-cell' });
+      if (a.rate === null) {
+        rateTd.appendChild(U.el('span', { class: 'sla-na', text: '—' }));
+      } else {
+        var pct = Math.round(a.rate * 1000) / 10;
+        var cls = pct >= 90 ? 'sla-ok' : (pct >= 70 ? 'sla-warn' : 'sla-bad');
+        var bar = U.el('div', { class: 'sla-bar' }, [U.el('i', { class: cls })]);
+        bar.firstChild.style.width = pct + '%';
+        rateTd.appendChild(bar);
+        rateTd.appendChild(U.el('span', { class: 'sla-pct ' + cls, text: pct + '%' }));
+      }
+      tr.appendChild(rateTd);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    box.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
   }
 
   /* 跨全部項目，依某維度(部門/負責人)彙整並排名(逾期多者在前) */
