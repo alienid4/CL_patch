@@ -339,12 +339,13 @@
         cell: function (g) { return U.el('td', { class: 'num-cell', text: (Math.round(g.rate * 1000) / 10) + '%' }); } },
     ];
     var rowClass = function (g) { return g.overdue > 0 ? 'row-overdue' : (g.open === 0 ? 'row-clean' : ''); };
-    block.appendChild(U.el('div', { class: 'table-scroll' }, [makeSortableTable(cols, list, 2, -1, rowClass)]));
+    block.appendChild(makeSortableTable(cols, list, 2, -1, rowClass, 5));   // 預設只顯示前 5 名
     return block;
   }
 
-  /* 通用可排序表：cols=[{h,num,sortVal,cell}], initCi/initDir 預設排序欄, rowClass(row)→class */
-  function makeSortableTable(cols, rows, initCi, initDir, rowClass) {
+  /* 通用可排序表：cols=[{h,num,sortVal,cell}], initCi/initDir 預設排序欄, rowClass(row)→class
+   * limit：預設只顯示前 N 列(依目前排序)，超過時附「展開全部／收合」按鈕。 */
+  function makeSortableTable(cols, rows, initCi, initDir, rowClass, limit) {
     var table = U.el('table', { class: 'tracking-table rank-table' });
     var thead = U.el('thead'); var htr = U.el('tr'); var ths = [];
     cols.forEach(function (c) {
@@ -354,6 +355,8 @@
     thead.appendChild(htr); table.appendChild(thead);
     var tbody = U.el('tbody'); table.appendChild(tbody);
     var sortState = { ci: (initCi == null ? null : initCi), dir: initDir || 1 };
+    var capped = !!(limit && rows.length > limit);
+    var expanded = false;
     function cmp(a, b, dir) {
       var an = (a === null || a === undefined || a === ''), bn = (b === null || b === undefined || b === '');
       if (an && bn) return 0; if (an) return 1; if (bn) return -1;
@@ -363,8 +366,9 @@
     function renderBody() {
       var arr = rows.slice();
       if (sortState.ci != null) { var col = cols[sortState.ci]; arr.sort(function (a, b) { return cmp(col.sortVal(a), col.sortVal(b), sortState.dir); }); }
+      var show = (capped && !expanded) ? arr.slice(0, limit) : arr;
       tbody.innerHTML = '';
-      arr.forEach(function (r) {
+      show.forEach(function (r) {
         var tr = U.el('tr', { class: (rowClass ? rowClass(r) : '') });
         cols.forEach(function (c) { tr.appendChild(c.cell(r)); });
         tbody.appendChild(tr);
@@ -383,7 +387,16 @@
       });
     });
     renderBody();
-    return table;
+
+    var wrapper = U.el('div', {}, [U.el('div', { class: 'table-scroll' }, [table])]);
+    if (capped) {
+      var btn = U.el('button', { class: 'btn btn-secondary btn-sm rank-expand' });
+      function updateBtn() { btn.textContent = expanded ? '收合' : ('展開全部（' + rows.length + '）'); }
+      btn.addEventListener('click', function () { expanded = !expanded; renderBody(); updateBtn(); });
+      updateBtn();
+      wrapper.appendChild(btn);
+    }
+    return wrapper;
   }
 
   function renderChart(rows, onSelect) {

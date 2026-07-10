@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.26 紅黑榜排行預設只顯示前 5 名＋展開全部 ✅ 完成
+- 需求(使用者)：紅黑榜負責人排行在「全部部門」時很長(範例50人)，預設只顯示前5名(逾期最多)＋「展開全部」按鈕。並確認「模組化=功能開關」已於 V1.22 做好(此為紅黑榜模組內部顯示行為，不另開開關)。
+- 補充：驗證負責人/部門排行本就跟著左側「部門」選擇器縮(偽造第二部門測試：全部部門50人→選資訊架構部45人、被移走的玄慈/喬峰從榜上消失)，非 bug；使用者原以為列全部人是因無部門，實為範例66筆全在單一部門。
+- 成果：summary.js makeSortableTable 加 limit 參數：capped=list>limit 時，預設 slice(0,limit) 只顯示前 N(依目前排序)，附「展開全部（N）／收合」按鈕，回傳 wrapper(含 table-scroll+按鈕)；rankBlock 傳 limit=5。展開/排序連動:排序改變後前5名跟著換。css .rank-expand。
+- 驗(預覽範例)：部門排行1列無按鈕；負責人排行顯示前5(玄慈2逾期首)+「展開全部（50）」；點展開→50列/「收合」、再點→回5；點高風險未結欄首→前5隨新排序換;console 無錯;V1.26;?v全1.26。
+
 ## 2026-07-10 V1.25 趨勢「跟上次比」＋歷史快照（第三個新模組，三個新功能收官）✅ 完成
 - 需求(使用者)：每次匯入=一份快照，比對本次vs上次。確認採 A(自動記+去重)。
 - 架構：js/history.js 新模組。record(sheets,fileName,dateStr) 存輕量快照(不存整份Excel，只存 open/overdue/closed/high/total/rate + 未結弱點指紋 openKeys=host||pluginId)；去重=同檔名同日覆蓋；localStorage『vulnDashboard.history』留最近 12 期。只在 handleFile(真實匯入)記；tryRestore(自動還原)/loadSample(範例)不記，免污染。main.js 加 todayKey(YYYY-MM-DD)、handleFile 成功後 record、selectSheet/resetToUpload 加 History.destroyChart。

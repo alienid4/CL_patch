@@ -600,6 +600,7 @@ body.modal-open { overflow: hidden; }
 .rank-table td { padding: 10px 12px; font-size: 14px; }
 .rank-table tbody tr.row-clean { background: #f0f9f1; }
 .rank-table tbody tr.row-clean:hover { background: #e6f4e8; }
+.rank-expand { margin-top: 8px; }
 
 /* ---------- 趨勢（跟上次比） ---------- */
 .trend-delta { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; margin-bottom: 14px; }
