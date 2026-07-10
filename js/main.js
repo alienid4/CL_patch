@@ -8,7 +8,7 @@
   var U = global.Utils;
   var UI = global.UI;
 
-  var state = { result: null, fileName: '', sheets: null, activeIdx: 0, mode: 'summary' };
+  var state = { result: null, fileName: '', sheets: null, activeIdx: 0, mode: 'summary', myDept: '__all__' };
 
   function $(id) { return document.getElementById(id); }
 
@@ -102,8 +102,10 @@
       UI.copyText(buildSummaryText(state.result));
     });
 
-    // 篩選：部門 / 結案狀態
-    if ($('filter-dept')) $('filter-dept').addEventListener('change', applyFilters);
+    // 記住「我的部門」(下次進來預設)
+    state.myDept = loadMyDept();
+
+    // 篩選：結案狀態(部門由左側全站選擇器控管)
     if ($('filter-close')) $('filter-close').addEventListener('change', applyFilters);
 
     // 常駐查詢框（若在總覽，先進入目前項目再查）
@@ -127,7 +129,7 @@
   function buildSummaryText(result) {
     // 總覽模式：全部項目彙總
     if (state.mode === 'summary' && state.sheets && global.Summary) {
-      var o = global.Summary.overall(state.sheets);
+      var o = global.Summary.overall(state.sheets, state.myDept);
       var t = o.totals;
       var hot = o.rows.filter(function (r) { return r.overdue > 0; })
         .sort(function (a, b) { return b.overdue - a.overdue; }).slice(0, 5)
@@ -206,15 +208,44 @@
   }
 
   /* -------- 左側導覽：總覽 + 各項目 -------- */
+  /* 所有工作表出現過的部門(去重、排序) */
+  function allDepartments(sheets) {
+    var set = {};
+    (sheets || []).forEach(function (s) {
+      (s.records || []).forEach(function (r) { set[r.unit || '(未填)'] = 1; });
+    });
+    return Object.keys(set).sort();
+  }
+  /* 某表在指定部門下的未結案數 */
+  function deptOpenCount(s, dept) {
+    return (s.records || []).filter(function (r) {
+      return r.closeBucket === 'open' && (dept === '__all__' || (r.unit || '(未填)') === dept);
+    }).length;
+  }
+
   function renderSheetNav() {
     var nav = $('sheet-nav');
     nav.innerHTML = '';
-    // 總覽（全部）置頂
+
+    // 部門選擇器(全站；記住的部門若此檔沒有則退回全部)
+    var depts = allDepartments(state.sheets);
+    if (state.myDept !== '__all__' && depts.indexOf(state.myDept) < 0) state.myDept = '__all__';
+    var sel = U.el('select', { class: 'dept-select', id: 'my-dept-select' });
+    var oAll = document.createElement('option'); oAll.value = '__all__'; oAll.textContent = '全部部門'; sel.appendChild(oAll);
+    depts.forEach(function (u) { var o = document.createElement('option'); o.value = u; o.textContent = u; sel.appendChild(o); });
+    sel.value = state.myDept;
+    sel.addEventListener('change', function () { setMyDept(sel.value); });
+    nav.appendChild(U.el('div', { class: 'dept-picker' }, [
+      U.el('span', { class: 'dept-picker-label', text: '部門' }), sel,
+    ]));
+
+    // 總覽置頂
     nav.appendChild(U.el('button', {
       class: 'sheet-item nav-summary' + (state.mode === 'summary' ? ' active' : ''),
       onclick: showSummary,
-    }, [U.el('span', { class: 'sheet-name', text: '總覽（全部）' })]));
-    // 各項目
+    }, [U.el('span', { class: 'sheet-name', text: '總覽' })]));
+
+    // 各項目(未結數依目前部門)
     state.sheets.forEach(function (s, i) {
       var item = U.el('button', {
         class: 'sheet-item' + (state.mode === 'sheet' && i === state.activeIdx ? ' active' : ''),
@@ -222,10 +253,19 @@
         onclick: (function (idx) { return function () { selectSheet(idx); saveActiveIdx(idx); }; })(i),
       }, [
         U.el('span', { class: 'sheet-name', text: s.name }),
-        U.el('span', { class: 'sheet-count', text: U.num(s.result.summary.total) + ' 未結' }),
+        U.el('span', { class: 'sheet-count', text: U.num(deptOpenCount(s, state.myDept)) + ' 未結' }),
       ]);
       nav.appendChild(item);
     });
+  }
+
+  /* 切換「我的部門」：記住、重繪導覽與目前畫面 */
+  function setMyDept(v) {
+    state.myDept = v;
+    saveMyDept(v);
+    renderSheetNav();
+    if (state.mode === 'summary') showSummary();
+    else applyFilters();
   }
 
   function setNavActive() {
@@ -244,7 +284,7 @@
     $('summary-view').classList.remove('hidden');
     $('sheet-view').classList.add('hidden');
     setNavActive();
-    global.Summary.render(state.sheets, function (i) { selectSheet(i); saveActiveIdx(i); });
+    global.Summary.render(state.sheets, function (i) { selectSheet(i); saveActiveIdx(i); }, state.myDept);
     if ($('file-name-tag')) $('file-name-tag').textContent = state.fileName + '　(總覽)';
     if ($('copy-summary-btn')) $('copy-summary-btn').disabled = !state.sheets;
   }
@@ -258,8 +298,7 @@
     $('summary-view').classList.add('hidden');
     $('sheet-view').classList.remove('hidden');
     setNavActive();
-    // 填部門選項 + 重設篩選為預設(全部部門 / 未結案)
-    populateDeptOptions(s);
+    // 結案狀態重設為預設(未結案)；部門沿用「我的部門」
     if ($('filter-close')) $('filter-close').value = 'open';
     applyFilters();
   }
@@ -268,7 +307,7 @@
   function applyFilters() {
     if (!state.sheets) return;
     var s = state.sheets[state.activeIdx];
-    var deptSel = $('filter-dept') ? $('filter-dept').value : '__all__';
+    var deptSel = state.myDept || '__all__';
     var closeSel = $('filter-close') ? $('filter-close').value : 'open';
     var recs = s.records;
     var deptFiltered = (deptSel === '__all__') ? recs : recs.filter(function (r) { return (r.unit || '(未填)') === deptSel; });
@@ -277,20 +316,6 @@
     result.caps = s.caps;
     state.result = result;
     renderResult(result, s.name, { dept: deptSel, close: closeSel, deptCount: deptFiltered.length });
-  }
-
-  function populateDeptOptions(s) {
-    var sel = $('filter-dept'); if (!sel) return;
-    sel.innerHTML = '';
-    var units = {};
-    s.records.forEach(function (r) { var u = r.unit || '(未填)'; units[u] = (units[u] || 0) + 1; });
-    var all = document.createElement('option');
-    all.value = '__all__'; all.textContent = '全部部門 (' + s.records.length + ')';
-    sel.appendChild(all);
-    Object.keys(units).sort().forEach(function (u) {
-      var o = document.createElement('option'); o.value = u; o.textContent = u + ' (' + units[u] + ')'; sel.appendChild(o);
-    });
-    sel.value = '__all__';
   }
 
   function renderResult(result, sheetName, opts) {
@@ -359,6 +384,11 @@
     } catch (e) { return null; }
   }
   function clearState() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+  /* 「我的部門」記憶(獨立於檔案，跨檔沿用) */
+  var DEPT_KEY = 'vulnDashboard.dept';
+  function loadMyDept() { try { return localStorage.getItem(DEPT_KEY) || '__all__'; } catch (e) { return '__all__'; } }
+  function saveMyDept(v) { try { localStorage.setItem(DEPT_KEY, v); } catch (e) {} }
 
   function fmtSavedAt(iso) {
     if (!iso) return '';

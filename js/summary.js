@@ -10,10 +10,12 @@
   var CFG = global.APP_CONFIG;
   var chart = null;
 
-  /* 單一項目(工作表)的彙總 */
-  function agg(sheet) {
+  function inDept(r, dept) { return !dept || dept === '__all__' || (r.unit || '(未填)') === dept; }
+
+  /* 單一項目(工作表)的彙總(可限定部門) */
+  function agg(sheet, dept) {
     var soon = CFG.soonDays || 30;
-    var recs = sheet.records || [];
+    var recs = (sheet.records || []).filter(function (r) { return inDept(r, dept); });
     var open = recs.filter(function (r) { return r.closeBucket === 'open'; });
     var closed = recs.filter(function (r) { return r.closeBucket === 'closed'; });
     var overdue = open.filter(function (r) { return r.realDue && r.daysLeft < 0; });
@@ -26,9 +28,9 @@
     };
   }
 
-  /* 全部項目彙總(供 KPI / 複製摘要) */
-  function overall(sheets) {
-    var rows = (sheets || []).map(agg);
+  /* 全部項目彙總(供 KPI / 複製摘要；可限定部門) */
+  function overall(sheets, dept) {
+    var rows = (sheets || []).map(function (s) { return agg(s, dept); });
     var t = { open: 0, closed: 0, overdue: 0, soon: 0, high: 0, total: 0 };
     rows.forEach(function (r) {
       t.open += r.open; t.closed += r.closed; t.overdue += r.overdue;
@@ -38,17 +40,59 @@
     return { rows: rows, totals: t };
   }
 
-  function render(sheets, onSelect) {
+  /* 跨所有項目，撈出「未結案且已逾期」的弱點（主管稽核：沒修補的弱點；可限定部門） */
+  function collectOverdue(sheets, dept) {
+    var out = [];
+    (sheets || []).forEach(function (s) {
+      (s.records || []).forEach(function (r) {
+        if (r.closeBucket === 'open' && r.overdue && inDept(r, dept)) out.push(r);
+      });
+    });
+    return out;
+  }
+
+  /* 全域逾期清單的前置欄位：讓主管一眼看到是哪個項目、哪個部門 */
+  var OVERDUE_EXTRA_COLS = [
+    { h: '項目', cls: 'col-name', disp: function (r) { return r.sheet; }, sortVal: function (r) { return (r.sheet || '').toLowerCase(); } },
+    { h: '部門', cls: '', disp: function (r) { return r.unit || '(未填)'; }, sortVal: function (r) { return (r.unit || '').toLowerCase(); } },
+  ];
+
+  /* 開啟「全部逾期未結」明細（跨項目彙整，可排序 / 匯出 / 另開分頁） */
+  function openAllOverdue(recs) {
+    if (!global.UI) return;
+    global.UI.openDetail('全部逾期未結清單（' + recs.length + ' 筆）', recs, { extraCols: OVERDUE_EXTRA_COLS });
+  }
+
+  function render(sheets, onSelect, dept) {
     var box = document.getElementById('summary-view');
     if (!box) return;
     box.innerHTML = '';
-    var o = overall(sheets);
+    var o = overall(sheets, dept);
     var rows = o.rows, t = o.totals;
 
     box.appendChild(U.el('div', { class: 'panel-bar' }, [
-      U.el('h3', { text: '全部項目總覽' }),
-      U.el('span', { class: 'panel-bar-note', text: '共 ' + sheets.length + ' 個項目 · 點列可進入細項' }),
+      U.el('h3', { text: (dept && dept !== '__all__') ? (dept + ' 總覽') : '全部項目總覽' }),
+      U.el('span', { class: 'panel-bar-note', text: '共 ' + sheets.length + ' 個項目' }),
     ]));
+
+    /* 逾期警示橫幅（主管稽核）：跨全部項目的「沒修補（逾期未結）」弱點，一鍵攤開 */
+    var overdueRecs = collectOverdue(sheets, dept);
+    if (overdueRecs.length) {
+      var maxOd = overdueRecs.reduce(function (m, r) { return Math.max(m, r.overdueDays || 0); }, 0);
+      var byDept = {};
+      overdueRecs.forEach(function (r) { var u = r.unit || '(未填)'; byDept[u] = (byDept[u] || 0) + 1; });
+      var topDepts = Object.keys(byDept)
+        .sort(function (a, b) { return byDept[b] - byDept[a]; }).slice(0, 4)
+        .map(function (u) { return u + '（' + byDept[u] + '）'; });
+      box.appendChild(U.el('div', { class: 'overdue-alert' }, [
+        U.el('span', { class: 'oa-icon', text: '⚠' }),
+        U.el('span', { class: 'oa-text', html:
+          '全部項目共 <b>' + U.num(overdueRecs.length) + '</b> 筆弱點<b>已逾期尚未結案</b>，最久已逾期 <b>' + U.num(maxOd) + '</b> 天。' +
+          (topDepts.length ? '　逾期集中：' + U.esc(topDepts.join('、')) + '。' : '') }),
+        U.el('button', { class: 'btn btn-danger btn-sm', text: '查看全部逾期清單',
+          onclick: function () { openAllOverdue(overdueRecs); } }),
+      ]));
+    }
 
     /* KPI 合計 */
     var kpis = [
@@ -129,7 +173,7 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' }, title: { display: true, text: '各項目未結案（含已逾期），x 軸為項目編號', font: { size: 14 } } },
+        plugins: { legend: { position: 'top' }, title: { display: false } },
         scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
       },
     });
@@ -137,5 +181,5 @@
 
   function destroyChart() { if (chart) { chart.destroy(); chart = null; } }
 
-  global.Summary = { render: render, overall: overall, destroyChart: destroyChart };
+  global.Summary = { render: render, overall: overall, destroyChart: destroyChart, collectOverdue: collectOverdue };
 })(window);

@@ -47,7 +47,7 @@ html, body {
   position: sticky; top: 0; z-index: 50;
 }
 .header-inner {
-  max-width: 1280px; margin: 0 auto;
+  max-width: 1600px; margin: 0 auto;
   padding: 14px 24px;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
 }
@@ -63,7 +63,7 @@ html, body {
   color: #fff; border-radius: 20px; padding: 3px 11px;
 }
 
-.container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+.container { max-width: 1600px; margin: 0 auto; padding: 24px 28px; }
 
 /* ---------- 按鈕 ---------- */
 .btn {
@@ -120,24 +120,31 @@ html, body {
 /* ---------- 工作區：左側工作表導覽 + 右側看板 ---------- */
 .workspace { display: flex; gap: 16px; align-items: flex-start; }
 .sheet-nav {
-  flex: 0 0 288px; display: flex; flex-direction: column; gap: 3px;
+  flex: 0 0 340px; display: flex; flex-direction: column; gap: 4px;
   position: sticky; top: 78px; max-height: calc(100vh - 96px); overflow-y: auto;
 }
+/* 部門選擇器（全站，置左側頂端） */
+.dept-picker { display: flex; align-items: center; gap: 8px; padding: 4px 2px 10px; }
+.dept-picker-label { font-size: 14px; font-weight: 700; color: var(--c-text); flex: none; }
+.dept-select { flex: 1; min-width: 0; font-family: inherit; font-size: 15px; font-weight: 600;
+  padding: 9px 11px; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+  background: var(--c-surface); color: var(--c-primary-dark); cursor: pointer; }
+.dept-select:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-soft); }
 /* 每項一行：名稱(過長省略) + 未結數，同一列 */
 .sheet-item {
-  display: flex; align-items: baseline; gap: 6px;
+  display: flex; align-items: baseline; gap: 8px;
   text-align: left; background: var(--c-surface); border: 1px solid var(--c-border);
   border-left: 3px solid transparent; border-radius: var(--radius-sm);
-  padding: 5px 9px; cursor: pointer; font-family: inherit; transition: all .12s ease;
+  padding: 8px 12px; cursor: pointer; font-family: inherit; transition: all .12s ease;
 }
 .sheet-item:hover { border-color: var(--c-primary); background: #f6f9fd; }
 .sheet-item.active { border-left-color: var(--c-primary); background: var(--c-primary-soft); }
 .sheet-name {
   flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-weight: 600; font-size: 12.5px; color: var(--c-text); line-height: 1.7;
+  font-weight: 600; font-size: 14px; color: var(--c-text); line-height: 1.6;
 }
 .sheet-item.active .sheet-name { color: var(--c-primary-dark); }
-.sheet-count { flex: none; font-size: 11px; color: var(--c-text-soft); white-space: nowrap; }
+.sheet-count { flex: none; font-size: 12.5px; color: var(--c-text-soft); white-space: nowrap; }
 .ws-main { flex: 1; min-width: 0; }
 
 @media (max-width: 900px) {
@@ -228,11 +235,11 @@ html, body {
   flex: 0 0 auto; min-width: 92px;
 }
 .metric-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-.metric-value { font-size: 23px; font-weight: 800; line-height: 1.1; }
-.metric-label { font-size: 12px; color: var(--c-text-soft); margin-top: 1px; font-weight: 600; white-space: nowrap; }
+.metric-value { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.metric-label { font-size: 13px; color: var(--c-text-soft); margin-top: 1px; font-weight: 600; white-space: nowrap; }
 /* 總覽的「未結案」卡稍微放大強調 */
 .metric-group:first-child .metric-card { min-width: 130px; }
-.metric-group:first-child .metric-value { font-size: 30px; }
+.metric-group:first-child .metric-value { font-size: 34px; }
 
 .m-total { border-top-color: var(--c-primary); }
 .m-total .metric-value { color: var(--c-primary); }
@@ -278,10 +285,10 @@ html, body {
 }
 .tracking-table th {
   background: var(--c-primary); color: #fff; padding: 12px 14px;
-  text-align: center; font-size: 14px; font-weight: 600; white-space: nowrap;
+  text-align: center; font-size: 15px; font-weight: 600; white-space: nowrap;
 }
 .tracking-table th:first-child { text-align: left; }
-.tracking-table td { padding: 11px 14px; border-bottom: 1px solid var(--c-border); text-align: center; }
+.tracking-table td { padding: 12px 14px; border-bottom: 1px solid var(--c-border); text-align: center; font-size: 15px; }
 .tracking-table tbody tr:hover { background: #f8fafd; }
 .owner-cell { text-align: left !important; font-weight: 600; white-space: nowrap; }
 .num-cell { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; }
@@ -453,6 +460,31 @@ body.modal-open { overflow: hidden; }
 .quality-banner .q-icon { font-size: 18px; }
 .quality-banner .q-text { flex: 1; }
 .quality-banner .q-text b { color: var(--c-overdue); }
+
+/* 逾期警示橫幅（主管總覽：沒修補的弱點一鍵攤開） */
+.overdue-alert { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: #fdecea; border: 1px solid #f5c6cb; border-left: 5px solid var(--c-overdue);
+  border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; color: #842029; font-size: 14px; }
+.overdue-alert .oa-icon { font-size: 20px; line-height: 1; }
+.overdue-alert .oa-text { flex: 1; min-width: 240px; line-height: 1.6; }
+.overdue-alert .oa-text b { color: var(--c-overdue); }
+.btn-danger { background: var(--c-overdue); color: #fff; }
+.btn-danger:hover { background: #a91f1f; }
+
+/* Email 設定表單 */
+.email-form { display: flex; flex-direction: column; gap: 12px; }
+.email-field { display: flex; flex-direction: column; gap: 5px; }
+.email-field-label { font-size: 13px; font-weight: 700; color: var(--c-text); }
+.email-input { width: 100%; box-sizing: border-box; padding: 8px 10px; font-family: inherit; font-size: 14px;
+  border: 1px solid var(--c-border); border-radius: var(--radius-sm); background: var(--c-surface); color: var(--c-text); }
+.email-input:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-soft); }
+.email-input-sm { max-width: 120px; }
+.email-area { resize: vertical; line-height: 1.5; }
+.email-scope { display: flex; gap: 18px; }
+.email-check { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.email-preview { margin-top: 14px; padding: 12px; background: #f6f8fb; border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+  max-height: 320px; overflow: auto; }
 .quality-detail { display: flex; flex-direction: column; gap: 10px; }
 .q-issue-head { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f6f8fb; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
 .q-badge { background: var(--c-overdue); color: #fff; min-width: 30px; text-align: center; padding: 2px 8px; border-radius: 20px; font-weight: 700; }

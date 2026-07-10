@@ -79,5 +79,50 @@
     "attempts": 0,
     "created": "2026-07-08",
     "notes": ""
+  },
+  {
+    "id": "audit-overdue-global",
+    "desc": "主管稽核：總覽頁把『全部項目逾期未結（沒修補）』的弱點一鍵攤開",
+    "done_when": "總覽頁有紅色逾期警示橫幅(筆數/最久逾期天數/逾期集中部門)；點『查看全部逾期清單』開跨項目明細(前置欄位:項目/部門)，可排序、匯出CSV、另開分頁；無逾期時不顯示橫幅；既有各分頁明細不受影響",
+    "status": "done",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "V1.09。summary.js collectOverdue/openAllOverdue + .overdue-alert；ui-common.js openDetail/buildDetailTable/popOutTable/exportCSV 加可選 extraCols(向後相容)。回歸已驗:一般明細仍11欄從Host起、預設排真正到期日。"
+  },
+  {
+    "id": "my-dept-landing",
+    "desc": "第一批A1｜窗口視角：記住『我的部門』，開檔/進項目自動套用該部門篩選",
+    "done_when": "選過的部門存 localStorage；下次開檔或進任一項目，若該部門存在於選項則自動選取(而非全部部門)；可清除回到全部",
+    "status": "done",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "V1.12。部門控制從『每表 filter-dept』升級為左側全站選擇器(#my-dept-select)，存 vulnDashboard.dept 跨檔沿用；總覽/各表/未結數/逾期橫幅/複製摘要/Email 內容皆吃 state.myDept；此檔無該部門則退回全部。同版順做版面收窄放大(A-layout)。"
+  },
+  {
+    "id": "vuln-aggregate",
+    "desc": "第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔",
+    "done_when": "提供聚合檢視:同弱點合併顯示影響台數、可展開看各主機；不破壞逐筆明細",
+    "status": "todo",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": ""
+  },
+  {
+    "id": "one-page-print",
+    "desc": "第一批A5｜一頁列印/PDF:本部門(或全域)摘要可直接貼週報/對上交代",
+    "done_when": "有列印友善版面(隱藏導覽/分頁鈕)，A4 一頁含 KPI+逾期重點；瀏覽器列印為PDF正常",
+    "status": "todo",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": ""
+  },
+  {
+    "id": "email-send-script",
+    "desc": "Email 實際寄送：本機 send_mail.ps1 讀 mail-task.json 走公司 relay 寄(E2 手動)＋工作排程器自動(E3)",
+    "done_when": "E2:雙擊腳本能透過免認證 relay 寄出 mail-task.json 的內容；E3:排程每天自動寄(腳本自解析最新 xlsx)",
+    "status": "todo",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "暫停(使用者指示 2026-07-10：等要開發再做)。Email 設定介面 V1.11 已完成。開發前先問環境：能否跑.ps1、relay 主機:埠、有無 Excel、排程時間。"
   }
 ]

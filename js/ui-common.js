@@ -85,12 +85,14 @@
     return base * dir;
   }
 
-  /* -------- Drill-down 明細表(可排序、固定高度捲動視窗) -------- */
-  function buildDetailTable(records) {
+  /* -------- Drill-down 明細表(可排序、固定高度捲動視窗) --------
+   * extraCols: 選填，前置欄位陣列(如「項目」「部門」)，接在固定欄位之前。
+   */
+  function buildDetailTable(records, extraCols) {
     if (!records.length) {
       return U.el('div', {}, [U.el('p', { class: 'empty-hint', text: '無符合條件的資料。' })]);
     }
-    var cols = DETAIL_COLUMNS;
+    var cols = (extraCols && extraCols.length) ? extraCols.concat(DETAIL_COLUMNS) : DETAIL_COLUMNS;
     var count = U.el('p', { class: 'detail-count', text: '共 ' + records.length + ' 筆' });
 
     var table = U.el('table', { class: 'detail-table sortable' });
@@ -110,8 +112,10 @@
     var tbody = U.el('tbody');
     table.appendChild(tbody);
 
-    // 初始排序：真正到期日 asc(最急在前)
-    var sortState = { ci: 9, dir: 1 };
+    // 初始排序：真正到期日 asc(最急在前)。以欄名定位，避免前置欄位造成索引位移。
+    var dueCi = 0;
+    for (var di = 0; di < cols.length; di++) { if (cols[di].h === '真正到期日') { dueCi = di; break; } }
+    var sortState = { ci: dueCi, dir: 1 };
 
     function renderBody() {
       var col = cols[sortState.ci];
@@ -156,19 +160,23 @@
     return U.el('div', {}, [count, viewport]);
   }
 
-  /* 開啟 drill-down modal(含 匯出 / 新分頁開啟) */
-  function openDetail(title, records) {
-    var content = buildDetailTable(records);
+  /* 開啟 drill-down modal(含 匯出 / 新分頁開啟)
+   * opts.extraCols: 選填，前置欄位(如「項目」「部門」)，明細/CSV/新分頁一致沿用。
+   */
+  function openDetail(title, records, opts) {
+    opts = opts || {};
+    var extra = opts.extraCols;
+    var content = buildDetailTable(records, extra);
     var footer = U.el('div', { class: 'reminder-actions' }, [
-      U.el('button', { class: 'btn btn-secondary', text: '另開新分頁', onclick: function () { popOutTable(title, records); } }),
-      U.el('button', { class: 'btn btn-secondary', text: '匯出此清單 (CSV)', onclick: function () { exportCSV(records, title); } }),
+      U.el('button', { class: 'btn btn-secondary', text: '另開新分頁', onclick: function () { popOutTable(title, records, extra); } }),
+      U.el('button', { class: 'btn btn-secondary', text: '匯出此清單 (CSV)', onclick: function () { exportCSV(records, title, extra); } }),
     ]);
     openModal(title, content, { footer: footer });
   }
 
   /* -------- 在新瀏覽器分頁開啟可排序表格(獨立頁面) -------- */
-  function popOutTable(title, records) {
-    var cols = DETAIL_COLUMNS;
+  function popOutTable(title, records, extraCols) {
+    var cols = (extraCols && extraCols.length) ? extraCols.concat(DETAIL_COLUMNS) : DETAIL_COLUMNS;
     function esc2(v) { return U.esc(v === null || v === undefined ? '' : v); }
     var thead = cols.map(function (c) { return '<th data-t="' + (typeof c.sortVal(records[0] || {}) === 'number' ? 'num' : 'str') + '">' + esc2(c.h) + '<span class="ind"></span></th>'; }).join('');
     var rowsHtml = records.slice().sort(function (a, b) { return cmp(ts(a.realDue), ts(b.realDue)); }).map(function (r) {
@@ -230,18 +238,22 @@
     document.body.removeChild(ta);
   }
 
-  /* -------- 匯出 CSV(drill-down 清單) -------- */
-  function exportCSV(records, title) {
-    var headers = ['Host', 'Name', 'Risk', 'Severity', 'Plugin ID', '修補期限',
-      '首次展延上限', '例外核准期限', '真正到期日', '逾期天數', '負責人'];
+  /* -------- 匯出 CSV(drill-down 清單) --------
+   * extraCols: 選填，前置欄位(如「項目」「部門」)，與畫面明細一致。
+   */
+  function exportCSV(records, title, extraCols) {
+    extraCols = extraCols || [];
+    var headers = extraCols.map(function (c) { return c.h; }).concat(
+      ['Host', 'Name', 'Risk', 'Severity', 'Plugin ID', '修補期限',
+       '首次展延上限', '例外核准期限', '真正到期日', '逾期天數', '負責人']);
     var rows = records.map(function (r) {
-      return [
+      return extraCols.map(function (c) { return c.disp(r); }).concat([
         r.host, r.name, r.risk, r.severity, r.pluginId,
         U.fmtDate(r.fixDeadline), U.fmtDate(r.firstExtension), U.fmtDate(r.exceptionApproval),
         U.fmtDate(r.realDue),
         (r.realDue === null ? '' : (r.daysLeft < 0 ? r.overdueDays : 0)),
         r.owner,
-      ];
+      ]);
     });
     var csv = [headers].concat(rows).map(function (arr) {
       return arr.map(function (v) {
