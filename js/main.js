@@ -8,7 +8,7 @@
   var U = global.Utils;
   var UI = global.UI;
 
-  var state = { result: null, fileName: '', sheets: null, activeIdx: 0, mode: 'summary', myDept: '__all__' };
+  var state = { result: null, fileName: '', sheets: null, activeIdx: 0, mode: 'summary', myDept: '__all__', closeStatus: 'open' };
 
   function $(id) { return document.getElementById(id); }
 
@@ -124,11 +124,9 @@
       UI.copyText(buildSummaryText(state.result));
     });
 
-    // 記住「我的部門」(下次進來預設)
+    // 記住「我的部門」與「結案狀態」(全域，下次進來預設)
     state.myDept = loadMyDept();
-
-    // 篩選：結案狀態(部門由左側全站選擇器控管)
-    if ($('filter-close')) $('filter-close').addEventListener('change', applyFilters);
+    state.closeStatus = loadCloseStatus();
 
     // 常駐查詢框（若在總覽，先進入目前項目再查）
     if ($('global-search-input')) $('global-search-input').addEventListener('input', function () {
@@ -238,12 +236,15 @@
     });
     return Object.keys(set).sort();
   }
-  /* 某表在指定部門下的未結案數 */
-  function deptOpenCount(s, dept) {
+  /* 某表在指定部門 + 結案狀態下的筆數 */
+  function deptCount(s, dept, close) {
     return (s.records || []).filter(function (r) {
-      return r.closeBucket === 'open' && (dept === '__all__' || (r.unit || '(未填)') === dept);
+      var okDept = (dept === '__all__' || (r.unit || '(未填)') === dept);
+      var okClose = (close === 'all') || (r.closeBucket === close);
+      return okDept && okClose;
     }).length;
   }
+  var CLOSE_LABELS = { open: '未結', closed: '已結', all: '筆' };
 
   function renderSheetNav() {
     var nav = $('sheet-nav');
@@ -261,6 +262,17 @@
       U.el('span', { class: 'dept-picker-label', text: '部門' }), sel,
     ]));
 
+    // 結案狀態選擇器(全站，接在部門下面)
+    var csel = U.el('select', { class: 'dept-select', id: 'my-close-select' });
+    [['open', '未結案'], ['closed', '已結案'], ['all', '全部']].forEach(function (o) {
+      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; csel.appendChild(op);
+    });
+    csel.value = state.closeStatus;
+    csel.addEventListener('change', function () { setCloseStatus(csel.value); });
+    nav.appendChild(U.el('div', { class: 'dept-picker close-picker' }, [
+      U.el('span', { class: 'dept-picker-label', text: '結案狀態' }), csel,
+    ]));
+
     // 總覽置頂
     nav.appendChild(U.el('button', {
       class: 'sheet-item nav-summary' + (state.mode === 'summary' ? ' active' : ''),
@@ -275,7 +287,7 @@
         onclick: (function (idx) { return function () { selectSheet(idx); saveActiveIdx(idx); }; })(i),
       }, [
         U.el('span', { class: 'sheet-name', text: s.name }),
-        U.el('span', { class: 'sheet-count', text: U.num(deptOpenCount(s, state.myDept)) + ' 未結' }),
+        U.el('span', { class: 'sheet-count', text: U.num(deptCount(s, state.myDept, state.closeStatus)) + ' ' + CLOSE_LABELS[state.closeStatus] }),
       ]);
       nav.appendChild(item);
     });
@@ -288,6 +300,14 @@
     renderSheetNav();
     if (state.mode === 'summary') showSummary();
     else applyFilters();
+  }
+
+  /* 切換「結案狀態」(全站)：記住、重繪導覽計數與目前畫面 */
+  function setCloseStatus(v) {
+    state.closeStatus = v;
+    saveCloseStatus(v);
+    renderSheetNav();
+    if (state.mode === 'sheet') applyFilters();
   }
 
   function setNavActive() {
@@ -320,8 +340,7 @@
     $('summary-view').classList.add('hidden');
     $('sheet-view').classList.remove('hidden');
     setNavActive();
-    // 結案狀態重設為預設(未結案)；部門沿用「我的部門」
-    if ($('filter-close')) $('filter-close').value = 'open';
+    // 部門與結案狀態沿用左側全站設定(不重設)
     applyFilters();
   }
 
@@ -330,7 +349,7 @@
     if (!state.sheets) return;
     var s = state.sheets[state.activeIdx];
     var deptSel = state.myDept || '__all__';
-    var closeSel = $('filter-close') ? $('filter-close').value : 'open';
+    var closeSel = state.closeStatus || 'open';
     var recs = s.records;
     var deptFiltered = (deptSel === '__all__') ? recs : recs.filter(function (r) { return (r.unit || '(未填)') === deptSel; });
     var scoped = (closeSel === 'all') ? deptFiltered : deptFiltered.filter(function (r) { return r.closeBucket === closeSel; });
@@ -418,6 +437,11 @@
   var DEPT_KEY = 'vulnDashboard.dept';
   function loadMyDept() { try { return localStorage.getItem(DEPT_KEY) || '__all__'; } catch (e) { return '__all__'; } }
   function saveMyDept(v) { try { localStorage.setItem(DEPT_KEY, v); } catch (e) {} }
+
+  /* 「結案狀態」記憶(全站，跨檔沿用) */
+  var CLOSE_KEY = 'vulnDashboard.close';
+  function loadCloseStatus() { try { var v = localStorage.getItem(CLOSE_KEY); return (v === 'closed' || v === 'all') ? v : 'open'; } catch (e) { return 'open'; } }
+  function saveCloseStatus(v) { try { localStorage.setItem(CLOSE_KEY, v); } catch (e) {} }
 
   function fmtSavedAt(iso) {
     if (!iso) return '';

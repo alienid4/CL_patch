@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.20 結案狀態改全域：移到左側「部門」下面(持久化、不再進項目重設) ✅ 完成
+- 需求(使用者)：結案狀態放到部門下面，變全域(全域去找)。原本在分頁內 #filter-bar，每次進項目重設成未結案。
+- 成果：index.html 移除 #filter-bar。main.js：state 加 closeStatus(全域，localStorage vulnDashboard.close 持久化，預設 open)；renderSheetNav 在部門 picker 下加同款 #my-close-select(未結案/已結案/全部)；setCloseStatus 重繪 nav 計數＋(sheet模式)applyFilters；applyFilters 改吃 state.closeStatus；selectSheet 不再重設；deptOpenCount→deptCount(dept,close) 計數，nav 未結數改隨狀態顯示「N 未結/已結/筆」。css：.dept-picker 加 width:100%+box-sizing 讓兩選擇器在窄視窗(≤900px row-wrap)也獨佔整列上下堆疊；label min-width:4em 對齊。
+- 驗(預覽載範例)：nav 兩選擇器 部門+結案狀態、filter-bar 消失；切已結案→左側計數「0/2 已結」、看板總數 7→0、scope 狀態：已結案；切全部→進別項目沿用(不重設)；設已結→reload→自動還原已結(持久化 OK)；兩選擇器上下堆疊靠左對齊(top164/224)；console 無錯；V1.20；?v 全1.20。
+- 註：結案狀態只影響各項目細項(sheet 視圖)；總覽(summary)仍是全狀態彙總不受影響(合理)。summary.js tr.title/「高風險(未結)」備註仍待清。
+
 ## 2026-07-10 V1.19 交叉分析改「排除式」：點嚴重度＝把它藏起來(其餘全留) ✅ 完成
 - 修正(使用者澄清)：V1.17 做反了。使用者要的不是「點 Critical 就只剩 Critical」，而是「點 Critical→Critical 消失，High/Medium/Low 全留」＝排除法(把不想看的關掉，剩下就是要看的)。
 - 重寫 js/matrix.js 互動模型：state 改 {hiddenSevs[],hiddenBands[],dept,owner}。點嚴重度列首→toggle 進 hiddenSevs(該列消失，其餘留)；點到期欄首→toggle hiddenBands(該欄消失)；條件列列出「隱藏 X ✕」可逐一復原＋清除全部。格子數字改成 drill(cellDrill→UI.openDetail 看該 sev×band 實際筆數，延續 V1.18「數字都能點」)，不再是設 filter。部門/負責人 facet 維持「聚焦某一個」(inclusion)，chip 計數＝在目前可見 sev/band＋另一 facet 下的筆數(藏了時間帶→只在該帶的負責人會從選項消失，正確)。合計只在可見多列/多欄時顯示。matrixRecords=只套 dept/owner；filtered=套全部(藏的排除)。

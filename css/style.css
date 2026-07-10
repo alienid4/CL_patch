@@ -124,8 +124,9 @@ html, body {
   position: sticky; top: 78px; max-height: calc(100vh - 96px); overflow-y: auto;
 }
 /* 部門選擇器（全站，置左側頂端） */
-.dept-picker { display: flex; align-items: center; gap: 8px; padding: 4px 2px 10px; }
-.dept-picker-label { font-size: 14px; font-weight: 700; color: var(--c-text); flex: none; }
+.dept-picker { display: flex; align-items: center; gap: 8px; padding: 4px 2px 10px; width: 100%; box-sizing: border-box; }
+.dept-picker.close-picker { padding-top: 0; padding-bottom: 12px; }
+.dept-picker-label { font-size: 14px; font-weight: 700; color: var(--c-text); flex: none; min-width: 4em; }
 .dept-select { flex: 1; min-width: 0; font-family: inherit; font-size: 15px; font-weight: 600;
   padding: 9px 11px; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
   background: var(--c-surface); color: var(--c-primary-dark); cursor: pointer; }
