@@ -118,8 +118,8 @@
     var sr = result.severityRepair;
 
     box.appendChild(U.el('div', { class: 'panel-bar' }, [
-      U.el('h3', { text: '嚴重度 × 結案狀態' }),
-      U.el('span', { class: 'panel-bar-note', text: '含未結案與已結案，共 ' + U.num(sr.totals.total) + ' 筆' }),
+      U.el('h3', { text: '各嚴重度結案進度' }),
+      U.el('span', { class: 'panel-bar-note', text: '共 ' + U.num(sr.totals.total) + ' 筆' }),
     ]));
 
     if (!sr.rows.length) { box.appendChild(U.el('p', { class: 'empty-hint', text: '無資料。' })); return; }

@@ -76,7 +76,7 @@ window.APP_CONFIG = {
   /* 催辦信件 — 寄件抬頭與署名(可自行修改) */
   mail: {
     subjectPrefix: '【弱點修補催辦】',
-    signature: '資安管理小組 敬上',
+    signature: '弱點追蹤管理人員 敬上',
     ccNote: '如已完成修補請回覆本信並提供佐證，謝謝。',
   },
 

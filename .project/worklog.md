@@ -9,6 +9,15 @@
 
 ---
 
+## 2026-07-10 V1.21 面板改名＋署名改＋總覽項目表可排序＋去括號備註 ✅ 完成
+- 需求(使用者3件)：①「嚴重度 × 結案狀態」名詞不好→改新名；②署名「資安管理小組 敬上」→改「弱點追蹤管理人員」；③總覽的項目狀態表要可排序。
+- 成果：
+  · dashboard.js sev-repair 面板標題「嚴重度 × 結案狀態」→「各嚴重度結案進度」；副標去掉「含未結案與已結案」冗字→只留「共 N 筆」。
+  · config.js mail.signature「資安管理小組 敬上」→「弱點追蹤管理人員 敬上」(保留敬上)；docs/mail_內文.txt 同步。reminder.js 催辦信吃此署名。
+  · summary.js 各項目狀態表改可排序：8 欄皆可點欄首排序(數字欄首點=大到小、再點升序、字串欄升序)，reuse .th-sort/.sorted/.sort-ind(tracking-table 已有樣式)；每列先記 r._idx=原始項目索引→排序後點列仍正確進入該項目；順手把表頭「高風險(未結)」→「高風險未結」(去括號，與 V1.14 KPI 一致)、移除列的「點擊進入…」tooltip(使用者不要的說明備註)。
+- 驗(預覽範例)：面板=各嚴重度結案進度/共7筆、舊詞全消失；署名=弱點追蹤管理人員 敬上；表頭無(未結)、無 tr.title；點未結案欄首→降序7777654444/▼、再點→升序、排序後點「4-滲透測試」列→正確進該表(sheet模式)；console 無錯；V1.21;?v 全1.21。
+- 註：署名保留「敬上」；若要整行只留「弱點追蹤管理人員」再說。docs/使用說明.html 頁尾「請洽資安管理小組」未動(不同語境:求助聯絡)。
+
 ## 2026-07-10 V1.20 結案狀態改全域：移到左側「部門」下面(持久化、不再進項目重設) ✅ 完成
 - 需求(使用者)：結案狀態放到部門下面，變全域(全域去找)。原本在分頁內 #filter-bar，每次進項目重設成未結案。
 - 成果：index.html 移除 #filter-bar。main.js：state 加 closeStatus(全域，localStorage vulnDashboard.close 持久化，預設 open)；renderSheetNav 在部門 picker 下加同款 #my-close-select(未結案/已結案/全部)；setCloseStatus 重繪 nav 計數＋(sheet模式)applyFilters；applyFilters 改吃 state.closeStatus；selectSheet 不再重設；deptOpenCount→deptCount(dept,close) 計數，nav 未結數改隨狀態顯示「N 未結/已結/筆」。css：.dept-picker 加 width:100%+box-sizing 讓兩選擇器在窄視窗(≤900px row-wrap)也獨佔整列上下堆疊；label min-width:4em 對齊。

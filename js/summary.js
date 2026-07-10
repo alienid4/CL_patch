@@ -111,34 +111,79 @@
     });
     box.appendChild(kgrid);
 
-    /* 各項目狀態表 */
+    /* 各項目狀態表（可點列進細項；可點欄位標題排序） */
+    rows.forEach(function (r, i) { r._idx = i; });   // 記住原始項目索引(排序後仍能正確進入該項目)
+    var statusOf = function (r) {
+      return r.overdue > 0 ? { t: '有逾期', c: 'st-red' }
+           : r.open > 0 ? { t: '追蹤中', c: 'st-amber' }
+           : { t: '已全數結案', c: 'st-green' };
+    };
+    var cols = [
+      { h: '項目', sortVal: function (r) { var m = String(r.name).match(/^\d+/); return m ? parseInt(m[0], 10) : String(r.name).toLowerCase(); },
+        cell: function (r) { return U.el('td', { class: 'owner-cell', text: r.name }); } },
+      { h: '未結案', num: true, sortVal: function (r) { return r.open; },
+        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.open) }); } },
+      { h: '已逾期', num: true, sortVal: function (r) { return r.overdue; },
+        cell: function (r) { return U.el('td', { class: 'num-cell' + (r.overdue > 0 ? ' has-overdue' : ''), text: U.num(r.overdue) }); } },
+      { h: '近期到期', num: true, sortVal: function (r) { return r.soon; },
+        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.soon) }); } },
+      { h: '高風險未結', num: true, sortVal: function (r) { return r.high; },
+        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.high) }); } },
+      { h: '已結案', num: true, sortVal: function (r) { return r.closed; },
+        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.closed) }); } },
+      { h: '結案率', num: true, sortVal: function (r) { return r.rate; },
+        cell: function (r) { return U.el('td', { class: 'num-cell', text: (Math.round(r.rate * 1000) / 10) + '%' }); } },
+      { h: '狀態', sortVal: function (r) { return r.overdue > 0 ? 2 : (r.open > 0 ? 1 : 0); },
+        cell: function (r) { var st = statusOf(r); var td = U.el('td'); td.appendChild(U.el('span', { class: 'status-pill ' + st.c, text: st.t })); return td; } },
+    ];
+
     var table = U.el('table', { class: 'tracking-table summary-table' });
     var thead = U.el('thead'); var htr = U.el('tr');
-    ['項目', '未結案', '已逾期', '近期到期', '高風險(未結)', '已結案', '結案率', '狀態'].forEach(function (h) {
-      htr.appendChild(U.el('th', { text: h }));
+    var ths = [];
+    cols.forEach(function (c, ci) {
+      var th = U.el('th', { class: 'th-sort', dataset: { ci: String(ci) } }, [
+        U.el('span', { text: c.h }), U.el('span', { class: 'sort-ind', text: '' }),
+      ]);
+      ths.push(th); htr.appendChild(th);
     });
     thead.appendChild(htr); table.appendChild(thead);
 
-    var tbody = U.el('tbody');
-    rows.forEach(function (r, i) {
-      var tr = U.el('tr', { class: 'clickable' + (r.overdue > 0 ? ' row-overdue' : '') });
-      tr.title = '點擊進入「' + r.name + '」細項';
-      tr.addEventListener('click', function () { onSelect(i); });
-      tr.appendChild(U.el('td', { class: 'owner-cell', text: r.name }));
-      tr.appendChild(U.el('td', { class: 'num-cell', text: U.num(r.open) }));
-      tr.appendChild(U.el('td', { class: 'num-cell' + (r.overdue > 0 ? ' has-overdue' : ''), text: U.num(r.overdue) }));
-      tr.appendChild(U.el('td', { class: 'num-cell', text: U.num(r.soon) }));
-      tr.appendChild(U.el('td', { class: 'num-cell', text: U.num(r.high) }));
-      tr.appendChild(U.el('td', { class: 'num-cell', text: U.num(r.closed) }));
-      tr.appendChild(U.el('td', { class: 'num-cell', text: (Math.round(r.rate * 1000) / 10) + '%' }));
-      var st = r.overdue > 0 ? { t: '有逾期', c: 'st-red' }
-             : r.open > 0 ? { t: '追蹤中', c: 'st-amber' }
-             : { t: '已全數結案', c: 'st-green' };
-      var stTd = U.el('td'); stTd.appendChild(U.el('span', { class: 'status-pill ' + st.c, text: st.t }));
-      tr.appendChild(stTd);
-      tbody.appendChild(tr);
+    var tbody = U.el('tbody'); table.appendChild(tbody);
+    var sortState = { ci: null, dir: 1 };   // null = 原始項目順序
+
+    function cmp(a, b, dir) {
+      var an = (a === null || a === undefined || a === ''), bn = (b === null || b === undefined || b === '');
+      if (an && bn) return 0; if (an) return 1; if (bn) return -1;
+      var base = (typeof a === 'number' && typeof b === 'number') ? (a - b) : (String(a) < String(b) ? -1 : (String(a) > String(b) ? 1 : 0));
+      return base * dir;
+    }
+    function renderBody() {
+      var arr = rows.slice();
+      if (sortState.ci !== null) {
+        var col = cols[sortState.ci];
+        arr.sort(function (a, b) { return cmp(col.sortVal(a), col.sortVal(b), sortState.dir); });
+      }
+      tbody.innerHTML = '';
+      arr.forEach(function (r) {
+        var tr = U.el('tr', { class: 'clickable' + (r.overdue > 0 ? ' row-overdue' : '') });
+        tr.addEventListener('click', (function (idx) { return function () { onSelect(idx); }; })(r._idx));
+        cols.forEach(function (c) { tr.appendChild(c.cell(r)); });
+        tbody.appendChild(tr);
+      });
+      ths.forEach(function (th, i) {
+        var ind = th.querySelector('.sort-ind');
+        ind.textContent = (i === sortState.ci) ? (sortState.dir === 1 ? ' ▲' : ' ▼') : '';
+        th.classList.toggle('sorted', i === sortState.ci);
+      });
+    }
+    ths.forEach(function (th, i) {
+      th.addEventListener('click', function () {
+        if (sortState.ci === i) sortState.dir = -sortState.dir;
+        else { sortState.ci = i; sortState.dir = cols[i].num ? -1 : 1; }   // 數字欄首點＝大到小
+        renderBody();
+      });
     });
-    table.appendChild(tbody);
+    renderBody();
 
     var tfoot = U.el('tfoot'); var ftr = U.el('tr', { class: 'total-row' });
     ftr.appendChild(U.el('td', { class: 'owner-cell', text: '合計' }));
