@@ -116,13 +116,15 @@
     };
   }
 
-  /* -------- 分類判斷 -------- */
-  function isOverdue(r) { return r.realDue && r.daysLeft < 0; }
-  function withinDays(r, n) { return r.realDue && r.daysLeft >= 0 && r.daysLeft <= n; }
+  /* -------- 分類判斷 --------
+   * 已結案的弱點一律不再用到期日判斷（不算逾期/近期到期/待追蹤）。 */
+  function isClosed(r) { return r.closeBucket === 'closed'; }
+  function isOverdue(r) { return !isClosed(r) && r.realDue && r.daysLeft < 0; }
+  function withinDays(r, n) { return !isClosed(r) && r.realDue && r.daysLeft >= 0 && r.daysLeft <= n; }
   // 六個月到期：逾期 或 未來180天內到期(半年內需關注)
-  function withinSixMonths(r) { return r.realDue && r.daysLeft <= CFG.sixMonthsDays; }
+  function withinSixMonths(r) { return !isClosed(r) && r.realDue && r.daysLeft <= CFG.sixMonthsDays; }
   // 今日待追蹤：今日(含)以前到期，尚未結案 → 需立即處理
-  function isTodayTrack(r) { return r.realDue && r.daysLeft <= 0; }
+  function isTodayTrack(r) { return !isClosed(r) && r.realDue && r.daysLeft <= 0; }
   function isSeverity(r, sev) { return r.severity === sev; }
 
   /* -------- 到期時間帶(互斥，可加總回總數) --------
@@ -136,6 +138,7 @@
     { key: 'noDue',    label: '無到期日' },
   ];
   function bandOf(r) {
+    if (r.closeBucket === 'closed') return 'noDue';   // 已結案：無活躍到期時間帶，不計入已逾期等帶
     if (!r.realDue) return 'noDue';
     if (r.daysLeft < 0) return 'overdue';
     if (r.daysLeft <= 30) return 'd30';
@@ -418,7 +421,10 @@
     var actions = parseActions(r.remark || '');
     r.actionCount = actions.total; r.extCount = actions.ext; r.excCount = actions.exc;
     r.chronic = actions.total >= (CFG.chronicThreshold || 2);
-    if (r.overdueDays === undefined) r.overdueDays = (r.daysLeft !== null && r.daysLeft < 0) ? -r.daysLeft : 0;
+    // 已結案不再算逾期（統一在此覆寫，確保各路徑一致）
+    var od = (r.closeBucket !== 'closed' && r.daysLeft !== null && r.daysLeft < 0);
+    r.overdue = od;
+    r.overdueDays = od ? -r.daysLeft : 0;
     r.riskScore = riskScore(r.severity, r.realDue, r.daysLeft, r.overdueDays);
     if (r.department === undefined) r.department = r.unit || '';
     if (!r.owner) r.owner = '(未指定)';

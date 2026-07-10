@@ -9,6 +9,14 @@
 
 ---
 
+## 2026-07-11 V1.28 修 bug：已結案不再判逾期 ✅ 完成
+- 使用者回報：不少「已結案」卻顯示「已逾期」。原因：overdue 只看到期日(daysLeft<0)，沒管 closeBucket。
+- 修法(已結案一律不再用到期日判斷)：
+  · sheets.js(多表實際路徑)：overdue/overdueDays 加 closeBucket!=='closed' guard(源頭修正，summary/history 直接讀 sheet.records 也對)。
+  · analysis.js：isOverdue/withinDays/withinSixMonths/isTodayTrack 全加 !isClosed(r) guard；bandOf 開頭 closeBucket==='closed'→'noDue'(已結案不進已逾期等帶)；finalizeRecord 統一覆寫 r.overdue/overdueDays(close-aware)，確保各路徑一致。
+  · ui-common 明細表逾期天數欄/紅列不用改：它讀 r.overdue/overdueDays，源頭修好就自動正確。
+- 驗(預覽)：純函式 bandOf(closed,過期)=noDue、bandOf(open,過期)=overdue、isOverdue(closed)=false、finalize(closed)overdue=false/0；XLSX 造真檔走 Multi.buildAll 實測——同一過期日，未結overdue=true/band overdue/2382天，已結overdue=false/band noDue/0天，summary 已逾期帶=1(只未結)、owners 李四(已結)逾期=0；console 無錯；V1.28;?v 全1.28。
+
 ## 2026-07-10 V1.27 打包正式版：移除「天龍八部」範例資料 ✅ 完成
 - 需求(使用者)：要打包正式資料，把天龍八部範例相關的全部拿掉。
 - 成果：index.html 移除兩個「載入範例資料（天龍八部）」按鈕(#sample-btn 選單／#sample-btn-2 上傳頁)＋ assets/sample-data.js 的 script 標籤；main.js 移除 loadSample() 整段＋兩個綁定(b64ToAb 保留，仍供 tryRestore 自動還原用)；git rm assets/sample-data.js(21KB 內嵌 b64)；rm docs/測試假資料_天龍八部.xlsx(未進版控)。

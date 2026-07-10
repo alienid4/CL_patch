@@ -116,8 +116,9 @@
       owner: owner,
       fixDeadline: fix, firstExtension: ext, exceptionApproval: exc, otherDue: other,
       realDue: realDue, daysLeft: daysLeft,
-      overdue: (daysLeft !== null && daysLeft < 0),
-      overdueDays: (daysLeft !== null && daysLeft < 0) ? -daysLeft : 0,
+      // 已結案就不再判逾期（結案的弱點不論到期日都不算已逾期）
+      overdue: (closeBucket !== 'closed' && daysLeft !== null && daysLeft < 0),
+      overdueDays: (closeBucket !== 'closed' && daysLeft !== null && daysLeft < 0) ? -daysLeft : 0,
       closeStatus: closeRaw, closeBucket: closeBucket, closeDate: closeDate,
       remark: U.normStr(pick(row, map.remark)),
     };
