@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.19 交叉分析改「排除式」：點嚴重度＝把它藏起來(其餘全留) ✅ 完成
+- 修正(使用者澄清)：V1.17 做反了。使用者要的不是「點 Critical 就只剩 Critical」，而是「點 Critical→Critical 消失，High/Medium/Low 全留」＝排除法(把不想看的關掉，剩下就是要看的)。
+- 重寫 js/matrix.js 互動模型：state 改 {hiddenSevs[],hiddenBands[],dept,owner}。點嚴重度列首→toggle 進 hiddenSevs(該列消失，其餘留)；點到期欄首→toggle hiddenBands(該欄消失)；條件列列出「隱藏 X ✕」可逐一復原＋清除全部。格子數字改成 drill(cellDrill→UI.openDetail 看該 sev×band 實際筆數，延續 V1.18「數字都能點」)，不再是設 filter。部門/負責人 facet 維持「聚焦某一個」(inclusion)，chip 計數＝在目前可見 sev/band＋另一 facet 下的筆數(藏了時間帶→只在該帶的負責人會從選項消失，正確)。合計只在可見多列/多欄時顯示。matrixRecords=只套 dept/owner；filtered=套全部(藏的排除)。
+- 驗(預覽表1 7筆)：初始2列7筆；點Critical→只剩Medium列、條件「隱藏 Critical」、3筆；條件列✕復原→回2列7筆；點格子 Critical×已逾期→彈窗2筆；藏已逾期欄→該欄消失其餘留、3筆；facet玄慈→2筆；清除全部→7筆；console 無錯；V1.19;?v 全1.19。
+- 註：目前 facet(部門/負責人)是 inclusion(聚焦)，矩陣是 exclusion(排除)；若使用者要 facet 也改成「點=藏」再議。summary.js tr.title/「高風險(未結)」備註仍待清。
+
 ## 2026-07-10 V1.18 全站圖表/百分比可鑽取（核心原則：是數字就能點看實際筆數）✅ 完成
 - 需求(使用者)：不管什麼東西點下去都要能追到實際筆數。明指:圓餅圖、堆疊長條圖、28.6% 例外覆蓋率、7/14/30天內 chip、例外核准逾期。「全部只要是數字，都要可以點進去看，包括長條圖」。
 - 現況盤點:stats 分頁的階段卡/子chip/例外核准已逾期/到期預警chip 早已可點；缺的是四張圖表本身與覆蓋率百分比。
