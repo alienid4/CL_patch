@@ -14,6 +14,8 @@ window.APP_FEATURES = [
   { id: 'tab-stats',           group: '分頁',           label: '例外／展延統計',        default: true },
   { id: 'tab-search',          group: '分頁',           label: '查詢',                  default: true },
 
+  { id: 'panel-red-list',      group: '總覽（首頁）',   label: '部門／負責人紅黑榜',    default: true },
+
   { id: 'panel-sev-repair',    group: '各項目看板面板', label: '各嚴重度結案進度',      default: true },
   { id: 'panel-today-actions', group: '各項目看板面板', label: '優先處理清單',          default: true },
   { id: 'panel-risk-top',      group: '各項目看板面板', label: '風險排序',              default: true },

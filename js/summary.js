@@ -200,6 +200,116 @@
       U.el('div', { class: 'chart-wrap' }, [U.el('canvas', { id: 'summary-chart' })]),
     ]));
     renderChart(rows, onSelect);
+
+    /* 部門／負責人紅黑榜（跨全部項目彙整；可於「功能開關」關閉） */
+    if (!global.Features || global.Features.isOn('panel-red-list')) {
+      renderRankings(box, sheets, dept);
+    }
+  }
+
+  /* 跨全部項目，依某維度(部門/負責人)彙整並排名(逾期多者在前) */
+  function rankBy(sheets, dept, keyFn) {
+    var map = {};
+    (sheets || []).forEach(function (s) {
+      (s.records || []).forEach(function (r) {
+        if (!inDept(r, dept)) return;
+        var k = keyFn(r) || '(未填)';
+        var g = map[k] || (map[k] = { name: k, total: 0, open: 0, closed: 0, overdue: 0, high: 0,
+          openRecords: [], overdueRecords: [], highRecords: [], closedRecords: [] });
+        g.total++;
+        if (r.closeBucket === 'open') {
+          g.open++; g.openRecords.push(r);
+          if (r.overdue) { g.overdue++; g.overdueRecords.push(r); }
+          if (r.severity === 'Critical' || r.severity === 'High') { g.high++; g.highRecords.push(r); }
+        } else if (r.closeBucket === 'closed') { g.closed++; g.closedRecords.push(r); }
+      });
+    });
+    var list = Object.keys(map).map(function (k) { var g = map[k]; g.rate = g.total ? g.closed / g.total : 0; return g; });
+    list.sort(function (a, b) { return (b.overdue - a.overdue) || (b.open - a.open) || (a.rate - b.rate); });
+    return list;
+  }
+
+  function renderRankings(box, sheets, dept) {
+    box.appendChild(U.el('div', { class: 'panel-bar' }, [ U.el('h3', { text: '部門／負責人紅黑榜' }) ]));
+    var wrap = U.el('div', { class: 'rank-wrap' });
+    wrap.appendChild(rankBlock('部門', rankBy(sheets, dept, function (r) { return r.unit || '(未填)'; })));
+    wrap.appendChild(rankBlock('負責人', rankBy(sheets, dept, function (r) { return r.owner || '(未指定)'; })));
+    box.appendChild(wrap);
+  }
+
+  function rankBlock(nameHeader, list) {
+    var block = U.el('div', { class: 'rank-block' });
+    block.appendChild(U.el('div', { class: 'rank-block-title', text: nameHeader + '排行' }));
+    if (!list.length) { block.appendChild(U.el('p', { class: 'empty-hint', text: '無資料。' })); return block; }
+
+    function drillCell(val, title, recs, extraCls) {
+      var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
+      if (val > 0) {
+        return U.el('td', { class: cls + ' clickable', text: U.num(val),
+          onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+      }
+      return U.el('td', { class: cls, text: U.num(val) });
+    }
+    var cols = [
+      { h: nameHeader, sortVal: function (g) { return String(g.name).toLowerCase(); },
+        cell: function (g) { return U.el('td', { class: 'owner-cell', text: g.name }); } },
+      { h: '未結案', num: true, sortVal: function (g) { return g.open; },
+        cell: function (g) { return drillCell(g.open, g.name + '　未結案', g.openRecords); } },
+      { h: '已逾期', num: true, sortVal: function (g) { return g.overdue; },
+        cell: function (g) { return drillCell(g.overdue, g.name + '　已逾期', g.overdueRecords, g.overdue > 0 ? 'has-overdue' : ''); } },
+      { h: '高風險未結', num: true, sortVal: function (g) { return g.high; },
+        cell: function (g) { return drillCell(g.high, g.name + '　高風險未結', g.highRecords); } },
+      { h: '已結案', num: true, sortVal: function (g) { return g.closed; },
+        cell: function (g) { return drillCell(g.closed, g.name + '　已結案', g.closedRecords); } },
+      { h: '結案率', num: true, sortVal: function (g) { return g.rate; },
+        cell: function (g) { return U.el('td', { class: 'num-cell', text: (Math.round(g.rate * 1000) / 10) + '%' }); } },
+    ];
+    var rowClass = function (g) { return g.overdue > 0 ? 'row-overdue' : (g.open === 0 ? 'row-clean' : ''); };
+    block.appendChild(U.el('div', { class: 'table-scroll' }, [makeSortableTable(cols, list, 2, -1, rowClass)]));
+    return block;
+  }
+
+  /* 通用可排序表：cols=[{h,num,sortVal,cell}], initCi/initDir 預設排序欄, rowClass(row)→class */
+  function makeSortableTable(cols, rows, initCi, initDir, rowClass) {
+    var table = U.el('table', { class: 'tracking-table rank-table' });
+    var thead = U.el('thead'); var htr = U.el('tr'); var ths = [];
+    cols.forEach(function (c) {
+      var th = U.el('th', { class: 'th-sort' }, [U.el('span', { text: c.h }), U.el('span', { class: 'sort-ind', text: '' })]);
+      ths.push(th); htr.appendChild(th);
+    });
+    thead.appendChild(htr); table.appendChild(thead);
+    var tbody = U.el('tbody'); table.appendChild(tbody);
+    var sortState = { ci: (initCi == null ? null : initCi), dir: initDir || 1 };
+    function cmp(a, b, dir) {
+      var an = (a === null || a === undefined || a === ''), bn = (b === null || b === undefined || b === '');
+      if (an && bn) return 0; if (an) return 1; if (bn) return -1;
+      var base = (typeof a === 'number' && typeof b === 'number') ? (a - b) : (String(a) < String(b) ? -1 : (String(a) > String(b) ? 1 : 0));
+      return base * dir;
+    }
+    function renderBody() {
+      var arr = rows.slice();
+      if (sortState.ci != null) { var col = cols[sortState.ci]; arr.sort(function (a, b) { return cmp(col.sortVal(a), col.sortVal(b), sortState.dir); }); }
+      tbody.innerHTML = '';
+      arr.forEach(function (r) {
+        var tr = U.el('tr', { class: (rowClass ? rowClass(r) : '') });
+        cols.forEach(function (c) { tr.appendChild(c.cell(r)); });
+        tbody.appendChild(tr);
+      });
+      ths.forEach(function (th, i) {
+        var ind = th.querySelector('.sort-ind');
+        ind.textContent = (i === sortState.ci) ? (sortState.dir === 1 ? ' ▲' : ' ▼') : '';
+        th.classList.toggle('sorted', i === sortState.ci);
+      });
+    }
+    ths.forEach(function (th, i) {
+      th.addEventListener('click', function () {
+        if (sortState.ci === i) sortState.dir = -sortState.dir;
+        else { sortState.ci = i; sortState.dir = cols[i].num ? -1 : 1; }
+        renderBody();
+      });
+    });
+    renderBody();
+    return table;
   }
 
   function renderChart(rows, onSelect) {
