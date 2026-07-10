@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `7c2abe8`
+- 目前 HEAD: `76d0153`
 
 ## 強制層檢查即時結果
 
@@ -34,7 +34,7 @@
 
 ## 待辦進度（backlog.json）
 
-- 完成 11｜待做 3｜卡住 0
+- 完成 15｜待做 3｜卡住 0
 - **下一件：`vuln-aggregate` — 第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔**
   - 怎樣算對：提供聚合檢視:同弱點合併顯示影響台數、可展開看各主機；不破壞逐筆明細
 
@@ -51,6 +51,10 @@
 | done | ms-07-verify-deliver | 逐表驗證與交付：數字對帳、checks 全過、更新使用說明 |
 | done | audit-overdue-global | 主管稽核：總覽頁把『全部項目逾期未結（沒修補）』的弱點一鍵攤開 |
 | done | my-dept-landing | 第一批A1｜窗口視角：記住『我的部門』，開檔/進項目自動套用該部門篩選 |
+| done | feature-toggle-framework | 功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層） |
+| done | dept-owner-ranking | 主管：部門／負責人紅黑榜（逾期多者在前，紅/綠榜，前5名+展開） |
+| done | sla-compliance | 主管：SLA 達成率（各嚴重度政策天數，未結案未逾期比率） |
+| done | trend-history | 主管：趨勢(跟上次比)＋歷史快照 |
 | todo | vuln-aggregate | 第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔 |
 | todo | one-page-print | 第一批A5｜一頁列印/PDF:本部門(或全域)摘要可直接貼週報/對上交代 |
 | todo | email-send-script | Email 實際寄送：本機 send_mail.ps1 讀 mail-task.json 走公司 relay 寄(E2 手動)＋工作排程器自動(E3) |
@@ -59,46 +63,46 @@
 
 ```
 
-## 2026-07-10 V1.13 內建「載入範例資料（天龍八部）」按鈕 ✅ 完成
-- 背景：使用者要看假資料但一直載到舊真實檔(其他功能→檔案顯示 弱點彙總報告(New)_V20260702 的TEST.xlsx)。用 computer-use 讀取層看到其畫面：版本已是 V1.12(對)，純粹載錯檔。Claude Chrome 擴充未連(list_connected_browsers 空)→無法替他點 Chrome(唯讀層)。故改用「內建範例資料一鍵載入」根治。
-- 成果：assets/sample-data.js(把 docs/測試假資料_天龍八部.xlsx 轉 base64 內嵌，約21KB)；index.html 掛該檔＋「載入範例資料（天龍八部）」按鈕兩處(其他功能選單 #sample-btn＋上傳頁 #sample-btn-2)；main.js loadSample() 讀內建 b64→走既有 loadWorkbook/saveWorkbook。免選檔、離線可用(file:// 也行，不需 fetch)。
-- 驗(預覽)：清空 localStorage→上傳頁→點按鈕→測試假資料_天龍八部.xlsx 載入、10表66筆、KPI 55/16/17/27/16.7%、負責人段正淳等天龍八部名、console 無錯、V1.13。
+## 2026-07-10 V1.26 紅黑榜排行預設只顯示前 5 名＋展開全部 ✅ 完成
+- 需求(使用者)：紅黑榜負責人排行在「全部部門」時很長(範例50人)，預設只顯示前5名(逾期最多)＋「展開全部」按鈕。並確認「模組化=功能開關」已於 V1.22 做好(此為紅黑榜模組內部顯示行為，不另開開關)。
+- 補充：驗證負責人/部門排行本就跟著左側「部門」選擇器縮(偽造第二部門測試：全部部門50人→選資訊架構部45人、被移走的玄慈/喬峰從榜上消失)，非 bug；使用者原以為列全部人是因無部門，實為範例66筆全在單一部門。
+- 成果：summary.js makeSortableTable 加 limit 參數：capped=list>limit 時，預設 slice(0,limit) 只顯示前 N(依目前排序)，附「展開全部（N）／收合」按鈕，回傳 wrapper(含 table-scroll+按鈕)；rankBlock 傳 limit=5。展開/排序連動:排序改變後前5名跟著換。css .rank-expand。
+- 驗(預覽範例)：部門排行1列無按鈕；負責人排行顯示前5(玄慈2逾期首)+「展開全部（50）」；點展開→50列/「收合」、再點→回5；點高風險未結欄首→前5隨新排序換;console 無錯;V1.26;?v全1.26。
 
-### 接手狀態（給新 session）
-- App 版本 **V1.13**。使用者實機：Windows 11 + Chrome，用 **file://** 開 `C:\Users\leea6\OneDrive\2025 Data\AI LAB\CL_patch\index.html`。**Claude Chrome 擴充未連**→Claude 無法直接操作其瀏覽器；要嘛請他連擴充，要嘛靠「載入範例資料」按鈕/口頭指引。
-- **測試資料**：`docs/測試假資料_天龍八部.xlsx`(66筆全『資訊架構部』、天龍八部人名、逾期/例外/展延齊、每項6-7筆) 與舊真實檔 `docs/弱點彙總報告(New)_V20260702 的TEST.xlsx` 皆**未進版控**(測試檔)。是否加 .gitignore 使用者尚未定(上次 dismiss)。
-- **Email(E2 手動寄 ps1 / E3 排程自動)**：暫停中(backlog email-send-script)，等使用者要開發再做；開發前先問環境(能否跑.ps1 / relay 主機:埠 / Excel / 排程時間)。Email 設定介面 V1.11 已完成。
-- **第一批剩餘**：A4 弱點聚合(同 Plugin ID 跨主機收合)、A5 一頁列印/PDF。
-- 使用者長期偏好(已存 memory no-ui-annotation-text)：畫面不放說明/備註/自創解釋字。
-- 環境雷：本機 `python` 是 Windows Store stub(壞，exit 49/9009)，一律用 **`py`** 跑 .project/checks.py、snapshot.py。
+## 2026-07-10 V1.25 趨勢「跟上次比」＋歷史快照（第三個新模組，三個新功能收官）✅ 完成
+- 需求(使用者)：每次匯入=一份快照，比對本次vs上次。確認採 A(自動記+去重)。
+- 架構：js/history.js 新模組。record(sheets,fileName,dateStr) 存輕量快照(不存整份Excel，只存 open/overdue/closed/high/total/rate + 未結弱點指紋 openKeys=host||pluginId)；去重=同檔名同日覆蓋；localStorage『vulnDashboard.history』留最近 12 期。只在 handleFile(真實匯入)記；tryRestore(自動還原)/loadSample(範例)不記，免污染。main.js 加 todayKey(YYYY-MM-DD)、handleFile 成功後 record、selectSheet/resetToUpload 加 History.destroyChart。
+- 趨勢畫面(總覽首頁最上，可開關 panel-trend)：本次vs上次三張卡「新增未結(紅,可點看實際筆數)／結案消失(綠,可點看指紋清單)／未結淨變化」＋對照期別；≥2期畫未結/逾期趨勢線(Chart.js line)。新增用目前檔案 open 且 key 在新增集→openDetail；消失只有指紋→openModal 列 host/pluginId。註冊 config/features.js panel-trend(群組總覽首頁,置頂)。css .trend-*。
+- 驗(預覽,直接呼叫 History.record 模擬兩次匯入)：首份 open55/overdue16/46指紋；同檔同日再記→仍1期(去重OK)；塞前後兩期(前期多2假key少3key)→新增3(紅可點=3筆實際)、消失2(綠可點=指紋清單FAKEHOST 2列)、淨變化+10、對照『本期2026-06-15 vs 上期2026-06-01』、趨勢線 Chart 實例存在；關趨勢開關→趨勢消失且SLA仍在；console 無錯；V1.25;?v全1.25。
+- 註：新增/消失以(host+pluginID)指紋計(同弱點同主機算一件)、淨變化以未結筆數計，單位略不同屬合理。趨勢為全部部門(歷史不分部門)。真實 record 只在使用者選檔匯入時觸發(範例/自動還原不記)。三個新功能(紅黑榜/SLA/趨勢)全數完成，皆掛功能開關。
 
-## 2026-07-10 V1.12 我的部門(全站記憶) ＋ 版面收窄放大 ✅ 完成
-- 需求(使用者)：①左側白邊太多→放大/往左移，中間字放大；②沒有部門想看全部，要能選自己部門且「下次進來預設就是我的部門」，不用每次重選。
-- 我的部門：部門控制從「每張表 filter-dept」升級為左側全站選擇器 #my-dept-select(在導覽頂端)；選擇存 localStorage『vulnDashboard.dept』跨檔沿用；總覽標題/KPI/狀態表/未結數/逾期橫幅/複製摘要/Email 內容全部吃 state.myDept；此檔無該部門→自動退回全部部門。移除表內 filter-dept 與 populateDeptOptions；filter-bar 只留結案狀態。summary.js agg/overall/collectOverdue/render 加 dept 參數；email.js scopedRecords 依 myDept。
-- 版面：.container 版心 1280→1600(左白邊約 210→75px)、header-inner 同步 1600；.sheet-nav 288→340px、sheet-name 12.5→14、count 11→12.5、item padding 放大；指標 metric-value 23→26 首格 30→34、label 12→13；tracking/summary 表 th/td 字 14→15。總覽項名由「總覽（全部）」改「總覽」(選部門後不再是全部)。
-- 驗(10 項測試檔、桌面 1710 寬)：V1.12；部門選擇器 11 部門；選『資訊架構部』→標題『資訊架構部 總覽』、KPI 1/1/0/0/91.7%、橫幅 1 筆、未結數只第10項 1；reload 後預設仍『資訊架構部』(持久化 OK)；進項目 scope-info 自動『部門：資訊架構部』；切回全部→19/18/…/87.3%；container 1600、nav 340px 量測相符；console 無錯。
+## 2026-07-10 V1.24 SLA 達成率（第二個新模組，掛功能開關）✅ 完成
+- 需求(使用者)：各嚴重度 SLA 政策 Critical7/High30/Medium90/Low180。查資料無「發現日/掃描日」欄(profiles 只有 name 別名含『發現』是弱點名非日期)→無法算真正時效。決定：達成率＝各嚴重度「未結案中未逾期」比率；政策天數當目標對照，放 config.sla(可改)。日後 Excel 有發現日再升級真時效。
+- 成果：config.js 加 sla:{Critical:7,High:30,Medium:90,Low:180}。summary.js slaStats(sheets,dept)：各嚴重度統計 open/overdue(存 records)，rate=(open-overdue)/open(open=0→null顯示—)。renderSLA 出表：嚴重度｜政策(天)｜未結案｜逾期｜達成率(長條+百分比，≥90綠/70-90黃/<70紅)；未結/逾期數可點 drill。加 module 級 drillTd 共用。config/features.js 註冊 panel-sla(群組『總覽（首頁）』)。css .sla-*。
+- 驗(預覽範例)：Critical 7天/未結16/逾期6/62.5%(=(16-6)/16)、High 30/11/0/100%、Medium 90/15/10/33.3%、Low 180/9/0/100%，數字對帳；點 Critical 逾期→彈窗6筆；關 SLA 開關→SLA表消失且紅黑榜仍在(獨立)；console 無錯；V1.24;?v 全1.24。
+- 剩最後一個：#1 跟上次比的趨勢(每次匯入=一份輕量快照，存 localStorage，比對本次vs上次；設計待使用者確認 auto+dedupe 後再做)。
 
-## 2026-07-10 V1.11 Email 設定管理介面（其他功能）✅ 完成
-- 決策(使用者)：Email 首要；架構=網頁做設定＋產生內容→本機 PowerShell 走公司 SMTP 寄→工作排程器自動(跑在使用者個人電腦)；公司 SMTP=免認證內部 relay(不收密碼)。
-- 鐵牆說明：瀏覽器無法直接走 SMTP(無 TCP socket)，故網頁只負責設定＋產生 mail-task.json，實際寄送與自動由本機腳本＋排程做。
-- 成果：js/email.js 新增「其他功能→Email 設定」視窗：SMTP 主機/埠/寄件人/收件人/副本/主旨前綴/寄送範圍(逾期未結、近期到期)，存 localStorage(個人套個人)；「預覽通知內容」；「匯出寄送任務」下載 mail-task.json(含 smtp/from/to/cc/subject/body/count，auth:false)。index.html 加選單項＋email.js；summary.js 公開 collectOverdue；css 加表單樣式。
-- 驗(localStorage 還原真實 App state 測)：V1.11；EmailCfg.buildContent 主旨「【弱點修補提醒】弱點待處理 5 筆」、逐筆含項目/部門/負責人/弱點/嚴重度/到期/逾期天數；開視窗 6 欄＋範圍勾選、設定回填、預覽正確；console 無錯。
-- 待續：E2 本機 send_mail.ps1(讀 mail-task.json→relay 寄，手動)；E3 排程自動＋腳本自解析最新 xlsx(需 Excel COM/檔案路徑/排程時間)。寫腳本前先問環境。
+## 2026-07-10 V1.23 部門／負責人紅黑榜（第一個掛進功能開關的新模組）✅ 完成
+- 需求(使用者)：主管要一眼知道「哪個部門/誰逾期最多、結案率最差」→ 找誰談。做成模組、掛在功能開關。
+- 成果：summary.js 加 rankBy(sheets,dept,keyFn) 跨全部項目彙整(部門=r.unit、負責人=r.owner)，算 未結/已逾期/高風險未結/已結/結案率，並存各子集 records 供 drill；預設按已逾期多者在前。renderRankings 在總覽首頁(圖表下方)出兩張表(部門排行/負責人排行)；makeSortableTable 通用可排序表(欄首可排序、數字欄首點=大到小)。每個數字可點→UI.openDetail 看實際筆數。紅黑視覺：有逾期列 row-overdue(紅)、全數結案列 row-clean(綠, css #f0f9f1)。config/features.js 註冊 panel-red-list(群組『總覽（首頁）』, 預設開)；summary.render 用 Features.isOn 包起來。css .rank-wrap/.rank-block/.rank-table。
+- 驗(預覽範例)：總覽出現紅黑榜；部門排行資訊架構部 55未結/16逾期/27高風險/11已結/16.7%(對帳 55+11=66、11/66=16.7%)；負責人排行逾期者紅列在上(玄慈2逾期居首)、全結案綠列在下(包不同等100%)；點玄慈已逾期→彈窗2筆；點已結案欄首→排序;功能開關關掉紅黑榜→整塊消失(reload 持久化沿用框架)；console 無錯；V1.23;?v 全1.23。
+- 下一步(剩兩個新功能)：#2 SLA 達成率(要先定各嚴重度天數政策)、#1 跟上次比的趨勢(要存歷史快照)。都照同模式掛進功能開關。
 
-## 2026-07-10 V1.10 畫面去說明字 ✅ 完成
+## 2026-07-10 V1.22 功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層）✅ 完成
+- 決策(使用者)：功能模組化、有開關；主管不喜歡就到「後台」關掉。確認採 A＋B 兩層(config 出廠預設＋個人 localStorage 覆寫)。先做框架＋設定面板，把現有分頁/面板納管，再逐一加新功能(紅黑榜/SLA/趨勢)。
 ```
 
 ## 最近 10 筆 commit
 
 ```
-7c2abe8 V1.09–V1.12：主管稽核全域逾期／去說明字／Email 設定介面／我的部門＋版面
-caae77b 接手包：snapshot 改抓 worklog 最新段(修 head 變數撞名)，供開新 session 無縫接手
-e916b73 V1.08：新增主管總覽首頁（全部項目一頁彙總：KPI 合計＋各項目狀態表＋堆疊圖，可點列進細項）
-8350a11 V1.07：查詢框移到頁首中央；版本與操作按鈕收進「其他功能」下拉，頁首更清爽
-f3ebc15 V1.06：查詢框常駐分頁上方(首頁明顯處)，輸入即自動切至查詢並顯示結果
-d27e8f5 V1.05：全站正式化（對外版）— 自創名詞改正式用語、移除說明提示與裝飾圖示、明細/CSV/催辦/搜尋去除備註
-aaa7085 V1.04：左側工作表清單加寬(288px)，最長表名完整顯示不再被截斷
-2090be2 V1.03：左側工作表清單改單行(名稱省略號+未結數同列)，一眼看完全部表
-f870dd9 V1.02：函式庫改本機載入(assets/vendor)，離線可用，修正 XLSX is not defined；checks 白名單 vendor lib
-cb5861f V1.01：加不快取 meta + script 版本查詢字串，根治更新後看到舊版的問題
+76d0153 V1.26：紅黑榜排行預設只顯示前 5 名＋展開全部
+ddc625c V1.25：趨勢「跟上次比」＋歷史快照（三個新功能收官）
+1056942 V1.24：SLA 達成率（第二個新模組，掛功能開關）
+ac48a01 V1.23：部門／負責人紅黑榜（第一個掛進功能開關的新模組）
+871eb7c V1.22：功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層）
+26b0023 V1.21：面板改名＋署名改＋總覽項目表可排序（去括號備註）
+22a1c69 V1.20：結案狀態改全域（移到左側「部門」下面，持久化）
+b559c57 V1.19：交叉分析改「排除式」— 點嚴重度＝把它藏起來（其餘全留）
+0fc2fc4 V1.18：全站圖表／百分比可鑽取（是數字就能點看實際筆數）
+5043563 V1.17：交叉分析篩掉的列/欄整個消失（不淡化）＋去說明備註
 ```

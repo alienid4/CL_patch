@@ -99,6 +99,42 @@
     "notes": "V1.12。部門控制從『每表 filter-dept』升級為左側全站選擇器(#my-dept-select)，存 vulnDashboard.dept 跨檔沿用；總覽/各表/未結數/逾期橫幅/複製摘要/Email 內容皆吃 state.myDept；此檔無該部門則退回全部。同版順做版面收窄放大(A-layout)。"
   },
   {
+    "id": "feature-toggle-framework",
+    "desc": "功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層）",
+    "done_when": "config/features.js 出廠預設 + js/features.js 個人覆寫(localStorage)；其他功能→功能開關可勾選；分頁/面板依開關顯示；還原預設有效",
+    "status": "done",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "V1.22。加新功能 = config/features.js 加一行 + 渲染處 Features.isOn 包起來。main.js applyTabVisibility 統一 caps+開關。"
+  },
+  {
+    "id": "dept-owner-ranking",
+    "desc": "主管：部門／負責人紅黑榜（逾期多者在前，紅/綠榜，前5名+展開）",
+    "done_when": "總覽首頁跨全部項目依部門/負責人排名；有逾期紅列、全結案綠列；欄首可排序；數字可鑽取；預設前5名+展開全部；隨部門選擇器縮；可開關",
+    "status": "done",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "V1.23+V1.26。summary.js rankBy/makeSortableTable(limit)。feature panel-red-list。"
+  },
+  {
+    "id": "sla-compliance",
+    "desc": "主管：SLA 達成率（各嚴重度政策天數，未結案未逾期比率）",
+    "done_when": "config.sla 政策天數可改；各嚴重度顯示政策/未結/逾期/達成率(長條)；數字可鑽取；可開關",
+    "status": "done",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "V1.24。資料無發現日→用未逾期比率非真時效，有發現日再升級。feature panel-sla。"
+  },
+  {
+    "id": "trend-history",
+    "desc": "主管：趨勢(跟上次比)＋歷史快照",
+    "done_when": "每次真實匯入自動記輕量快照(同檔同日去重)；本次vs上次(新增/結案/淨變化,可點)+趨勢線；範例/自動還原不記；可開關",
+    "status": "done",
+    "attempts": 0,
+    "created": "2026-07-10",
+    "notes": "V1.25。js/history.js，localStorage vulnDashboard.history 留最近12期。feature panel-trend。"
+  },
+  {
     "id": "vuln-aggregate",
     "desc": "第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔",
     "done_when": "提供聚合檢視:同弱點合併顯示影響台數、可展開看各主機；不破壞逐筆明細",
