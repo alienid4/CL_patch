@@ -88,23 +88,35 @@
       grid.appendChild(section);
     });
 
-    /* ---- 嚴重度 × 修復狀態 ---- */
-    renderSevRepair(result);
+    /* ---- 各面板：依「功能開關」決定顯示/渲染 ---- */
+    var F = global.Features;
+    function feat(id) { return !F || F.isOn(id); }
+    function gate(elId, on) { var el = document.getElementById(elId); if (el) el.style.display = on ? '' : 'none'; }
 
-    /* ---- 今日行動清單 ---- */
-    renderTodayActions(result);
+    // 各嚴重度結案進度
+    gate('sev-repair', feat('panel-sev-repair'));
+    if (feat('panel-sev-repair')) renderSevRepair(result);
 
-    /* ---- 風險加權 Top N ---- */
-    renderRiskTop(result);
+    // 優先處理清單
+    gate('today-actions', feat('panel-today-actions'));
+    if (feat('panel-today-actions')) renderTodayActions(result);
 
-    /* ---- 圖表 ---- */
+    // 風險排序
+    gate('risk-top', feat('panel-risk-top'));
+    if (feat('panel-risk-top')) renderRiskTop(result);
+
+    // 圖表（嚴重度／到期分布）
     destroyCharts();
-    var noSev = (result.caps && result.caps.severity === false);
-    var sevCanvas = document.getElementById('chart-severity');
-    var sevCard = sevCanvas && sevCanvas.closest ? sevCanvas.closest('.chart-card') : null;
-    if (sevCard) sevCard.style.display = noSev ? 'none' : '';
-    if (!noSev) renderSeverityChart(s, result.records);
-    renderDueChart(s, result.records);
+    var chartsRow = document.querySelector('#tab-dashboard .charts-row');
+    if (chartsRow) chartsRow.style.display = feat('panel-charts') ? '' : 'none';
+    if (feat('panel-charts')) {
+      var noSev = (result.caps && result.caps.severity === false);
+      var sevCanvas = document.getElementById('chart-severity');
+      var sevCard = sevCanvas && sevCanvas.closest ? sevCanvas.closest('.chart-card') : null;
+      if (sevCard) sevCard.style.display = noSev ? 'none' : '';
+      if (!noSev) renderSeverityChart(s, result.records);
+      renderDueChart(s, result.records);
+    }
   }
 
   /* 嚴重度 × 修復狀態（給主管：哪些已修復 / 未修復 + 修復率） */

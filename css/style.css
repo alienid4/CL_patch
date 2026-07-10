@@ -591,6 +591,15 @@ body.modal-open { overflow: hidden; }
 .xf-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .xf-result-head strong { font-size: 15px; color: var(--c-primary-dark); }
 
+/* ---------- 功能開關設定面板 ---------- */
+.feature-settings { display: flex; flex-direction: column; gap: 2px; min-width: 320px; }
+.feature-group-title { font-size: 12.5px; font-weight: 700; color: var(--c-text-soft); margin: 16px 0 4px; }
+.feature-group-title:first-child { margin-top: 0; }
+.feature-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer; }
+.feature-row:hover { background: var(--c-primary-soft); }
+.feature-row input { width: 17px; height: 17px; cursor: pointer; flex: none; accent-color: var(--c-primary); }
+.feature-name { font-size: 14px; color: var(--c-text); }
+
 /* ---------- 查詢 ---------- */
 .search-bar { display: flex; gap: 10px; margin-bottom: 12px; }
 .search-input {

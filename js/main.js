@@ -116,6 +116,12 @@
     if ($('sample-btn')) $('sample-btn').addEventListener('click', loadSample);
     if ($('sample-btn-2')) $('sample-btn-2').addEventListener('click', loadSample);
 
+    // 功能開關（其他功能 → 設定面板）
+    if ($('features-btn')) $('features-btn').addEventListener('click', function () {
+      closeMore();
+      if (global.Features) global.Features.openSettings(refreshView);
+    });
+
     // 複製指標摘要(整理成一段可讀文字 → 剪貼簿，方便貼進 email)
     var copyBtn = $('copy-summary-btn');
     if (copyBtn) copyBtn.addEventListener('click', function () {
@@ -361,19 +367,7 @@
 
   function renderResult(result, sheetName, opts) {
     opts = opts || {};
-    var caps = result.caps || {};
-    // 面板自適應：無例外/展延 → 隱藏「例外/展延統計」分頁
-    var statsBtn = document.querySelector('.tab-btn[data-tab="stats"]');
-    if (statsBtn) {
-      statsBtn.style.display = caps.stagePanel === false ? 'none' : '';
-      if (caps.stagePanel === false && statsBtn.classList.contains('active')) switchTab('dashboard');
-    }
-    // 面板自適應：無嚴重度欄 → 隱藏「交叉分析」分頁(嚴重度軸無意義)
-    var matrixBtn = document.querySelector('.tab-btn[data-tab="matrix"]');
-    if (matrixBtn) {
-      matrixBtn.style.display = caps.severity === false ? 'none' : '';
-      if (caps.severity === false && matrixBtn.classList.contains('active')) switchTab('dashboard');
-    }
+    applyTabVisibility(result.caps || {});
     $('file-name-tag').textContent = state.fileName + '　(工作表：' + sheetName + ')';
     renderQuality(result);
     global.Dashboard.render(result);
@@ -537,6 +531,32 @@
     document.querySelectorAll('.tab-panel').forEach(function (p) {
       p.classList.toggle('active', p.id === 'tab-' + tab);
     });
+  }
+
+  /* 分頁顯示：面板自適應(caps) + 功能開關(Features) 任一不通就隱藏；當前分頁被藏則退回總覽 */
+  function applyTabVisibility(caps) {
+    caps = caps || {};
+    var F = global.Features;
+    var defs = [
+      { tab: 'tracking', ok: true },
+      { tab: 'matrix',   ok: caps.severity !== false },
+      { tab: 'stats',    ok: caps.stagePanel !== false },
+      { tab: 'search',   ok: true },
+    ];
+    defs.forEach(function (d) {
+      var btn = document.querySelector('.tab-btn[data-tab="' + d.tab + '"]');
+      if (!btn) return;
+      var visible = d.ok && (!F || F.isOn('tab-' + d.tab));
+      btn.style.display = visible ? '' : 'none';
+      if (!visible && btn.classList.contains('active')) switchTab('dashboard');
+    });
+  }
+
+  /* 功能開關變更後重繪目前畫面 */
+  function refreshView() {
+    if (!state.sheets) return;
+    if (state.mode === 'summary') showSummary();
+    else applyFilters();
   }
   function showError(html) {
     var box = $('error-box');

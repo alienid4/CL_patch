@@ -9,6 +9,13 @@
 
 ---
 
+## 2026-07-10 V1.22 功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層）✅ 完成
+- 決策(使用者)：功能模組化、有開關；主管不喜歡就到「後台」關掉。確認採 A＋B 兩層(config 出廠預設＋個人 localStorage 覆寫)。先做框架＋設定面板，把現有分頁/面板納管，再逐一加新功能(紅黑榜/SLA/趨勢)。
+- 架構：config/features.js＝出廠預設註冊表(layer A，隨資料夾發布)；js/features.js＝Features 模組 isOn/set/reset/openSettings，個人覆寫存 localStorage『vulnDashboard.features』(layer B)。isOn=個人有覆寫用覆寫，否則吃 config default。加新功能只需往 APP_FEATURES 加一行，設定面板與渲染自動吃。
+- 納管：分頁 tracking/matrix/stats/search(dashboard 總覽固定不關)；各項目看板面板 sev-repair/today-actions/risk-top/charts。main.js applyTabVisibility(caps+Features 任一不通即隱藏，當前分頁被藏退回總覽)取代原本 caps-only 隱藏；dashboard.js 各面板 gate(display)＋跳過 render；index.html 其他功能加「功能開關」#features-btn→Features.openSettings(refreshView)。css .feature-*。
+- 驗(預覽表1)：設定面板 8 開關/2 群組；關「交叉分析」→分頁消失、關「風險排序」→面板消失、存 ls；reload 後仍隱藏(持久化)；還原預設→全復原、ls 清空、勾選全回(落回出廠預設)；console 無錯；V1.22；?v 全1.22。
+- 下一步：把三個新功能當模組插進去 → #3 部門/負責人紅黑榜(先)、#2 SLA 達成率、#1 跟上次比的趨勢(要存歷史快照)。若主管要一鍵改全體，再補 C(設定匯出/匯入 settings.json)。
+
 ## 2026-07-10 V1.21 面板改名＋署名改＋總覽項目表可排序＋去括號備註 ✅ 完成
 - 需求(使用者3件)：①「嚴重度 × 結案狀態」名詞不好→改新名；②署名「資安管理小組 敬上」→改「弱點追蹤管理人員」；③總覽的項目狀態表要可排序。
 - 成果：
