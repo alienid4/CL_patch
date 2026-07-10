@@ -552,6 +552,18 @@ body.modal-open { overflow: hidden; }
 .xf-cond-label { font-size: 13px; font-weight: 700; color: var(--c-text-soft); }
 .xf-cond-val { font-size: 14px; color: var(--c-text-soft); padding: 5px 12px; border: 1px solid var(--c-border); border-radius: 20px; background: #f6f8fc; }
 .xf-cond-val.on { color: var(--c-primary-dark); font-weight: 700; background: var(--c-primary-soft); border-color: var(--c-primary); }
+.xf-cond-tag { font-size: 13px; padding: 5px 12px; border: 1px solid var(--c-primary); border-radius: 20px;
+  background: var(--c-primary-soft); color: var(--c-primary-dark); cursor: pointer; }
+.xf-cond-tag:hover { background: var(--c-primary); color: #fff; }
+.xf-cond-tag b { font-weight: 700; }
+
+/* facet chips（部門／負責人 漏斗維度） */
+.xf-facets { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.xf-facet { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.xf-facet-label { flex: none; width: 58px; font-size: 13px; font-weight: 700; color: var(--c-text-soft); padding-top: 6px; }
+.xf-chip { margin: 0; }
+.xf-chip-n { font-weight: 700; opacity: .7; margin-left: 3px; }
+.xf-chip.active .xf-chip-n { opacity: .9; }
 
 .xf-matrix-wrap { overflow-x: auto; }
 .xf-matrix { min-width: 640px; }

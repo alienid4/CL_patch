@@ -9,6 +9,12 @@
 
 ---
 
+## 2026-07-10 V1.16 交叉分析升級「真漏斗」：多維度可疊加 cross-filter ✅ 完成
+- 需求(使用者)：V1.15 第一版看了「對對對，我就是要真漏斗」→ 升級成方案乙。矩陣(嚴重度×到期)照舊，再加 部門／負責人 facet chips，任意維度疊點，每點一次矩陣格/facet 計數/清單全部即時重算。
+- 成果(改寫 js/matrix.js)：狀態 {sev,band,dept,owner}；DIMS 取值函式；matchesExcept(r,exceptKeys) 做「除了某維度外其他都符合」的交叉統計核心。矩陣改吃 matrixRecords()(套 dept/owner 後再拆 sev×band)→選部門/負責人後矩陣跟著縮。facet：部門/負責人各一排 chip(reuse .search-chip)，每 chip 計數=「其他維度都符合下」該值筆數(標準 faceted count)；單一值且未選的維度自動隱藏(範例資料同部門→部門排不出現)。條件列改成可點的 tag(點 tag 移除該維度)＋清除全部。清單/標題/匯出沿用。css 加 .xf-cond-tag/.xf-facet/.xf-chip。
+- 驗(預覽表1 7筆)：facet 只出負責人5人(部門單值隱藏，對)；點喬峰→矩陣總計縮成2、清單2、cond[負責人:喬峰]；疊點矩陣格 Critical×已逾期→cond三條[Critical,已逾期,喬峰]、1筆；點條件 tag 移除負責人→回[Critical,已逾期]2筆、矩陣總計回7；清除全部→7筆、facet回滿5 chip；選玄慈→矩陣2筆全已逾期、chip亮；console 無錯；V1.16；?v 全1.16。
+- 可續：若要更多維度(處置階段/系統類別)照 FACET_DEFS 加一行即可；嚴重度分數當軸仍未做(目前在明細欄)。A5 一頁列印、A4 弱點聚合、Email 寄送仍在 backlog。
+
 ## 2026-07-10 V1.15 交叉分析分頁：嚴重度 × 到期時間帶 逐層過濾（第一版）✅ 完成
 - 需求(使用者)：把「嚴重度×結案狀態」「負責人×到期」兩張表的維度交叉 → 一張「嚴重度 × 到期時間帶」矩陣（Critical 且 30天內幾筆？31–90天？…）；並要「逐層點選過濾」技巧：每個分類攤成可點選項，點一個就往下縮，慢慢篩出最後想看的清單。方案採甲(只 嚴重度×到期 兩維)、母體=未結案(跟現有篩選走)、嚴重度分數暫放明細欄(Risk/Severity)非第三軸。
 - 成果：新增分頁「交叉分析」(tab-matrix，介於人員追蹤與例外統計之間)。js/matrix.js：Matrix.render(result) 讀 result.records，畫 嚴重度(列)×A.BANDS(欄) 矩陣+列/欄/總合計；點格=鎖 sev+band、點列首=只鎖 sev、點欄首=只鎖 band、再點取消、清除鈕；下方即時 UI.buildDetailTable(篩選後) + 另開新分頁/匯出CSV(reuse popOutTable/exportCSV)。main.js renderResult 加 Matrix.render 與「無嚴重度欄(caps.severity===false)則隱藏此分頁」自適應。css 加 .xf-* 樣式(reuse --c-* 與 .matrix-table/.sev-badge/.num-cell)。index.html 加 tab 鈕+panel+script。
