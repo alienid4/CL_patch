@@ -1,3 +1,7 @@
 .project/.loop_prompt.txt
 .project/run_report.md
 node_modules/
+
+# 打包產物（build_dist.sh 產生，不進版控）
+dist/
+*.zip
