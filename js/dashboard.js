@@ -39,8 +39,8 @@
     });
 
     var groups = [
-      { title: '總覽', cards: [{ label: '未結案（總）', value: s.total, cls: 'm-total', filter: function () { return true; } }] },
-      { title: '到期時間帶（互斥）', cards: A.BANDS.map(function (b) {
+      { title: '總覽', cards: [{ label: '未結案', value: s.total, cls: 'm-total', filter: function () { return true; } }] },
+      { title: '到期時間帶', cards: A.BANDS.map(function (b) {
           return { label: b.label, value: s.bands[b.key], cls: bandCls[b.key] || 'm-info',
             filter: (function (key) { return function (r) { return A.bandOf(r) === key; }; })(b.key) };
         }) },

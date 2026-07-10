@@ -243,7 +243,7 @@
       data: { labels: labels, datasets: datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' }, title: { display: true, text: '到期時間帶 × 處置階段（堆疊）', font: { size: 14 } } },
+        plugins: { legend: { position: 'top' }, title: { display: true, text: '到期時間帶 × 處置階段', font: { size: 14 } } },
         scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
       },
     });

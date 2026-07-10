@@ -99,7 +99,7 @@
       { label: '未結案', value: t.open, cls: 'm-total' },
       { label: '已逾期', value: t.overdue, cls: 'm-overdue' },
       { label: '近期到期', value: t.soon, cls: 'm-warn' },
-      { label: '高風險未結（C+H）', value: t.high, cls: 'm-critical' },
+      { label: '高風險未結', value: t.high, cls: 'm-critical' },
       { label: '整體結案率', value: t.rate + '%', cls: 'm-info' },
     ];
     var kgrid = U.el('div', { class: 'summary-kpis' });

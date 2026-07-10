@@ -9,6 +9,14 @@
 
 ---
 
+## 2026-07-10 V1.14 再掃畫面殘留「括號說明字」全清 ✅ 完成
+- 背景：使用者截圖指「到期時間帶（互斥）」等括號小備註不該出現(長期偏好 no-ui-annotation-text)。全站再掃一次。
+- 清掉(會顯示在畫面的自創解釋字)：dashboard.js 指標卡標題「未結案（總）→未結案」「到期時間帶（互斥）→到期時間帶」；summary.js 總覽KPI「高風險未結（C+H）→高風險未結」；stats.js 堆疊圖標題「到期時間帶 × 處置階段（堆疊）→…（去堆疊）」；analysis.js 品質異常清單「缺少到期日（修補/展延/例外皆空）」「…（邏輯矛盾）」×2 去括號。
+- 保留(功能性計數，非備註)：查看全部（N筆）、合計（N人）、產生催辦（N人）、複製整封（主旨+內容）、版本日期 tooltip。
+- 修環境雷：.claude/launch.json 之前指向另一台 `C:\Users\leea6\...`＋用壞掉的 `python`→改本機 `C:\Users\User\...`＋`py`，預覽伺服器才起得來。
+- 驗(預覽 http.server 8778 載範例資料)：group 標題=總覽/到期時間帶/嚴重度(無互斥)；指標卡 label 未結案(無總)；總覽 KPI 高風險未結(無C+H)；全頁掃 互斥/C+H/堆疊/邏輯矛盾/皆空 皆 0 殘留；console 無錯；V1.14。index.html ?v 全數 1.13→1.14。
+- 待辦不變：A4 弱點聚合、A5 一頁列印、Email 寄送。
+
 ## 2026-07-10 V1.13 內建「載入範例資料（天龍八部）」按鈕 ✅ 完成
 - 背景：使用者要看假資料但一直載到舊真實檔(其他功能→檔案顯示 弱點彙總報告(New)_V20260702 的TEST.xlsx)。用 computer-use 讀取層看到其畫面：版本已是 V1.12(對)，純粹載錯檔。Claude Chrome 擴充未連(list_connected_browsers 空)→無法替他點 Chrome(唯讀層)。故改用「內建範例資料一鍵載入」根治。
 - 成果：assets/sample-data.js(把 docs/測試假資料_天龍八部.xlsx 轉 base64 內嵌，約21KB)；index.html 掛該檔＋「載入範例資料（天龍八部）」按鈕兩處(其他功能選單 #sample-btn＋上傳頁 #sample-btn-2)；main.js loadSample() 讀內建 b64→走既有 loadWorkbook/saveWorkbook。免選檔、離線可用(file:// 也行，不需 fetch)。

@@ -389,11 +389,11 @@
     var valid = CFG.validSeverities || ['Critical', 'High', 'Medium', 'Low', 'Info'];
     var unassigned = CFG.unassignedOwner || '(未指定)';
     var defs = [
-      { key: 'noDue', label: '缺少到期日（修補/展延/例外皆空）',
+      { key: 'noDue', label: '缺少到期日',
         test: function (r) { return !r.realDue; } },
-      { key: 'exBeforeFix', label: '例外核准期限早於修補期限（邏輯矛盾）',
+      { key: 'exBeforeFix', label: '例外核准期限早於修補期限',
         test: function (r) { return r.exceptionApproval && r.fixDeadline && r.exceptionApproval < r.fixDeadline; } },
-      { key: 'extBeforeFix', label: '首次展延上限早於修補期限（邏輯矛盾）',
+      { key: 'extBeforeFix', label: '首次展延上限早於修補期限',
         test: function (r) { return r.firstExtension && r.fixDeadline && r.firstExtension < r.fixDeadline; } },
       { key: 'noOwner', label: '負責人未指定',
         test: function (r) { return !r.owner || r.owner === unassigned; } },
