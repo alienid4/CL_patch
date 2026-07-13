@@ -9,6 +9,17 @@
 
 ---
 
+## 2026-07-13 V1.32 國泰證券改版：子分頁(免下拉)＋綠配色＋標題/版本/選單 ✅ 完成
+- 使用者要求：總覽的優先處理/風險排序/到期分佈等改子分頁(不想往下拉，套用到各功能)；其他功能拿掉「複製指標摘要」「載入範例資料/天龍八部」(後者早已在 V1.27 移除)；版本移到前面；首頁標題改「國泰證券弱點彙總」；配色改國泰證券綠。
+- 成果：
+  · 配色：css :root --c-primary 藍#1e4b8f→國泰綠#009142(dark #00703a/soft #e5f4ec)；history 趨勢線、ui-common 另開分頁表頭同步改綠(資料色如嚴重度/到期帶保留)。
+  · 標題：<title>/頁首 h1/頁尾 → 「國泰證券弱點彙總」。
+  · 版本：#app-version 移到頁首 h1 內(永遠可見)＋上傳頁加 #app-version-up；移除下拉裡的版本列與 #copy-summary-btn。
+  · 子分頁：index.html 把 #tab-dashboard 拆成 指標/結案進度/優先處理/風險排序/圖表 五個 .subpanel＋.subtabs；#tab-stats 拆 階段統計/圖表/治理雷達。main.js 加 initSubtabs/activateSubtab/setSubtabVisible(面板關掉連子分頁一起藏)；dashboard.js render 末尾呼叫 setSubtabVisible。css 加 .subtabs/.subtab-btn/.subpanel。
+  · 圖表雷：Chart.js4 在 display:none 建立→0×0 且 resize()無效；解法：activateSubtab 切到含未成形圖表(canvas.width==0)的子分頁時呼叫 refreshView() 讓圖表在可見狀態重建(每次切回自動修復)。
+- 驗(預覽8790 DataTransfer 灌測試檔)：V1.32、標題正確、頁首綠#009142、版本在前、複製鈕移除、dashboard/stats 子分頁齊且圖表切過去都正確渲染(dashOk/statsOk true)、總覽 KPI 正常、console 無錯、?v全1.32。橫向拖曳拉把 V1.29 已有。
+- 註：預覽 launch.json 的 python 伺服器指到錯目錄(全404)，用 py -m http.server 8790 --directory 正確路徑另起才可測；載資料用 file-input DataTransfer 走真實流程。
+
 ## 2026-07-13 V1.31 查詢快速篩選改「可複選」（多條件疊加）✅ 完成
 - 使用者要求：查詢分頁的快速篩選 chips 原本單選(選一個列全部)，要能多選疊加，例：今日待追蹤＋High、今日待追蹤＋High＋例外管理中，一直收窄。
 - 設計：分面篩選——「同類 OR、跨類 AND」。同類(互斥/同維度)：到期狀態(已逾期/近期/今日待追蹤/六個月)、嚴重度(Critical/High/Medium)、處置階段(例外管理中/首次展延中)各為一類，類內多選＝OR(聯集，避免 High+Medium 變空集)；其餘(例外核准未到期/反覆展延例外)各自獨立，跨類一律 AND。避免了純 AND 下同嚴重度互斥→空集的困擾。

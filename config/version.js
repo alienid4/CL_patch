@@ -4,5 +4,5 @@
  * 規則：功能新增/修改 → 小版 +0.01（V1.0 → V1.01）；重大里程碑 → 大版 +1。
  * 注意：bump 時同步更新 index.html 各 script/link 的 ?v=xxx（快取破壞）。
  * ============================================================ */
-window.APP_VERSION = 'V1.31';
+window.APP_VERSION = 'V1.32';
 window.APP_VERSION_DATE = '2026-07-13';   // 對應日期（人工維護）

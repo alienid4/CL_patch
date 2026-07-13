@@ -149,7 +149,7 @@
       data: {
         labels: labels,
         datasets: [
-          { label: '未結案', data: arr.map(function (s) { return s.open; }), borderColor: '#1e4b8f', backgroundColor: '#1e4b8f', tension: 0.25 },
+          { label: '未結案', data: arr.map(function (s) { return s.open; }), borderColor: '#009142', backgroundColor: '#009142', tension: 0.25 },
           { label: '已逾期', data: arr.map(function (s) { return s.overdue; }), borderColor: '#c62828', backgroundColor: '#c62828', tension: 0.25 },
         ],
       },

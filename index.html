@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>弱點彙總 Dashboard</title>
-  <link rel="stylesheet" href="css/style.css?v=1.31">
+  <title>國泰證券弱點彙總</title>
+  <link rel="stylesheet" href="css/style.css?v=1.32">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
       <div class="brand">
         <span class="brand-logo">🛡️</span>
         <div>
-          <h1>弱點彙總 Dashboard</h1>
+          <h1>國泰證券弱點彙總 <span id="app-version" class="app-version"></span></h1>
           <p class="brand-sub">弱點追蹤管理</p>
         </div>
       </div>
@@ -33,9 +33,7 @@
           <button id="more-btn" class="btn btn-ghost hidden">其他功能 ▾</button>
           <div id="more-dropdown" class="more-dropdown hidden">
             <div class="more-info">檔案：<span id="file-name-tag" class="file-tag"></span></div>
-            <div class="more-info">版本：<span id="app-version"></span></div>
             <div class="more-divider"></div>
-            <button id="copy-summary-btn" class="more-item" disabled>複製指標摘要</button>
             <button id="features-btn" class="more-item">功能開關</button>
             <button id="email-settings-btn" class="more-item">Email 設定</button>
             <button id="reload-btn" class="more-item">重新選擇檔案</button>
@@ -60,6 +58,7 @@
           預期工作表：<code>1-系統弱點掃描弱點</code>（找不到時自動改用第一個工作表）<br>
           依「欄位名稱」讀取，欄位順序改變仍可運作。
         </p>
+        <p class="drop-version">版本 <span id="app-version-up"></span></p>
       </div>
       <div id="error-box" class="error-box"></div>
     </section>
@@ -92,24 +91,37 @@
         <button class="tab-btn" data-tab="search">查詢</button>
       </nav>
 
-      <!-- TAB1 Dashboard -->
+      <!-- TAB1 Dashboard（子分頁：點選切換，免下拉） -->
       <div id="tab-dashboard" class="tab-panel active">
-        <div id="metric-grid" class="metric-grid"></div>
-
-        <div id="sev-repair" class="sev-repair-panel"></div>
-
-        <div id="today-actions" class="action-panel"></div>
-        <div id="risk-top" class="risk-panel"></div>
-
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-wrap"><canvas id="chart-severity"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-wrap"><canvas id="chart-due"></canvas></div>
+        <nav class="subtabs">
+          <button class="subtab-btn active" data-sub="metrics">指標</button>
+          <button class="subtab-btn" data-sub="sevrepair">結案進度</button>
+          <button class="subtab-btn" data-sub="today">優先處理</button>
+          <button class="subtab-btn" data-sub="risk">風險排序</button>
+          <button class="subtab-btn" data-sub="charts">圖表</button>
+        </nav>
+        <div class="subpanel active" data-sub="metrics">
+          <div id="metric-grid" class="metric-grid"></div>
+        </div>
+        <div class="subpanel" data-sub="sevrepair">
+          <div id="sev-repair" class="sev-repair-panel"></div>
+        </div>
+        <div class="subpanel" data-sub="today">
+          <div id="today-actions" class="action-panel"></div>
+        </div>
+        <div class="subpanel" data-sub="risk">
+          <div id="risk-top" class="risk-panel"></div>
+        </div>
+        <div class="subpanel" data-sub="charts">
+          <div class="charts-row">
+            <div class="chart-card">
+              <div class="chart-wrap"><canvas id="chart-severity"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-wrap"><canvas id="chart-due"></canvas></div>
+            </div>
           </div>
         </div>
-
       </div>
 
       <!-- TAB2 人員追蹤 -->
@@ -128,23 +140,26 @@
         <div id="matrix-body" class="matrix-cross-body"></div>
       </div>
 
-      <!-- TAB3 例外/展延統計 -->
+      <!-- TAB3 例外/展延統計（子分頁：免下拉） -->
       <div id="tab-stats" class="tab-panel">
-        <div class="panel-head">
-          <h3>例外管理／首次展延統計</h3>
+        <nav class="subtabs">
+          <button class="subtab-btn active" data-sub="stage">階段統計</button>
+          <button class="subtab-btn" data-sub="stats-charts">圖表</button>
+          <button class="subtab-btn" data-sub="gov">治理雷達</button>
+        </nav>
+        <div class="subpanel active" data-sub="stage">
+          <div id="stats-scope" class="scope-info"></div>
+          <div id="stage-grid" class="stage-grid"></div>
         </div>
-        <div id="stats-scope" class="scope-info"></div>
-        <div id="stage-grid" class="stage-grid"></div>
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-wrap"><canvas id="chart-stage-pie"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-wrap"><canvas id="chart-stage-band"></canvas></div>
+        <div class="subpanel" data-sub="stats-charts">
+          <div class="charts-row">
+            <div class="chart-card"><div class="chart-wrap"><canvas id="chart-stage-pie"></canvas></div></div>
+            <div class="chart-card"><div class="chart-wrap"><canvas id="chart-stage-band"></canvas></div></div>
           </div>
         </div>
-
-        <div id="gov-radar" class="gov-radar"></div>
+        <div class="subpanel" data-sub="gov">
+          <div id="gov-radar" class="gov-radar"></div>
+        </div>
       </div>
 
       <!-- TAB4 查詢 -->
@@ -183,34 +198,34 @@
   <div id="toast" class="toast"></div>
 
   <footer class="app-footer">
-    <span>弱點彙總 Dashboard · 純前端本機解析 · SheetJS + Chart.js</span>
+    <span>國泰證券弱點彙總 · 純前端本機解析 · SheetJS + Chart.js</span>
   </footer>
 
   <!-- ===== 相依函式庫：本機載入，離線(無網路)也能用，不依賴 CDN ===== -->
-  <script src="assets/vendor/xlsx.full.min.js?v=1.31"></script>
-  <script src="assets/vendor/chart.umd.min.js?v=1.31"></script>
+  <script src="assets/vendor/xlsx.full.min.js?v=1.32"></script>
+  <script src="assets/vendor/chart.umd.min.js?v=1.32"></script>
 
   <!-- ===== 應用程式 ===== -->
-  <script src="config/version.js?v=1.31"></script>
-  <script src="config/config.js?v=1.31"></script>
-  <script src="config/features.js?v=1.31"></script>
-  <script src="config/profiles.js?v=1.31"></script>
-  <script src="js/utils.js?v=1.31"></script>
-  <script src="js/excel.js?v=1.31"></script>
-  <script src="js/sheets.js?v=1.31"></script>
-  <script src="js/analysis.js?v=1.31"></script>
-  <script src="js/multi.js?v=1.31"></script>
-  <script src="js/reminder.js?v=1.31"></script>
-  <script src="js/ui-common.js?v=1.31"></script>
-  <script src="js/features.js?v=1.31"></script>
-  <script src="js/dashboard.js?v=1.31"></script>
-  <script src="js/tracking.js?v=1.31"></script>
-  <script src="js/matrix.js?v=1.31"></script>
-  <script src="js/stats.js?v=1.31"></script>
-  <script src="js/search.js?v=1.31"></script>
-  <script src="js/summary.js?v=1.31"></script>
-  <script src="js/history.js?v=1.31"></script>
-  <script src="js/email.js?v=1.31"></script>
-  <script src="js/main.js?v=1.31"></script>
+  <script src="config/version.js?v=1.32"></script>
+  <script src="config/config.js?v=1.32"></script>
+  <script src="config/features.js?v=1.32"></script>
+  <script src="config/profiles.js?v=1.32"></script>
+  <script src="js/utils.js?v=1.32"></script>
+  <script src="js/excel.js?v=1.32"></script>
+  <script src="js/sheets.js?v=1.32"></script>
+  <script src="js/analysis.js?v=1.32"></script>
+  <script src="js/multi.js?v=1.32"></script>
+  <script src="js/reminder.js?v=1.32"></script>
+  <script src="js/ui-common.js?v=1.32"></script>
+  <script src="js/features.js?v=1.32"></script>
+  <script src="js/dashboard.js?v=1.32"></script>
+  <script src="js/tracking.js?v=1.32"></script>
+  <script src="js/matrix.js?v=1.32"></script>
+  <script src="js/stats.js?v=1.32"></script>
+  <script src="js/search.js?v=1.32"></script>
+  <script src="js/summary.js?v=1.32"></script>
+  <script src="js/history.js?v=1.32"></script>
+  <script src="js/email.js?v=1.32"></script>
+  <script src="js/main.js?v=1.32"></script>
 </body>
 </html>

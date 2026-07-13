@@ -221,7 +221,7 @@
     var html = '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">' +
       '<title>' + esc2(title) + '</title><style>' +
       'body{font-family:"Segoe UI","Microsoft JhengHei",sans-serif;margin:0;background:#f4f6fa;color:#1f2937;}' +
-      'h1{font-size:16px;padding:12px 16px;margin:0;background:#1e4b8f;color:#fff;position:sticky;top:0;z-index:5;}' +
+      'h1{font-size:16px;padding:12px 16px;margin:0;background:#009142;color:#fff;position:sticky;top:0;z-index:5;}' +
       '.meta{padding:8px 16px;font-size:13px;color:#64748b;}' +
       '.wrap{overflow:auto;max-height:calc(100vh - 90px);margin:0 12px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;}' +
       'table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap;}' +
@@ -230,7 +230,7 @@
       'tr.od{background:#fff5f5;}tr:hover{background:#f8fafd;}' +
       '.sev{color:#fff;font-weight:700;text-align:center;}.sev-Critical{background:#b71c1c;}.sev-High{background:#e64a19;}' +
       '.sev-Medium{background:#f9a825;color:#4a3800;}.sev-Low{background:#43a047;}.sev-Info{background:#607d8b;}.sev-Unknown{background:#90a4ae;}' +
-      '.ind{color:#1e4b8f;font-weight:700;}</style></head><body>' +
+      '.ind{color:#009142;font-weight:700;}</style></head><body>' +
       '<h1>' + esc2(title) + '</h1><div class="meta">共 ' + records.length + ' 筆 · 點欄位標題排序 · 可自由左右捲動</div>' +
       '<div class="wrap"><table><thead><tr>' + thead + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' +
       '<script>(function(){var t=document.querySelector("table");var ths=t.tHead.rows[0].cells;var dir=1,cur=-1;' +

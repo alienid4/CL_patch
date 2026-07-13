@@ -8,9 +8,9 @@
   --c-border: #e2e8f0;
   --c-text: #1f2937;
   --c-text-soft: #64748b;
-  --c-primary: #1e4b8f;
-  --c-primary-dark: #163a70;
-  --c-primary-soft: #e8f0fb;
+  --c-primary: #009142;        /* 國泰證券綠 */
+  --c-primary-dark: #00703a;
+  --c-primary-soft: #e5f4ec;
 
   --c-critical: #b71c1c;
   --c-high: #e64a19;
@@ -98,6 +98,8 @@ html, body {
 .drop-zone .btn-primary { margin-bottom: 20px; }
 .drop-note { color: var(--c-text-soft); font-size: 13px; line-height: 1.8; }
 .drop-note code { background: #eef2f7; padding: 2px 7px; border-radius: 5px; color: var(--c-primary); font-size: 12.5px; }
+.drop-version { color: var(--c-text-soft); font-size: 12.5px; margin: 18px 0 0; }
+.drop-version span { font-weight: 700; color: var(--c-primary); }
 
 /* ---------- 錯誤框 ---------- */
 .error-box {
@@ -216,6 +218,18 @@ html, body {
 .tab-btn.active { color: var(--c-primary); border-bottom-color: var(--c-primary); }
 .tab-panel { display: none; animation: fade .25s ease; }
 .tab-panel.active { display: block; }
+
+/* 子分頁：同一分頁內點選切換，取代往下捲 */
+.subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.subtab-btn {
+  border: 1px solid var(--c-border); background: var(--c-surface); color: var(--c-text-soft);
+  border-radius: 20px; padding: 6px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all .15s ease;
+}
+.subtab-btn:hover { border-color: var(--c-primary); color: var(--c-primary); }
+.subtab-btn.active { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+.subpanel { display: none; animation: fade .2s ease; }
+.subpanel.active { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ---------- 指標卡(三個群組框 + 精簡) ---------- */

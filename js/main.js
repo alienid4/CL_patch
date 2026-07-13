@@ -20,6 +20,11 @@
       vEl.textContent = global.APP_VERSION;
       if (global.APP_VERSION_DATE) vEl.title = '版本 ' + global.APP_VERSION + '（' + global.APP_VERSION_DATE + '）';
     }
+    var vUp = $('app-version-up');
+    if (vUp && global.APP_VERSION) vUp.textContent = global.APP_VERSION;
+
+    // 子分頁（總覽/例外統計內，點選切換，免下拉）
+    initSubtabs();
 
     // 檢查相依函式庫
     if (typeof XLSX === 'undefined') {
@@ -556,11 +561,54 @@
     box.innerHTML = '';
   }
 
+  /* -------- 子分頁（subtabs）：同一分頁內點選切換，取代往下捲 -------- */
+  function initSubtabs() {
+    document.querySelectorAll('.subtab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { activateSubtab(btn); });
+    });
+  }
+  function activateSubtab(btn) {
+    var panel = btn.closest('.tab-panel'); if (!panel) return;
+    var sub = btn.dataset.sub;
+    Array.prototype.forEach.call(panel.querySelectorAll('.subtab-btn'), function (b) {
+      b.classList.toggle('active', b === btn);
+    });
+    Array.prototype.forEach.call(panel.querySelectorAll('.subpanel'), function (p) {
+      p.classList.toggle('active', p.dataset.sub === sub);
+    });
+    // Chart.js 4 在 display:none 下建立的圖表 canvas 為 0×0 且 resize 無效；
+    // 切到含未成形圖表的子分頁時，重繪目前畫面，讓圖表在「可見」狀態下重新建立
+    var activePanel = panel.querySelector('.subpanel.active');
+    if (activePanel) {
+      var cvs = activePanel.querySelectorAll('canvas');
+      var needsRender = Array.prototype.some.call(cvs, function (c) { return c.width === 0; });
+      if (needsRender) refreshView();
+    }
+  }
+  /* 依面板開關顯示/隱藏子分頁；確保永遠有一個可見子分頁被選中 */
+  function setSubtabVisible(tabId, map) {
+    var panel = document.getElementById('tab-' + tabId); if (!panel) return;
+    Object.keys(map).forEach(function (sub) {
+      var b = panel.querySelector('.subtab-btn[data-sub="' + sub + '"]');
+      var p = panel.querySelector('.subpanel[data-sub="' + sub + '"]');
+      var vis = !!map[sub];
+      if (b) b.style.display = vis ? '' : 'none';
+      if (!vis && b) b.classList.remove('active');
+      if (!vis && p) p.classList.remove('active');
+    });
+    var btns = Array.prototype.slice.call(panel.querySelectorAll('.subtab-btn'));
+    var activeOk = btns.some(function (b) { return b.classList.contains('active') && b.style.display !== 'none'; });
+    if (!activeOk) {
+      var first = btns.filter(function (b) { return b.style.display !== 'none'; })[0];
+      if (first) activateSubtab(first);
+    }
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
 
-  global.App = { getState: function () { return state; } };
+  global.App = { getState: function () { return state; }, setSubtabVisible: setSubtabVisible };
 })(window);

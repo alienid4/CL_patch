@@ -116,6 +116,17 @@
       if (!noSev) renderSeverityChart(s, result.records);
       renderDueChart(s, result.records);
     }
+
+    // 子分頁顯示：面板被關掉(功能開關/面板自適應)就連該子分頁一起藏
+    if (global.App && global.App.setSubtabVisible) {
+      var caps = result.caps || {};
+      global.App.setSubtabVisible('dashboard', {
+        sevrepair: feat('panel-sev-repair') && caps.severity !== false,
+        today: feat('panel-today-actions'),
+        risk: feat('panel-risk-top'),
+        charts: feat('panel-charts'),
+      });
+    }
   }
 
   /* 嚴重度 × 修復狀態（給主管：哪些已修復 / 未修復 + 修復率） */
