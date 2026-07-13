@@ -9,6 +9,11 @@
 
 ---
 
+## 2026-07-13 V1.36 總覽首頁也改子分頁（免下拉）✅ 完成
+- 使用者：總覽下面好幾個功能沒做子tab，再查一次還有沒有這種情形。→ 主管總覽(summary.js)整頁還是往下疊。
+- 成果：summary.js render 重構——逾期橫幅＋KPI 常駐在上，下面分子分頁：項目狀態／圖表／趨勢／SLA／紅黑榜(趨勢/SLA/紅黑榜受功能開關控制，關了就不出該子分頁)。抽出 buildStatusTable/buildChartPanel；renderSLA/renderRankings/History.renderTrend 改填入各子分頁 container。子分頁用「顯示時才建立(fill 一次)」——圖表(堆疊圖/趨勢)在可見狀態下建立，避開 Chart.js4 display:none 0×0 問題。子分頁 click 綁 summary 自己的 activateSub(非 .tab-panel，不用 main.js 泛用機制)。
+- 驗(預覽8790)：V1.36；5 個子分頁齊、橫幅+KPI 常駐、預設項目狀態；圖表/趨勢懶載入渲染成功；SLA/紅黑榜有內容；狀態格下鑽正常(不誤進項目)、點項目名仍進細項；console 無錯。
+
 ## 2026-07-13 V1.35 下鑽補完：所有數字框框/合計列皆可下鑽 ✅ 完成
 - 使用者：總覽下面好幾個功能沒做下鑽(點了只退回)；再查一次「有數字的框框」都要能下鑽；做好自測再推。
 - 稽核後補的缺口：

@@ -136,7 +136,51 @@
     });
     box.appendChild(kgrid);
 
-    /* 各項目狀態表（可點列進細項；可點欄位標題排序） */
+    /* ---- 子分頁（免下拉）：項目狀態 / 圖表 / 趨勢 / SLA / 紅黑榜 ---- */
+    var F = global.Features;
+    function on(id) { return !F || F.isOn(id); }
+    var subDefs = [
+      { key: 'status', label: '項目狀態', fill: function (p) { buildStatusTable(p, rows, t, onSelect); } },
+      { key: 'chart',  label: '圖表',     fill: function (p) { buildChartPanel(p, rows, onSelect); } },
+    ];
+    if (on('panel-trend') && global.History) subDefs.push({ key: 'trend', label: '趨勢', fill: function (p) { global.History.renderTrend(p, sheets); } });
+    if (on('panel-sla')) subDefs.push({ key: 'sla', label: 'SLA', fill: function (p) { renderSLA(p, sheets, dept); } });
+    if (on('panel-red-list')) subDefs.push({ key: 'rank', label: '紅黑榜', fill: function (p) { renderRankings(p, sheets, dept); } });
+
+    var nav = U.el('div', { class: 'subtabs' });
+    var panelMap = {}, filled = {};
+    subDefs.forEach(function (def) {
+      var btn = U.el('button', { class: 'subtab-btn', text: def.label });
+      var panel = U.el('div', { class: 'subpanel', dataset: { sub: def.key } });
+      panelMap[def.key] = { def: def, btn: btn, panel: panel };
+      btn.addEventListener('click', function () { activateSub(def.key); });
+      nav.appendChild(btn);
+    });
+    box.appendChild(nav);
+    subDefs.forEach(function (def) { box.appendChild(panelMap[def.key].panel); });
+
+    function activateSub(key) {
+      subDefs.forEach(function (def) {
+        var m = panelMap[def.key];
+        m.btn.classList.toggle('active', def.key === key);
+        m.panel.classList.toggle('active', def.key === key);
+      });
+      // 首次顯示才建立內容(圖表在可見狀態下建立，避免 Chart.js 4 在 display:none 下變 0×0)
+      if (!filled[key]) { panelMap[key].def.fill(panelMap[key].panel); filled[key] = true; }
+    }
+    activateSub(subDefs[0].key);
+  }
+
+  /* 各項目未結案堆疊圖 → 填入 container(顯示時才建立) */
+  function buildChartPanel(container, rows, onSelect) {
+    container.appendChild(U.el('div', { class: 'chart-card summary-chart-card' }, [
+      U.el('div', { class: 'chart-wrap' }, [U.el('canvas', { id: 'summary-chart' })]),
+    ]));
+    renderChart(rows, onSelect);
+  }
+
+  /* 各項目狀態表（可點列進細項、數字格下鑽、欄位標題排序）→ 填入 container */
+  function buildStatusTable(container, rows, t, onSelect) {
     rows.forEach(function (r, i) { r._idx = i; });   // 記住原始項目索引(排序後仍能正確進入該項目)
     var statusOf = function (r) {
       return r.overdue > 0 ? { t: '有逾期', c: 'st-red' }
@@ -226,28 +270,7 @@
     ftr.appendChild(U.el('td', { class: 'num-cell', text: t.rate + '%' }));
     ftr.appendChild(U.el('td', {}));
     tfoot.appendChild(ftr); table.appendChild(tfoot);
-    box.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
-
-    /* 圖表：各項目 已逾期 + 其他未結（堆疊） */
-    box.appendChild(U.el('div', { class: 'chart-card summary-chart-card' }, [
-      U.el('div', { class: 'chart-wrap' }, [U.el('canvas', { id: 'summary-chart' })]),
-    ]));
-    renderChart(rows, onSelect);
-
-    /* 趨勢（跟上次比；可於「功能開關」關閉） */
-    if ((!global.Features || global.Features.isOn('panel-trend')) && global.History) {
-      global.History.renderTrend(box, sheets);
-    }
-
-    /* SLA 達成率（跨全部項目；可於「功能開關」關閉） */
-    if (!global.Features || global.Features.isOn('panel-sla')) {
-      renderSLA(box, sheets, dept);
-    }
-
-    /* 部門／負責人紅黑榜（跨全部項目彙整；可於「功能開關」關閉） */
-    if (!global.Features || global.Features.isOn('panel-red-list')) {
-      renderRankings(box, sheets, dept);
-    }
+    container.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
   }
 
   /* 可點的數字格：val>0 → 點開該批實際筆數 */
