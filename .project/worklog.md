@@ -9,6 +9,11 @@
 
 ---
 
+## 2026-07-13 V1.41 agent 可用功能開關關閉 ✅ 完成
+- 使用者：不喜歡 agent 能不能關模組。→ 能。
+- 成果：config/features.js 加 email-agent(group 'Email', default true)；email.js footer 依 Features.isOn('email-agent') 決定——開:寄出/測試小幫手/匯出(備用)；關:只留「匯出寄送檔」(回 send.bat 模式)。要連背景服務也移除則跑 uninstall_agent.bat。
+- 驗(預覽8790)：V1.41；開→footer 有寄出/測試小幫手；關(features{email-agent:false})→只剩匯出寄送檔；功能開關面板已登錄；console 無錯。
+
 ## 2026-07-13 V1.40 全在網頁寄信：本機小幫手(agent) ＋ 網頁「寄出」按鈕 ✅ 完成
 - 使用者：不想點 bat，全部在網頁完成。→ 純網頁不能寄(鐵牆)，唯一解=本機常駐 agent，網頁 fetch localhost 呼叫它查 AD+寄。使用者同意「設定一次、背景常駐」。
 - 成果：

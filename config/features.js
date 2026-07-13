@@ -22,4 +22,6 @@ window.APP_FEATURES = [
   { id: 'panel-today-actions', group: '各項目看板面板', label: '優先處理清單',          default: true },
   { id: 'panel-risk-top',      group: '各項目看板面板', label: '風險排序',              default: true },
   { id: 'panel-charts',        group: '各項目看板面板', label: '圖表（嚴重度／到期分布）', default: true },
+
+  { id: 'email-agent',         group: 'Email',          label: '用本機小幫手直接寄（關閉＝只匯出檔給 send.bat）', default: true },
 ];

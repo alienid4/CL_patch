@@ -312,14 +312,19 @@
         .catch(function () { UI.toast('寄送時連不到小幫手', 'error'); });
     }
 
-    var footer = U.el('div', { class: 'reminder-actions' }, [
+    var useAgent = !global.Features || global.Features.isOn('email-agent');
+    var footBtns = [
       U.el('button', { class: 'btn btn-primary', text: '儲存設定', onclick: doSave }),
       U.el('button', { class: 'btn btn-secondary', text: '列出催辦名單', onclick: doList }),
-      U.el('button', { class: 'btn btn-primary', text: '寄出', onclick: doSend }),
-      U.el('button', { class: 'btn btn-secondary', text: '測試小幫手', onclick: doTestAgent }),
-      U.el('button', { class: 'btn btn-secondary', text: '匯出（備用）', onclick: doExportSelected }),
-    ]);
-    UI.openModal('Email 設定', body, { footer: footer });
+    ];
+    if (useAgent) {
+      footBtns.push(U.el('button', { class: 'btn btn-primary', text: '寄出', onclick: doSend }));
+      footBtns.push(U.el('button', { class: 'btn btn-secondary', text: '測試小幫手', onclick: doTestAgent }));
+      footBtns.push(U.el('button', { class: 'btn btn-secondary', text: '匯出（備用）', onclick: doExportSelected }));
+    } else {
+      footBtns.push(U.el('button', { class: 'btn btn-primary', text: '匯出寄送檔', onclick: doExportSelected }));
+    }
+    UI.openModal('Email 設定', body, { footer: U.el('div', { class: 'reminder-actions' }, footBtns) });
   }
 
   function init() {
