@@ -9,6 +9,15 @@
 
 ---
 
+## 2026-07-13 V1.37 Email 半自動催辦：批次匯出＋本機 AD 寄送腳本 ✅ 完成
+- 決策：①半自動(匯出→雙擊寄)　②B 各負責人各別催辦　③relay 202.154.197.40:25 免認證、寄件人個人設定　④email 由腳本查 AD(ADSI)自動解，離職/查無→override→轉主管。relay IP 只存本機/匯出檔，絕不進 repo。
+- 網頁(email.js)：Email 設定改「每人一封」——移除單一收件人，加「副本(每封都副本)」「查無 email 轉寄(fallbackTo)」；buildBatch 依負責人分組(每人 subject/body)；按鈕改「預覽催辦」「匯出催辦批次」→ mail-batch.json {smtp,from,cc,fallbackTo,subjectPrefix,owners:[{owner,count,subject,body}]}。
+- 本機腳本：send_mail.ps1(讀 mail-batch.json→override 優先→ADSI anr 唯一命中才用→Send-MailMessage 免認證 relay UTF8→查無用 fallbackTo 轉寄並註明離職→印總結 寄出/轉主管/跳過)；send.bat(雙擊 Bypass 跑+pause)；override.json.example 範本。腳本不寫死任何公司資訊(全來自 json/AD)。
+- 安全：.gitignore 加 override.json / mail-batch.json / mail-task.json(含實 email/IP)；.gitattributes 加 *.ps1 eol=crlf。
+- 驗(預覽8790)：V1.37；buildBatch 依負責人分 31 人、每人自己主旨(玄慈2筆…)；表單有 查無email轉寄、無單一收件人；ps1 PSParser 解析 OK；email.js node OK；console 無錯。
+- **未測(需使用者機器)**：ps1 的 AD 查詢與實際 relay 寄送——我無法連公司 AD/relay，請你在公司電腦跑 send.bat 實測、把畫面貼回來，依實況修(鐵律:無測試環境,寫我經驗,你跑會踩雷再迭代)。
+- 註：send_mail.ps1/send.bat 在 repo 根，隨初次資料夾下載取得；update.bat 目前只更新網頁檔(不含根 .bat/.ps1)。
+
 ## 2026-07-13 V1.36 總覽首頁也改子分頁（免下拉）✅ 完成
 - 使用者：總覽下面好幾個功能沒做子tab，再查一次還有沒有這種情形。→ 主管總覽(summary.js)整頁還是往下疊。
 - 成果：summary.js render 重構——逾期橫幅＋KPI 常駐在上，下面分子分頁：項目狀態／圖表／趨勢／SLA／紅黑榜(趨勢/SLA/紅黑榜受功能開關控制，關了就不出該子分頁)。抽出 buildStatusTable/buildChartPanel；renderSLA/renderRankings/History.renderTrend 改填入各子分頁 container。子分頁用「顯示時才建立(fill 一次)」——圖表(堆疊圖/趨勢)在可見狀態下建立，避開 Chart.js4 display:none 0×0 問題。子分頁 click 綁 summary 自己的 activateSub(非 .tab-panel，不用 main.js 泛用機制)。

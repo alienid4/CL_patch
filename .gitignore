@@ -14,3 +14,8 @@ dist/
 
 # NB 端推送工具，不推上 GitHub（公司端只用 update.bat，避免混淆）
 upload.bat
+
+# Email 執行期產物／個人補漏（含實 email/relay IP，絕不上 GitHub）
+override.json
+mail-batch.json
+mail-task.json

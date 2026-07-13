@@ -1,0 +1,5 @@
+{
+  "_說明": "AD 查不到 email 的負責人，在這裡手動補。複製本檔為 override.json（去掉 .example）再填。姓名要跟 Excel 的『負責人』一致。",
+  "喬峰": "qiaofeng@example.com.tw",
+  "段譽": "duanyu@example.com.tw"
+}

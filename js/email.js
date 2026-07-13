@@ -16,8 +16,8 @@
     smtpHost: '',
     smtpPort: 25,
     from: '',
-    to: '',
     cc: '',
+    fallbackTo: '',        // 查無 email/離職者 → 轉寄給（主管/窗口）
     subjectPrefix: '【弱點修補提醒】',
     scopeOverdue: true,
     scopeSoon: false,
@@ -85,6 +85,27 @@
     return { subject: subject, body: lines.join('\n'), count: recs.length };
   }
 
+  /* 依負責人分組，每人一封催辦（B：各負責人各別催辦；email 由腳本查 AD 補） */
+  function buildBatch(cfg) {
+    var recs = scopedRecords(cfg);
+    var byOwner = {};
+    recs.forEach(function (r) { var o = r.owner || '(未指定)'; (byOwner[o] = byOwner[o] || []).push(r); });
+    var today = U.fmtDate(U.today());
+    var owners = Object.keys(byOwner).sort(function (a, b) { return byOwner[b].length - byOwner[a].length; });
+    return owners.map(function (o) {
+      var list = byOwner[o];
+      var subject = (cfg.subjectPrefix || '') + o + ' 弱點待處理 ' + list.length + ' 筆（' + today + '）';
+      var lines = ['以下弱點待您處理（' + today + '）：', ''];
+      list.forEach(function (r) {
+        var od = (r.realDue && r.daysLeft < 0) ? ('逾期 ' + r.overdueDays + ' 天')
+               : (r.realDue ? ('剩 ' + r.daysLeft + ' 天') : '無到期日');
+        lines.push('· [' + r.sheet + '] ' + (r.unit || '(未填)') +
+                   '｜' + r.name + '｜' + r.severity + '｜到期 ' + U.fmtDate(r.realDue) + '（' + od + '）');
+      });
+      return { owner: o, count: list.length, subject: subject, body: lines.join('\n') };
+    });
+  }
+
   /* 下載 JSON 檔 */
   function downloadJSON(obj, fileName) {
     var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8;' });
@@ -103,13 +124,12 @@
   }
 
   function buildForm(cfg) {
-    var iHost = U.el('input', { type: 'text', class: 'email-input', value: cfg.smtpHost, placeholder: '例：mailrelay.company.local' });
+    var iHost = U.el('input', { type: 'text', class: 'email-input', value: cfg.smtpHost, placeholder: '公司 SMTP relay 主機（本機設定，不上傳）' });
     var iPort = U.el('input', { type: 'number', class: 'email-input email-input-sm', value: String(cfg.smtpPort), min: '1' });
     var iFrom = U.el('input', { type: 'text', class: 'email-input', value: cfg.from, placeholder: '你的寄件信箱' });
-    var iTo = U.el('textarea', { class: 'email-input email-area', rows: '3', placeholder: '一行一位，或用逗號分隔' });
-    iTo.value = cfg.to;
-    var iCc = U.el('textarea', { class: 'email-input email-area', rows: '2', placeholder: '選填' });
+    var iCc = U.el('textarea', { class: 'email-input email-area', rows: '2', placeholder: '每封都副本給（選填，如主管）' });
     iCc.value = cfg.cc;
+    var iFallback = U.el('input', { type: 'text', class: 'email-input', value: cfg.fallbackTo || '', placeholder: '查無 email/離職者轉寄給（主管/窗口）' });
     var iSubj = U.el('input', { type: 'text', class: 'email-input', value: cfg.subjectPrefix });
     var cOverdue = U.el('input', { type: 'checkbox' }); cOverdue.checked = !!cfg.scopeOverdue;
     var cSoon = U.el('input', { type: 'checkbox' }); cSoon.checked = !!cfg.scopeSoon;
@@ -118,8 +138,8 @@
       field('SMTP 主機', iHost),
       field('埠', iPort),
       field('寄件人', iFrom),
-      field('收件人', iTo),
       field('副本', iCc),
+      field('查無 email 轉寄', iFallback),
       field('主旨前綴', iSubj),
       U.el('div', { class: 'email-field' }, [
         U.el('span', { class: 'email-field-label', text: '寄送範圍' }),
@@ -135,8 +155,8 @@
         smtpHost: iHost.value.trim(),
         smtpPort: parseInt(iPort.value, 10) || 25,
         from: iFrom.value.trim(),
-        to: iTo.value,
         cc: iCc.value,
+        fallbackTo: iFallback.value,
         subjectPrefix: iSubj.value,
         scopeOverdue: cOverdue.checked,
         scopeSoon: cSoon.checked,
@@ -159,32 +179,42 @@
     }
     function doPreview() {
       var c = f.read();
-      var m = buildContent(c);
-      preview.textContent = '主旨：' + m.subject + '\n\n' + m.body;
+      var batch = buildBatch(c);
+      var txt = '共 ' + batch.length + ' 位負責人：\n' +
+        batch.map(function (b) { return '· ' + b.owner + '（' + b.count + ' 筆）'; }).join('\n');
+      if (batch.length) {
+        txt += '\n\n—— 範例（' + batch[0].owner + '）——\n主旨：' + batch[0].subject + '\n\n' + batch[0].body;
+      } else {
+        txt = '目前無符合條件的負責人。';
+      }
+      preview.textContent = txt;
       preview.classList.remove('hidden');
     }
-    function doExport() {
+    function doExportBatch() {
       var c = f.read();
       saveCfg(c);
-      var to = parseList(c.to), cc = parseList(c.cc);
-      if (!c.smtpHost || !c.from || !to.length) {
-        UI.toast('請先填 SMTP 主機、寄件人、收件人', 'error');
+      if (!c.smtpHost || !c.from) {
+        UI.toast('請先填 SMTP 主機、寄件人', 'error');
         return;
       }
-      var m = buildContent(c);
+      var batch = buildBatch(c);
+      if (!batch.length) { UI.toast('目前無符合條件的負責人', 'error'); return; }
       downloadJSON({
         generatedAt: new Date().toISOString(),
         smtp: { host: c.smtpHost, port: c.smtpPort, auth: false },
-        from: c.from, to: to, cc: cc,
-        subject: m.subject, body: m.body, count: m.count,
-      }, 'mail-task.json');
-      UI.toast('已匯出 mail-task.json', 'success');
+        from: c.from,
+        cc: parseList(c.cc),
+        fallbackTo: parseList(c.fallbackTo),
+        subjectPrefix: c.subjectPrefix,
+        owners: batch,
+      }, 'mail-batch.json');
+      UI.toast('已匯出 mail-batch.json（' + batch.length + ' 位負責人）', 'success');
     }
 
     var footer = U.el('div', { class: 'reminder-actions' }, [
       U.el('button', { class: 'btn btn-primary', text: '儲存設定', onclick: doSave }),
-      U.el('button', { class: 'btn btn-secondary', text: '預覽通知內容', onclick: doPreview }),
-      U.el('button', { class: 'btn btn-secondary', text: '匯出寄送任務', onclick: doExport }),
+      U.el('button', { class: 'btn btn-secondary', text: '預覽催辦', onclick: doPreview }),
+      U.el('button', { class: 'btn btn-secondary', text: '匯出催辦批次', onclick: doExportBatch }),
     ]);
     UI.openModal('Email 設定', body, { footer: footer });
   }
@@ -203,5 +233,5 @@
     document.addEventListener('DOMContentLoaded', init);
   } else { init(); }
 
-  global.EmailCfg = { load: loadCfg, buildContent: buildContent };
+  global.EmailCfg = { load: loadCfg, buildContent: buildContent, buildBatch: buildBatch };
 })(window);
