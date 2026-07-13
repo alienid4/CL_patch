@@ -43,6 +43,12 @@ robocopy "%SRC%\config" "%~dp0config" /MIR /NFL /NDL /NJH /NJS >nul
 robocopy "%SRC%\assets" "%~dp0assets" /MIR /NFL /NDL /NJH /NJS >nul
 copy /Y "%SRC%\index.html" "%~dp0index.html" >nul
 
+echo Updating docs and helper scripts...
+robocopy "%SRC%\docs" "%~dp0docs" /E /NFL /NDL /NJH /NJS >nul
+for %%F in (mail_agent.ps1 install_agent.bat uninstall_agent.bat start_agent.bat send_mail.ps1 send.bat override.json.example) do (
+    if exist "%SRC%\%%F" copy /Y "%SRC%\%%F" "%~dp0%%F" >nul
+)
+
 echo Cleaning up temp files...
 del /q "%TMPZIP%" >nul 2>&1
 rmdir /s /q "%TMPDIR%" >nul 2>&1
