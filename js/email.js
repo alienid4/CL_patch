@@ -45,6 +45,22 @@
     try { localStorage.setItem(SEL_KEY, JSON.stringify(names || [])); } catch (e) {}
   }
 
+  /* 發信紀錄（存本機，最多留 500 筆） */
+  var LOG_KEY = 'vulnDashboard.emailLog';
+  function loadLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch (e) { return []; } }
+  function appendLog(entries) {
+    try {
+      var log = loadLog().concat(entries || []);
+      if (log.length > 500) log = log.slice(log.length - 500);
+      localStorage.setItem(LOG_KEY, JSON.stringify(log));
+    } catch (e) {}
+  }
+  function nowStamp() {
+    var d = new Date(); function p(n) { return String(n).padStart(2, '0'); }
+    return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function statusLabel(mode) { return mode === 'ad' ? '寄出' : mode === 'fallback' ? '轉主管' : mode === 'skip' ? '跳過' : '失敗'; }
+
   /* 收件人字串 → 陣列（換行/逗號/分號分隔、去空白去重） */
   function parseList(s) {
     var seen = {}, out = [];
@@ -267,6 +283,49 @@
         .catch(function () { UI.toast('連不到小幫手，請先執行 install_agent.bat', 'error'); });
     }
 
+    /* 發信紀錄（本機）：逐筆結果，失敗標紅，可匯出 CSV */
+    function doViewLog() {
+      var log = loadLog();
+      var wrap = U.el('div', {});
+      if (!log.length) {
+        wrap.appendChild(U.el('p', { class: 'empty-hint', text: '尚無發信紀錄。' }));
+      } else {
+        var cols = ['時間', '負責人', '收件人', '狀態', '錯誤'];
+        var keys = ['time', 'owner', 'to', 'status', 'error'];
+        var table = U.el('table', { class: 'tracking-table' });
+        var thead = U.el('thead'), htr = U.el('tr');
+        cols.forEach(function (h) { htr.appendChild(U.el('th', { text: h })); });
+        thead.appendChild(htr); table.appendChild(thead);
+        var tbody = U.el('tbody');
+        log.slice().reverse().forEach(function (r) {
+          var tr = U.el('tr', { class: (r.status === '失敗' ? 'row-overdue' : '') });
+          keys.forEach(function (k) { tr.appendChild(U.el('td', { text: r[k] || '' })); });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        wrap.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
+      }
+      var footer = U.el('div', { class: 'reminder-actions' }, [
+        U.el('button', { class: 'btn btn-secondary', text: '匯出 CSV', disabled: log.length ? null : 'disabled', onclick: function () { exportLog(log); } }),
+        U.el('button', { class: 'btn btn-secondary', text: '清空紀錄', disabled: log.length ? null : 'disabled',
+          onclick: function () { try { localStorage.removeItem(LOG_KEY); } catch (e) {} UI.toast('已清空發信紀錄', 'success'); UI.closeModal(); } }),
+      ]);
+      UI.openModal('發信紀錄（' + log.length + ' 筆）', wrap, { footer: footer });
+    }
+    function exportLog(log) {
+      var keys = ['time', 'owner', 'to', 'status', 'error'];
+      var rows = [['時間', '負責人', '收件人', '狀態', '錯誤']].concat(log.map(function (r) { return keys.map(function (k) { return r[k] || ''; }); }));
+      var csv = rows.map(function (arr) {
+        return arr.map(function (v) { var s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',');
+      }).join('\r\n');
+      var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = U.el('a', { href: url, download: '發信紀錄.csv' });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      UI.toast('已匯出 發信紀錄.csv', 'success');
+    }
+
     /* 寄出：先查 AD 出計畫 → 顯示 → 確認才寄 */
     function doSend() {
       var g = getSelected(); if (!g) return;
@@ -310,12 +369,24 @@
         .then(function (r) { return r.json(); })
         .then(function (j) {
           if (!j || !j.ok) { UI.toast((j && j.error) || '寄送失敗', 'error'); return; }
-          listBox.innerHTML = '';
-          listBox.appendChild(U.el('div', { class: 'batch-tools' }, [
+          var stamp = nowStamp();
+          appendLog((j.details || []).map(function (d) {
+            return { time: stamp, owner: d.owner, to: (d.to || ''), status: statusLabel(d.mode), error: (d.error || '') };
+          }));
+          listBox.innerHTML = ''; listBox.classList.remove('hidden');
+          listBox.appendChild(U.el('div', { class: 'batch-tools' + (j.failed > 0 ? ' send-fail' : '') }, [
             U.el('span', { class: 'batch-tools-label',
               text: '完成：寄出 ' + j.sent + '　轉主管 ' + j.fallback + '　跳過 ' + j.skipped + '　失敗 ' + j.failed }),
           ]));
-          UI.toast('寄出 ' + j.sent + ' 封', 'success');
+          (j.details || []).forEach(function (d) {
+            var info = d.error ? ('失敗：' + d.error) : (d.to ? ('→ ' + d.to) : '');
+            listBox.appendChild(U.el('div', { class: 'batch-row plan-' + d.mode }, [
+              U.el('span', { class: 'batch-owner', text: d.owner }),
+              U.el('span', { class: 'batch-count', text: statusLabel(d.mode) + (info ? '　' + info : '') }),
+            ]));
+          });
+          if (j.failed > 0) UI.toast('⚠ 有 ' + j.failed + ' 封寄送失敗！點「發信紀錄」看細節', 'error');
+          else UI.toast('寄出 ' + j.sent + ' 封', 'success');
         })
         .catch(function () { UI.toast('寄送時連不到小幫手', 'error'); });
     }
@@ -324,6 +395,7 @@
     var footBtns = [
       U.el('button', { class: 'btn btn-primary', text: '儲存設定', onclick: doSave }),
       U.el('button', { class: 'btn btn-secondary', text: '列出催辦名單', onclick: doList }),
+      U.el('button', { class: 'btn btn-secondary', text: '發信紀錄', onclick: doViewLog }),
     ];
     if (useAgent) {
       footBtns.push(U.el('button', { class: 'btn btn-primary', text: '寄出', onclick: doSend }));

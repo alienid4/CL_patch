@@ -526,6 +526,12 @@ body.modal-open { overflow: hidden; }
 .batch-row:hover { background: var(--c-primary-soft); }
 .batch-owner { flex: 1; font-size: 14px; }
 .batch-count { font-size: 12.5px; color: var(--c-text-soft); white-space: nowrap; }
+.batch-tools.send-fail { background: #fdecea; border-radius: 6px; padding: 4px 8px; border-bottom: none; }
+.batch-tools.send-fail .batch-tools-label { color: var(--c-overdue); }
+.batch-row.plan-ad .batch-count { color: #2e7d32; }
+.batch-row.plan-fallback .batch-count { color: #b26a00; }
+.batch-row.plan-skip .batch-count { color: var(--c-text-soft); }
+.batch-row.plan-fail .batch-count { color: var(--c-overdue); font-weight: 700; }
 .plan-actions { display: flex; gap: 8px; margin-top: 10px; }
 .batch-row.plan-fallback .batch-count { color: #8a5a00; }
 .batch-row.plan-skip { opacity: .6; }
