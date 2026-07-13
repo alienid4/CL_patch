@@ -17,6 +17,7 @@
     smtpPort: 25,
     from: '',
     cc: '',
+    ccSelf: true,          // 每封都副本給發信人自己
     fallbackTo: '',        // 查無 email/離職者 → 轉寄給（主管/窗口）
     subjectPrefix: '【弱點修補提醒】',
     scopeOverdue: true,
@@ -120,11 +121,13 @@
 
   /* 組成寄送批次 payload（匯出檔 / 送小幫手共用） */
   function buildPayload(c, selected) {
+    var cc = parseList(c.cc);
+    if (c.ccSelf && c.from && cc.indexOf(c.from) < 0) cc.push(c.from);   // 副本給自己（寄件人）
     return {
       generatedAt: new Date().toISOString(),
       smtp: { host: c.smtpHost, port: c.smtpPort, auth: false },
       from: c.from,
-      cc: parseList(c.cc),
+      cc: cc,
       fallbackTo: parseList(c.fallbackTo),
       subjectPrefix: c.subjectPrefix,
       owners: selected,
@@ -158,12 +161,16 @@
     var iSubj = U.el('input', { type: 'text', class: 'email-input', value: cfg.subjectPrefix });
     var cOverdue = U.el('input', { type: 'checkbox' }); cOverdue.checked = !!cfg.scopeOverdue;
     var cSoon = U.el('input', { type: 'checkbox' }); cSoon.checked = !!cfg.scopeSoon;
+    var cSelf = U.el('input', { type: 'checkbox' }); cSelf.checked = !!cfg.ccSelf;
 
     var form = U.el('div', { class: 'email-form' }, [
       field('SMTP 主機', iHost),
       field('埠', iPort),
       field('寄件人', iFrom),
       field('副本', iCc),
+      U.el('div', { class: 'email-field' }, [
+        U.el('label', { class: 'email-check' }, [cSelf, U.el('span', { text: '副本給自己（寄件人）' })]),
+      ]),
       field('查無 email 轉寄', iFallback),
       field('主旨前綴', iSubj),
       U.el('div', { class: 'email-field' }, [
@@ -181,6 +188,7 @@
         smtpPort: parseInt(iPort.value, 10) || 25,
         from: iFrom.value.trim(),
         cc: iCc.value,
+        ccSelf: cSelf.checked,
         fallbackTo: iFallback.value,
         subjectPrefix: iSubj.value,
         scopeOverdue: cOverdue.checked,
