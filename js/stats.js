@@ -107,9 +107,6 @@
     destroyCharts();
     renderStagePie(ss, records);
     renderBandChart(ss, records);
-
-    /* ---- 例外治理雷達 ---- */
-    renderGovernance(result);
   }
 
   /* 例外治理雷達：覆蓋率、例外破口、到期預警、慢性風險 */

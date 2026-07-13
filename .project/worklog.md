@@ -9,6 +9,11 @@
 
 ---
 
+## 2026-07-13 V1.34 移除治理雷達＋upload.bat 不上 GitHub ✅ 完成
+- 使用者：治理雷達沒必要就拿掉(並改手冊)；手冊放其他功能(V1.33已在，確認)；upload.bat 公司端易混淆，別推 GitHub。
+- 成果：①移除例外統計的「治理雷達」子分頁＋#gov-radar DOM；stats.js 移除 renderGovernance 呼叫(函式留著=無害死碼,可日後清)；使用說明.html 第5節去掉「治理雷達」。②upload.bat git rm --cached＋加 .gitignore(NB 本機檔保留,公司端下載的 zip 不含它,只留 update.bat)。
+- 驗(預覽8790)：V1.34；例外統計只剩 階段統計/圖表；gov-radar 不存在；圖表仍正常；console 無錯。upload.bat 已 untrack、本機仍在。
+
 ## 2026-07-13 V1.33 系統內建圖文使用說明 ✅ 完成
 - 使用者要求：系統裡放說明手冊、圖文並茂、OK 直接推 GitHub。
 - 成果：重寫 docs/使用說明.html（國泰綠、對應 V1.32、8章＋7張 inline SVG 圖：解析流程/上傳/左側控制/總覽/子分頁/多選查詢/更新流程；純內嵌 CSS＋SVG，離線可用）。入口：其他功能選單加 #help-btn「使用說明」(main.js window.open docs/使用說明.html)＋上傳頁加 .help-link；css .help-link。
