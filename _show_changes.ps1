@@ -6,7 +6,9 @@
 param([string]$Src, [string]$Dst)
 
 if (-not $Src -or -not $Dst) { exit 0 }
-$Dst = $Dst.TrimEnd([char]92)   # 去尾端反斜線
+# 清掉引號/尾端斜線(避免 -Dst "%~dp0" 尾端反斜線+引號變成非法路徑)
+$Src = $Src.Trim([char]34).TrimEnd([char]92, [char]47)
+$Dst = $Dst.Trim([char]34).TrimEnd([char]92, [char]47)
 
 # 只納入 update.bat 實際會更新的檔(資料夾以 / 結尾)
 $inc = @('index.html', 'css/', 'js/', 'config/', 'assets/', 'docs/', 'mail_agent.ps1', 'install_agent.bat', 'uninstall_agent.bat', 'start_agent.bat', 'send_mail.ps1', 'send.bat', 'override.json.example')
