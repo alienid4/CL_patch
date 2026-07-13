@@ -526,6 +526,9 @@ body.modal-open { overflow: hidden; }
 .batch-row:hover { background: var(--c-primary-soft); }
 .batch-owner { flex: 1; font-size: 14px; }
 .batch-count { font-size: 12.5px; color: var(--c-text-soft); white-space: nowrap; }
+.plan-actions { display: flex; gap: 8px; margin-top: 10px; }
+.batch-row.plan-fallback .batch-count { color: #8a5a00; }
+.batch-row.plan-skip { opacity: .6; }
 .quality-detail { display: flex; flex-direction: column; gap: 10px; }
 .q-issue-head { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f6f8fb; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
 .q-badge { background: var(--c-overdue); color: #fff; min-width: 30px; text-align: center; padding: 2px 8px; border-radius: 20px; font-weight: 700; }

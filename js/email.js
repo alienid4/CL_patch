@@ -115,6 +115,22 @@
     });
   }
 
+  /* 本機小幫手位址（背景常駐、只聽 localhost） */
+  var AGENT = 'http://localhost:8899';
+
+  /* 組成寄送批次 payload（匯出檔 / 送小幫手共用） */
+  function buildPayload(c, selected) {
+    return {
+      generatedAt: new Date().toISOString(),
+      smtp: { host: c.smtpHost, port: c.smtpPort, auth: false },
+      from: c.from,
+      cc: parseList(c.cc),
+      fallbackTo: parseList(c.fallbackTo),
+      subjectPrefix: c.subjectPrefix,
+      owners: selected,
+    };
+  }
+
   /* 下載 JSON 檔 */
   function downloadJSON(obj, fileName) {
     var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8;' });
@@ -218,30 +234,90 @@
       });
     }
 
-    function doExportSelected() {
-      var c = f.read();
-      saveCfg(c);
-      if (!c.smtpHost || !c.from) { UI.toast('請先填 SMTP 主機、寄件人', 'error'); return; }
-      if (!listState.batch.length) { UI.toast('請先按「列出催辦名單」', 'error'); return; }
+    /* 取目前設定＋勾選的人（驗證＋記住選擇）；回 {c, selected} 或 null */
+    function getSelected() {
+      var c = f.read(); saveCfg(c);
+      if (!c.smtpHost || !c.from) { UI.toast('請先填 SMTP 主機、寄件人', 'error'); return null; }
+      if (!listState.batch.length) { UI.toast('請先按「列出催辦名單」', 'error'); return null; }
       var selected = listState.batch.filter(function (b) { var cb = listState.checks[b.owner]; return cb && cb.checked; });
-      if (!selected.length) { UI.toast('請至少勾選一位', 'error'); return; }
-      saveSel(selected.map(function (b) { return b.owner; }));   // 記住這次選擇，下次自動帶入
-      downloadJSON({
-        generatedAt: new Date().toISOString(),
-        smtp: { host: c.smtpHost, port: c.smtpPort, auth: false },
-        from: c.from,
-        cc: parseList(c.cc),
-        fallbackTo: parseList(c.fallbackTo),
-        subjectPrefix: c.subjectPrefix,
-        owners: selected,
-      }, 'mail-batch.json');
-      UI.toast('已匯出 mail-batch.json（勾選 ' + selected.length + ' 位）', 'success');
+      if (!selected.length) { UI.toast('請至少勾選一位', 'error'); return null; }
+      saveSel(selected.map(function (b) { return b.owner; }));   // 記住這次選擇
+      return { c: c, selected: selected };
+    }
+
+    /* 備用：匯出批次檔（給 send.bat 用；不透過小幫手） */
+    function doExportSelected() {
+      var g = getSelected(); if (!g) return;
+      downloadJSON(buildPayload(g.c, g.selected), 'mail-batch.json');
+      UI.toast('已匯出 mail-batch.json（勾選 ' + g.selected.length + ' 位）', 'success');
+    }
+
+    /* 測試本機小幫手是否在跑 */
+    function doTestAgent() {
+      fetch(AGENT + '/health').then(function (r) { return r.json(); })
+        .then(function (j) { UI.toast((j && j.ok) ? '本機小幫手已連線 ✓' : '小幫手回應異常', (j && j.ok) ? 'success' : 'error'); })
+        .catch(function () { UI.toast('連不到小幫手，請先執行 install_agent.bat', 'error'); });
+    }
+
+    /* 寄出：先查 AD 出計畫 → 顯示 → 確認才寄 */
+    function doSend() {
+      var g = getSelected(); if (!g) return;
+      var payload = buildPayload(g.c, g.selected);
+      UI.toast('查 AD 解析中…', 'info');
+      fetch(AGENT + '/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { UI.toast((j && j.error) || '小幫手錯誤', 'error'); return; }
+          renderPlan(payload, j.owners || []);
+        })
+        .catch(function () { UI.toast('連不到小幫手，請先啟動（install_agent.bat）', 'error'); });
+    }
+
+    function renderPlan(payload, plan) {
+      listBox.innerHTML = ''; listBox.classList.remove('hidden');
+      var willSend = plan.filter(function (p) { return p.mode !== 'skip'; }).length;
+      listBox.appendChild(U.el('div', { class: 'batch-tools' }, [
+        U.el('span', { class: 'batch-tools-label', text: '寄送計畫（將寄出 ' + willSend + ' 封）' }),
+      ]));
+      plan.forEach(function (p) {
+        var label = p.mode === 'ad' ? ('→ ' + p.to)
+                  : p.mode === 'fallback' ? ('→ 轉主管 ' + p.to)
+                  : '查無 email，跳過';
+        listBox.appendChild(U.el('div', { class: 'batch-row plan-' + p.mode }, [
+          U.el('span', { class: 'batch-owner', text: p.owner }),
+          U.el('span', { class: 'batch-count', text: label }),
+        ]));
+      });
+      listBox.appendChild(U.el('div', { class: 'plan-actions' }, [
+        U.el('button', { class: 'btn btn-primary btn-sm', text: '確認寄出（' + willSend + '）',
+          onclick: function () { doConfirmSend(payload); } }),
+        U.el('button', { class: 'btn btn-secondary btn-sm', text: '取消',
+          onclick: function () { listBox.classList.add('hidden'); } }),
+      ]));
+    }
+
+    function doConfirmSend(payload) {
+      UI.toast('寄送中…', 'info');
+      fetch(AGENT + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { UI.toast((j && j.error) || '寄送失敗', 'error'); return; }
+          listBox.innerHTML = '';
+          listBox.appendChild(U.el('div', { class: 'batch-tools' }, [
+            U.el('span', { class: 'batch-tools-label',
+              text: '完成：寄出 ' + j.sent + '　轉主管 ' + j.fallback + '　跳過 ' + j.skipped + '　失敗 ' + j.failed }),
+          ]));
+          UI.toast('寄出 ' + j.sent + ' 封', 'success');
+        })
+        .catch(function () { UI.toast('寄送時連不到小幫手', 'error'); });
     }
 
     var footer = U.el('div', { class: 'reminder-actions' }, [
       U.el('button', { class: 'btn btn-primary', text: '儲存設定', onclick: doSave }),
       U.el('button', { class: 'btn btn-secondary', text: '列出催辦名單', onclick: doList }),
-      U.el('button', { class: 'btn btn-secondary', text: '匯出勾選的人', onclick: doExportSelected }),
+      U.el('button', { class: 'btn btn-primary', text: '寄出', onclick: doSend }),
+      U.el('button', { class: 'btn btn-secondary', text: '測試小幫手', onclick: doTestAgent }),
+      U.el('button', { class: 'btn btn-secondary', text: '匯出（備用）', onclick: doExportSelected }),
     ]);
     UI.openModal('Email 設定', body, { footer: footer });
   }

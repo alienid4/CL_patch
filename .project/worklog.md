@@ -9,6 +9,16 @@
 
 ---
 
+## 2026-07-13 V1.40 全在網頁寄信：本機小幫手(agent) ＋ 網頁「寄出」按鈕 ✅ 完成
+- 使用者：不想點 bat，全部在網頁完成。→ 純網頁不能寄(鐵牆)，唯一解=本機常駐 agent，網頁 fetch localhost 呼叫它查 AD+寄。使用者同意「設定一次、背景常駐」。
+- 成果：
+  · mail_agent.ps1：.NET HttpListener 只聽 http://localhost:8899；GET /health、POST /plan(查AD不寄回計畫)、POST /send(實寄)；ADSI 查 email(override 優先，唯一命中才用)；Send-MailMessage 免認證 relay；CORS *＋Access-Control-Allow-Private-Network:true(供 file:// / 跨埠 fetch)。不寫死公司資訊(全來自 web 送來的批次/AD)。
+  · install_agent.bat(schtasks ONLOGON 背景隱藏、設定一次開機自動)、start_agent.bat(測試可見)、uninstall_agent.bat。
+  · email.js：Email 設定加「寄出」(→/plan 顯示計畫→確認寄出→/send)、「測試小幫手」(/health)；buildPayload 共用；「匯出（備用）」保留給 send.bat。css .plan-actions/.plan-*。
+- 驗(在本機實起 agent 測 web↔agent)：/health ok；/plan 200 回計畫(本機查不到天龍八部名→正確 fallback 轉主管)；UI：列出→勾記憶(玄慈/阿朱)→寄出→計畫顯示「→轉主管」＋「確認寄出(2)」；console 無錯；V1.40。未按確認(避免真寄)。
+- 未測(需公司機器)：真 AD 解析＋真 relay 寄。流程本身已驗通。
+- 用法：跑一次 install_agent.bat(開機自動背景)→之後網頁「Email 設定→列出→勾選→寄出→確認」全在網頁完成。
+
 ## 2026-07-13 V1.39 催辦人選記憶（選一次下次自動帶入）✅ 完成
 - 使用者：第一次做選擇後就當預設帶入，以後不用再選。
 - 成果：email.js 加 SEL_KEY(vulnDashboard.emailSel)；doExportSelected 匯出時 saveSel(勾選的負責人名)；doList 用 loadSel 套用——有記憶就只勾記住的、沒記憶(從未選過)預設全勾。全選/全不選仍可臨時調整。
