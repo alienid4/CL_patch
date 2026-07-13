@@ -36,6 +36,12 @@ if not exist "%SRC%\index.html" (
     exit /b 1
 )
 
+REM 讀版號：舊(本機現有) 與 新(剛下載的)，讓使用者確認抓到最新
+set "OLDVER=(none)"
+if exist "%~dp0config\version.js" for /f "tokens=2 delims='" %%v in ('findstr /c:"APP_VERSION =" "%~dp0config\version.js"') do set "OLDVER=%%v"
+set "NEWVER=?"
+for /f "tokens=2 delims='" %%v in ('findstr /c:"APP_VERSION =" "%SRC%\config\version.js"') do set "NEWVER=%%v"
+
 echo Updating page files ^(index.html, css, js, config, assets^)...
 robocopy "%SRC%\css"    "%~dp0css"    /MIR /NFL /NDL /NJH /NJS >nul
 robocopy "%SRC%\js"     "%~dp0js"     /MIR /NFL /NDL /NJH /NJS >nul
@@ -66,7 +72,8 @@ start "" /min "%SWAP%"
 
 echo.
 echo ============================================
-echo   Update complete! Opening index.html...
+echo   Update complete!   version: %NEWVER%   (was %OLDVER%)
+echo   ^(open page, top-right shows %NEWVER%; press Ctrl+F5 if not^)
 echo ============================================
 start "" "%~dp0index.html"
 pause
