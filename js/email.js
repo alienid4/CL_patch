@@ -35,6 +35,15 @@
     catch (e) { return false; }
   }
 
+  /* 記住上次勾選的催辦人選（跨檔沿用）；null = 從未選過 → 預設全勾 */
+  var SEL_KEY = 'vulnDashboard.emailSel';
+  function loadSel() {
+    try { var raw = localStorage.getItem(SEL_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+  }
+  function saveSel(names) {
+    try { localStorage.setItem(SEL_KEY, JSON.stringify(names || [])); } catch (e) {}
+  }
+
   /* 收件人字串 → 陣列（換行/逗號/分號分隔、去空白去重） */
   function parseList(s) {
     var seen = {}, out = [];
@@ -196,8 +205,10 @@
         U.el('button', { class: 'btn btn-secondary btn-sm', text: '全選', onclick: function () { setAll(true); } }),
         U.el('button', { class: 'btn btn-secondary btn-sm', text: '全不選', onclick: function () { setAll(false); } }),
       ]));
+      var savedSel = loadSel();   // 有記憶就套用上次選擇；沒有則預設全勾
       listState.batch.forEach(function (b) {
-        var cb = U.el('input', { type: 'checkbox' }); cb.checked = true;
+        var cb = U.el('input', { type: 'checkbox' });
+        cb.checked = savedSel ? (savedSel.indexOf(b.owner) >= 0) : true;
         listState.checks[b.owner] = cb;
         listBox.appendChild(U.el('label', { class: 'batch-row' }, [
           cb,
@@ -214,6 +225,7 @@
       if (!listState.batch.length) { UI.toast('請先按「列出催辦名單」', 'error'); return; }
       var selected = listState.batch.filter(function (b) { var cb = listState.checks[b.owner]; return cb && cb.checked; });
       if (!selected.length) { UI.toast('請至少勾選一位', 'error'); return; }
+      saveSel(selected.map(function (b) { return b.owner; }));   // 記住這次選擇，下次自動帶入
       downloadJSON({
         generatedAt: new Date().toISOString(),
         smtp: { host: c.smtpHost, port: c.smtpPort, auth: false },
