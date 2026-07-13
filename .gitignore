@@ -19,3 +19,6 @@ upload.bat
 override.json
 mail-batch.json
 mail-task.json
+
+# update.bat 自我更新的暫存
+update.bat.new

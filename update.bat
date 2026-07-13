@@ -49,9 +49,20 @@ for %%F in (mail_agent.ps1 install_agent.bat uninstall_agent.bat start_agent.bat
     if exist "%SRC%\%%F" copy /Y "%SRC%\%%F" "%~dp0%%F" >nul
 )
 
+REM 自我更新：先把新版 update.bat 放成 .new（本程式結束後由背景小幫手換上，下次執行起即最新）
+if exist "%SRC%\update.bat" copy /Y "%SRC%\update.bat" "%~dp0update.bat.new" >nul
+
 echo Cleaning up temp files...
 del /q "%TMPZIP%" >nul 2>&1
 rmdir /s /q "%TMPDIR%" >nul 2>&1
+
+REM 產生背景小幫手：等本程式結束後，把 update.bat 換成新版，再自刪
+set "SWAP=%TEMP%\cl_patch_upd_swap.bat"
+> "%SWAP%" echo @echo off
+>> "%SWAP%" echo timeout /t 2 /nobreak ^>nul 2^>^&1
+>> "%SWAP%" echo if exist "%~dp0update.bat.new" move /y "%~dp0update.bat.new" "%~dp0update.bat" ^>nul 2^>^&1
+>> "%SWAP%" echo del "%%~f0" ^>nul 2^>^&1
+start "" /min "%SWAP%"
 
 echo.
 echo ============================================
