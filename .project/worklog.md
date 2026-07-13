@@ -9,6 +9,15 @@
 
 ---
 
+## 2026-07-13 V1.35 下鑽補完：所有數字框框/合計列皆可下鑽 ✅ 完成
+- 使用者：總覽下面好幾個功能沒做下鑽(點了只退回)；再查一次「有數字的框框」都要能下鑽；做好自測再推。
+- 稽核後補的缺口：
+  · summary.js：agg 帶出實際紀錄(openRecs/overdueRecs/soonRecs/highRecs/closedRecs)；各項目狀態表數字格(未結/逾期/近期/高風險/已結)＋合計列改 numDrillTd(e.stopPropagation 避免同時觸發整列進項目)；整體結案率 KPI 點開「整體已結案」。
+  · tracking.js：人員合計列、六個月矩陣(列合計/月合計/總計)皆可下鑽(drillTd)。
+  · matrix.js：交叉表 列/欄/總合計格可下鑽(totalTd + rowTotRecs/colTotRecs/grandRecs)。
+  · dashboard.js：風險排序加「查看全部」下鑽(openDetail)。
+- 自測(預覽8790)：狀態格→「1-系統…未結案(7)」且不進項目；合計→「全部項目 未結案(55)」；結案率→「整體已結案(11)」；人員合計→「全部負責人 未結案(7)」；矩陣月合計→「7月到期(1)」；交叉分析→「Critical 合計(4)」；風險排序查看全部→「風險排序(7)」；console 無錯；V1.35。
+
 ## 2026-07-13 V1.34 移除治理雷達＋upload.bat 不上 GitHub ✅ 完成
 - 使用者：治理雷達沒必要就拿掉(並改手冊)；手冊放其他功能(V1.33已在，確認)；upload.bat 公司端易混淆，別推 GitHub。
 - 成果：①移除例外統計的「治理雷達」子分頁＋#gov-radar DOM；stats.js 移除 renderGovernance 呼叫(函式留著=無害死碼,可日後清)；使用說明.html 第5節去掉「治理雷達」。②upload.bat git rm --cached＋加 .gitignore(NB 本機檔保留,公司端下載的 zip 不含它,只留 update.bat)。

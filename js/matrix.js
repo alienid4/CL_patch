@@ -126,6 +126,20 @@
     function colTot(bk) { var t = 0; visSevs.forEach(function (s) { t += g[s][bk]; }); return t; }
     var grand = 0; visSevs.forEach(function (s) { grand += rowTot(s); });
 
+    // 合計格下鑽
+    var visBandKeys = visBands.map(function (b) { return b.key; });
+    var visSevSet = {}; visSevs.forEach(function (s) { visSevSet[s] = 1; });
+    function totalTd(val, recs2, ttl) {
+      if (val > 0 && recs2.length) {
+        return U.el('td', { class: 'total-cell clickable', text: U.num(val),
+          onclick: function () { UI.openDetail(ttl + '（' + recs2.length + ' 筆）', recs2); } });
+      }
+      return U.el('td', { class: 'total-cell', text: U.num(val) });
+    }
+    function rowTotRecs(s) { return recs.filter(function (r) { return DIMS.sev(r) === s && visBandKeys.indexOf(DIMS.band(r)) >= 0; }); }
+    function colTotRecs(bk) { return recs.filter(function (r) { return DIMS.band(r) === bk && visSevSet[DIMS.sev(r)]; }); }
+    function grandRecs() { return recs.filter(function (r) { return visSevSet[DIMS.sev(r)] && visBandKeys.indexOf(DIMS.band(r)) >= 0; }); }
+
     var table = U.el('table', { class: 'matrix-table xf-matrix' });
 
     var thead = U.el('thead'), htr = U.el('tr');
@@ -160,7 +174,7 @@
         }
         tr.appendChild(td);
       });
-      if (showRowTotal) tr.appendChild(U.el('td', { class: 'total-cell', text: U.num(rowTot(s)) }));
+      if (showRowTotal) tr.appendChild(totalTd(rowTot(s), rowTotRecs(s), s + ' 合計'));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
@@ -168,8 +182,8 @@
     if (showColTotal) {
       var tfoot = U.el('tfoot'), ftr = U.el('tr', { class: 'total-row' });
       ftr.appendChild(U.el('th', { class: 'xf-row-head', text: '合計' }));
-      visBands.forEach(function (b) { ftr.appendChild(U.el('td', { class: 'total-cell', text: U.num(colTot(b.key)) })); });
-      if (showRowTotal) ftr.appendChild(U.el('td', { class: 'total-cell', text: U.num(grand) }));
+      visBands.forEach(function (b) { ftr.appendChild(totalTd(colTot(b.key), colTotRecs(b.key), b.label + ' 合計')); });
+      if (showRowTotal) ftr.appendChild(totalTd(grand, grandRecs(), '合計'));
       tfoot.appendChild(ftr); table.appendChild(tfoot);
     }
 

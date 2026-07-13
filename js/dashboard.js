@@ -305,6 +305,10 @@
     });
     table.appendChild(tbody);
     box.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
+    box.appendChild(U.el('div', { class: 'panel-actions' }, [
+      U.el('button', { class: 'btn btn-secondary btn-sm', text: '查看全部（' + list.length + ' 筆）',
+        onclick: function () { UI.openDetail('風險排序（' + list.length + ' 筆）', list); } }),
+    ]));
   }
 
   function renderSeverityChart(s, records) {

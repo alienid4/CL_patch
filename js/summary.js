@@ -25,6 +25,7 @@
       name: sheet.name, total: recs.length, open: open.length, closed: closed.length,
       overdue: overdue.length, soon: soonN.length, high: high.length,
       rate: recs.length ? closed.length / recs.length : 0,
+      openRecs: open, closedRecs: closed, overdueRecs: overdue, soonRecs: soonN, highRecs: high,
     };
   }
 
@@ -105,19 +106,28 @@
       });
       return out;
     }
+    function collectClosed() {
+      var out = [];
+      (sheets || []).forEach(function (s) {
+        (s.records || []).forEach(function (r) {
+          if (r.closeBucket === 'closed' && inDept(r, dept)) out.push(r);
+        });
+      });
+      return out;
+    }
     var kpis = [
       { label: '未結案', value: t.open, cls: 'm-total', recs: function () { return collect(null); } },
       { label: '已逾期', value: t.overdue, cls: 'm-overdue', recs: function () { return collect(function (r) { return r.overdue; }); } },
       { label: '近期到期', value: t.soon, cls: 'm-warn', recs: function () { return collect(function (r) { return r.realDue && r.daysLeft >= 0 && r.daysLeft <= soon; }); } },
       { label: '高風險未結', value: t.high, cls: 'm-critical', recs: function () { return collect(function (r) { return r.severity === 'Critical' || r.severity === 'High'; }); } },
-      { label: '整體結案率', value: t.rate + '%', cls: 'm-info' },
+      { label: '整體結案率', value: t.rate + '%', cls: 'm-info', title: '整體已結案', recs: function () { return collectClosed(); } },
     ];
     var kgrid = U.el('div', { class: 'summary-kpis' });
     kpis.forEach(function (k) {
       var attrs = { class: 'metric-card ' + k.cls + (k.recs ? ' clickable' : '') };
       if (k.recs) attrs.onclick = function () {
         var list = k.recs();
-        if (list.length) global.UI.openDetail(k.label + '（' + list.length + ' 筆）', list);
+        if (list.length) global.UI.openDetail((k.title || k.label) + '（' + list.length + ' 筆）', list);
       };
       kgrid.appendChild(U.el('div', attrs, [
         U.el('div', { class: 'metric-value', text: (typeof k.value === 'number' ? U.num(k.value) : k.value) }),
@@ -137,15 +147,15 @@
       { h: '項目', sortVal: function (r) { var m = String(r.name).match(/^\d+/); return m ? parseInt(m[0], 10) : String(r.name).toLowerCase(); },
         cell: function (r) { return U.el('td', { class: 'owner-cell', text: r.name }); } },
       { h: '未結案', num: true, sortVal: function (r) { return r.open; },
-        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.open) }); } },
+        cell: function (r) { return numDrillTd(r.open, r.name + '　未結案', r.openRecs); } },
       { h: '已逾期', num: true, sortVal: function (r) { return r.overdue; },
-        cell: function (r) { return U.el('td', { class: 'num-cell' + (r.overdue > 0 ? ' has-overdue' : ''), text: U.num(r.overdue) }); } },
+        cell: function (r) { return numDrillTd(r.overdue, r.name + '　已逾期', r.overdueRecs, r.overdue > 0 ? 'has-overdue' : ''); } },
       { h: '近期到期', num: true, sortVal: function (r) { return r.soon; },
-        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.soon) }); } },
+        cell: function (r) { return numDrillTd(r.soon, r.name + '　近期到期', r.soonRecs); } },
       { h: '高風險未結', num: true, sortVal: function (r) { return r.high; },
-        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.high) }); } },
+        cell: function (r) { return numDrillTd(r.high, r.name + '　高風險未結', r.highRecs); } },
       { h: '已結案', num: true, sortVal: function (r) { return r.closed; },
-        cell: function (r) { return U.el('td', { class: 'num-cell', text: U.num(r.closed) }); } },
+        cell: function (r) { return numDrillTd(r.closed, r.name + '　已結案', r.closedRecs); } },
       { h: '結案率', num: true, sortVal: function (r) { return r.rate; },
         cell: function (r) { return U.el('td', { class: 'num-cell', text: (Math.round(r.rate * 1000) / 10) + '%' }); } },
       { h: '狀態', sortVal: function (r) { return r.overdue > 0 ? 2 : (r.open > 0 ? 1 : 0); },
@@ -200,11 +210,19 @@
     });
     renderBody();
 
+    var allR = { open: [], overdue: [], soon: [], high: [], closed: [] };
+    rows.forEach(function (r) {
+      allR.open = allR.open.concat(r.openRecs); allR.overdue = allR.overdue.concat(r.overdueRecs);
+      allR.soon = allR.soon.concat(r.soonRecs); allR.high = allR.high.concat(r.highRecs);
+      allR.closed = allR.closed.concat(r.closedRecs);
+    });
     var tfoot = U.el('tfoot'); var ftr = U.el('tr', { class: 'total-row' });
     ftr.appendChild(U.el('td', { class: 'owner-cell', text: '合計' }));
-    [t.open, t.overdue, t.soon, t.high, t.closed].forEach(function (v, idx) {
-      ftr.appendChild(U.el('td', { class: 'num-cell' + (idx === 1 && v > 0 ? ' has-overdue' : ''), text: U.num(v) }));
-    });
+    ftr.appendChild(numDrillTd(t.open, '全部項目　未結案', allR.open));
+    ftr.appendChild(numDrillTd(t.overdue, '全部項目　已逾期', allR.overdue, t.overdue > 0 ? 'has-overdue' : ''));
+    ftr.appendChild(numDrillTd(t.soon, '全部項目　近期到期', allR.soon));
+    ftr.appendChild(numDrillTd(t.high, '全部項目　高風險未結', allR.high));
+    ftr.appendChild(numDrillTd(t.closed, '全部項目　已結案', allR.closed));
     ftr.appendChild(U.el('td', { class: 'num-cell', text: t.rate + '%' }));
     ftr.appendChild(U.el('td', {}));
     tfoot.appendChild(ftr); table.appendChild(tfoot);
@@ -238,6 +256,16 @@
     if (val > 0) {
       return U.el('td', { class: cls + ' clickable', text: U.num(val),
         onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+    }
+    return U.el('td', { class: cls, text: U.num(val) });
+  }
+
+  /* 同 drillTd，但阻止冒泡(用於「整列可點」的表格內，避免同時觸發整列動作) */
+  function numDrillTd(val, title, recs, extraCls) {
+    var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
+    if (val > 0 && recs && recs.length) {
+      return U.el('td', { class: cls + ' clickable', text: U.num(val),
+        onclick: function (e) { e.stopPropagation(); global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
     }
     return U.el('td', { class: cls, text: U.num(val) });
   }

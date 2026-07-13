@@ -9,6 +9,16 @@
   var U = global.Utils;
   var UI = global.UI;
 
+  /* 可下鑽的數字格：val>0 → 點開該批實際筆數 */
+  function drillTd(val, title, recs, extraCls) {
+    var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
+    if (val > 0 && recs && recs.length) {
+      return U.el('td', { class: cls + ' clickable', text: U.num(val),
+        onclick: function () { UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+    }
+    return U.el('td', { class: cls, text: U.num(val) });
+  }
+
   function render(result) {
     var owners = result.owners;
     var container = document.getElementById('tracking-body');
@@ -34,13 +44,17 @@
     container.appendChild(toolbar);
 
     var BANDS = global.Analysis.BANDS;
+    var bandOf = global.Analysis.bandOf;
 
-    // 合計列資料：未結案 + 各互斥時間帶
+    // 合計列資料：未結案 + 各互斥時間帶（含實際紀錄供下鑽）
     var totals = { open: 0, bands: {} };
-    BANDS.forEach(function (b) { totals.bands[b.key] = 0; });
+    var totalRecs = { open: [], bands: {} };
+    BANDS.forEach(function (b) { totals.bands[b.key] = 0; totalRecs.bands[b.key] = []; });
     owners.forEach(function (o) {
       totals.open += o.open;
+      totalRecs.open = totalRecs.open.concat(o.records);
       BANDS.forEach(function (b) { totals.bands[b.key] += o.bands[b.key]; });
+      o.records.forEach(function (r) { var bk = bandOf(r); if (totalRecs.bands[bk]) totalRecs.bands[bk].push(r); });
     });
 
     var table = U.el('table', { class: 'tracking-table sortable' });
@@ -100,9 +114,9 @@
     var tfoot = U.el('tfoot');
     var ftr = U.el('tr', { class: 'total-row' });
     ftr.appendChild(U.el('td', { class: 'owner-cell', text: '合計（' + owners.length + ' 人）' }));
-    ftr.appendChild(U.el('td', { class: 'num-cell', text: U.num(totals.open) }));
+    ftr.appendChild(drillTd(totals.open, '全部負責人　未結案', totalRecs.open));
     BANDS.forEach(function (b) {
-      ftr.appendChild(U.el('td', { class: 'num-cell' + (b.key === 'overdue' && totals.bands[b.key] > 0 ? ' has-overdue' : ''), text: U.num(totals.bands[b.key]) }));
+      ftr.appendChild(drillTd(totals.bands[b.key], '全部負責人　' + b.label, totalRecs.bands[b.key], (b.key === 'overdue' && totals.bands[b.key] > 0) ? 'has-overdue' : ''));
     });
     ftr.appendChild(U.el('td', {}));
     tfoot.appendChild(ftr);
@@ -155,16 +169,24 @@
         }
         tr.appendChild(td);
       });
-      tr.appendChild(U.el('td', { class: 'num-cell total-cell', text: U.num(row.total) }));
+      var rowRecs = [];
+      dm.months.forEach(function (mm) { if (row.recs[mm.key]) rowRecs = rowRecs.concat(row.recs[mm.key]); });
+      tr.appendChild(drillTd(row.total, row.owner + '　未來六個月到期', rowRecs, 'total-cell'));
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
 
-    // 合計列
+    // 合計列（可下鑽）
+    var colRecs = {}; var allRecs = [];
+    dm.months.forEach(function (mm) { colRecs[mm.key] = []; });
+    dm.rows.forEach(function (row) {
+      dm.months.forEach(function (mm) { if (row.recs[mm.key]) colRecs[mm.key] = colRecs[mm.key].concat(row.recs[mm.key]); });
+    });
+    dm.months.forEach(function (mm) { allRecs = allRecs.concat(colRecs[mm.key]); });
     var tfoot = U.el('tfoot'); var ftr = U.el('tr', { class: 'total-row' });
     ftr.appendChild(U.el('td', { class: 'owner-cell', text: '合計（' + dm.rows.length + ' 人）' }));
-    dm.months.forEach(function (mm) { ftr.appendChild(U.el('td', { class: 'num-cell', text: U.num(dm.totals[mm.key]) })); });
-    ftr.appendChild(U.el('td', { class: 'num-cell total-cell', text: U.num(dm.totals.total) }));
+    dm.months.forEach(function (mm) { ftr.appendChild(drillTd(dm.totals[mm.key], mm.label + ' 到期', colRecs[mm.key])); });
+    ftr.appendChild(drillTd(dm.totals.total, '未來六個月到期', allRecs, 'total-cell'));
     tfoot.appendChild(ftr); table.appendChild(tfoot);
 
     container.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
