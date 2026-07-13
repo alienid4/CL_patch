@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `76d0153`
+- 目前 HEAD: `8104c7e`
 
 ## 強制層檢查即時結果
 
@@ -63,46 +63,46 @@
 
 ```
 
-## 2026-07-10 V1.26 紅黑榜排行預設只顯示前 5 名＋展開全部 ✅ 完成
-- 需求(使用者)：紅黑榜負責人排行在「全部部門」時很長(範例50人)，預設只顯示前5名(逾期最多)＋「展開全部」按鈕。並確認「模組化=功能開關」已於 V1.22 做好(此為紅黑榜模組內部顯示行為，不另開開關)。
-- 補充：驗證負責人/部門排行本就跟著左側「部門」選擇器縮(偽造第二部門測試：全部部門50人→選資訊架構部45人、被移走的玄慈/喬峰從榜上消失)，非 bug；使用者原以為列全部人是因無部門，實為範例66筆全在單一部門。
-- 成果：summary.js makeSortableTable 加 limit 參數：capped=list>limit 時，預設 slice(0,limit) 只顯示前 N(依目前排序)，附「展開全部（N）／收合」按鈕，回傳 wrapper(含 table-scroll+按鈕)；rankBlock 傳 limit=5。展開/排序連動:排序改變後前5名跟著換。css .rank-expand。
-- 驗(預覽範例)：部門排行1列無按鈕；負責人排行顯示前5(玄慈2逾期首)+「展開全部（50）」；點展開→50列/「收合」、再點→回5；點高風險未結欄首→前5隨新排序換;console 無錯;V1.26;?v全1.26。
+## 2026-07-13 V1.31 查詢快速篩選改「可複選」（多條件疊加）✅ 完成
+- 使用者要求：查詢分頁的快速篩選 chips 原本單選(選一個列全部)，要能多選疊加，例：今日待追蹤＋High、今日待追蹤＋High＋例外管理中，一直收窄。
+- 設計：分面篩選——「同類 OR、跨類 AND」。同類(互斥/同維度)：到期狀態(已逾期/近期/今日待追蹤/六個月)、嚴重度(Critical/High/Medium)、處置階段(例外管理中/首次展延中)各為一類，類內多選＝OR(聯集，避免 High+Medium 變空集)；其餘(例外核准未到期/反覆展延例外)各自獨立，跨類一律 AND。避免了純 AND 下同嚴重度互斥→空集的困擾。
+- 成果：search.js 由 state.activeKey(單) 改 state.sel{}(集合)；chip 點擊 toggle，「全部」清空；buildPredicate() 依 OR_GROUP 分組(due/sev/stage)算「跨類 every、類內 some」；標題列出已選(A ＋ B ＋ C)；syncChips 反映多選、無選時「全部」亮。CSS 不動(.search-chip.active 支援多顆亮)。
+- 驗(預覽 8790 起 py 伺服器；DataTransfer 灌 docs/測試假資料_天龍八部.xlsx；某表7筆)：同類 OR High(0)＋Medium(3)=3；跨類 AND 今日待追蹤(4)＋Medium(3)=2、已逾期(4)＋例外管理中=1(破口)；多 chip 同時 active；全部清空回7；console 無錯；V1.31；?v 全 1.31。
+- 注意：預覽 launch.json 的 python 伺服器指到錯目錄(全 404)——用 py -m http.server 8790 --directory 正確路徑另起才可測。
 
-## 2026-07-10 V1.25 趨勢「跟上次比」＋歷史快照（第三個新模組，三個新功能收官）✅ 完成
-- 需求(使用者)：每次匯入=一份快照，比對本次vs上次。確認採 A(自動記+去重)。
-- 架構：js/history.js 新模組。record(sheets,fileName,dateStr) 存輕量快照(不存整份Excel，只存 open/overdue/closed/high/total/rate + 未結弱點指紋 openKeys=host||pluginId)；去重=同檔名同日覆蓋；localStorage『vulnDashboard.history』留最近 12 期。只在 handleFile(真實匯入)記；tryRestore(自動還原)/loadSample(範例)不記，免污染。main.js 加 todayKey(YYYY-MM-DD)、handleFile 成功後 record、selectSheet/resetToUpload 加 History.destroyChart。
-- 趨勢畫面(總覽首頁最上，可開關 panel-trend)：本次vs上次三張卡「新增未結(紅,可點看實際筆數)／結案消失(綠,可點看指紋清單)／未結淨變化」＋對照期別；≥2期畫未結/逾期趨勢線(Chart.js line)。新增用目前檔案 open 且 key 在新增集→openDetail；消失只有指紋→openModal 列 host/pluginId。註冊 config/features.js panel-trend(群組總覽首頁,置頂)。css .trend-*。
-- 驗(預覽,直接呼叫 History.record 模擬兩次匯入)：首份 open55/overdue16/46指紋；同檔同日再記→仍1期(去重OK)；塞前後兩期(前期多2假key少3key)→新增3(紅可點=3筆實際)、消失2(綠可點=指紋清單FAKEHOST 2列)、淨變化+10、對照『本期2026-06-15 vs 上期2026-06-01』、趨勢線 Chart 實例存在；關趨勢開關→趨勢消失且SLA仍在；console 無錯；V1.25;?v全1.25。
-- 註：新增/消失以(host+pluginID)指紋計(同弱點同主機算一件)、淨變化以未結筆數計，單位略不同屬合理。趨勢為全部部門(歷史不分部門)。真實 record 只在使用者選檔匯入時觸發(範例/自動還原不記)。三個新功能(紅黑榜/SLA/趨勢)全數完成，皆掛功能開關。
+## 2026-07-11 V1.30 下鑽稽核補漏 ＋ 清乾淨備註 ✅ 完成
+- 使用者要求：全站下鑽都檢查過了嗎？備註都拿掉了嗎？
+- 下鑽稽核(逐模組)：dashboard 指標卡/圖表✓、sev-repair 未結/已結/其他✓但**合計欄漏掉**→補上(cell(r.total,r.records,'X 全部'))含 tfoot 合計(concat 全狀態)；tracking 數字✓；stats 階段卡/chip/gov/圖✓；summary KPI(V1.29)/項目表(點列進項目)/紅黑榜/SLA/趨勢卡✓；matrix 格子✓；search 用明細表✓。今日行動/風險排序是預覽表(列不逐一下鑽,但有『查看全部』全量入口)——保留。
+- 備註清除：dashboard 指標卡 title:'點擊看明細' tooltip 移除；優先清單教學句『僅顯示前20筆,可點查看全部…』整行刪(有查看全部按鈕)；matrix empty『已隱藏全部,改按上方清除全部復原』→『已隱藏全部。』；history empty『尚無歷史;之後每次匯入…』→『尚無歷史資料。』；趨勢『只有1期…下次匯入即可比較』→只留『目前只有1期(日期)』。保留:明細表 Name/Host 過長 title(=Excel顯示全文,使用者認可)、chart 標題、共N筆/共N項目等功能性計數。
+- 驗(預覽 XLSX 造真檔 render dashboard)：metric 卡無 title；sev-repair 合計欄可點(Critical 1未結+1已結=2)→『Critical 全部(2筆)』2列；優先清單無教學句；console 無錯；V1.30;?v全1.30。
 
-## 2026-07-10 V1.24 SLA 達成率（第二個新模組，掛功能開關）✅ 完成
-- 需求(使用者)：各嚴重度 SLA 政策 Critical7/High30/Medium90/Low180。查資料無「發現日/掃描日」欄(profiles 只有 name 別名含『發現』是弱點名非日期)→無法算真正時效。決定：達成率＝各嚴重度「未結案中未逾期」比率；政策天數當目標對照，放 config.sla(可改)。日後 Excel 有發現日再升級真時效。
-- 成果：config.js 加 sla:{Critical:7,High:30,Medium:90,Low:180}。summary.js slaStats(sheets,dept)：各嚴重度統計 open/overdue(存 records)，rate=(open-overdue)/open(open=0→null顯示—)。renderSLA 出表：嚴重度｜政策(天)｜未結案｜逾期｜達成率(長條+百分比，≥90綠/70-90黃/<70紅)；未結/逾期數可點 drill。加 module 級 drillTd 共用。config/features.js 註冊 panel-sla(群組『總覽（首頁）』)。css .sla-*。
-- 驗(預覽範例)：Critical 7天/未結16/逾期6/62.5%(=(16-6)/16)、High 30/11/0/100%、Medium 90/15/10/33.3%、Low 180/9/0/100%，數字對帳；點 Critical 逾期→彈窗6筆；關 SLA 開關→SLA表消失且紅黑榜仍在(獨立)；console 無錯；V1.24;?v 全1.24。
-- 剩最後一個：#1 跟上次比的趨勢(每次匯入=一份輕量快照，存 localStorage，比對本次vs上次；設計待使用者確認 auto+dedupe 後再做)。
+## 2026-07-11 V1.29 總覽 KPI 可鑽取 ＋ 明細寬表抓取拖曳捲動(拉把) ✅ 完成
+- 使用者回報(總覽頁)：①上排 KPI(未結案/已逾期/近期到期/高風險未結)不能點；②展開的寬明細表拉到最右很難拉，要個「拉把」。
+- 成果：
+  · summary.js KPI 卡加 collect(pred) 跨全部項目彙整該類未結案紀錄→onclick UI.openDetail；未結案/已逾期/近期到期/高風險未結 可點，整體結案率不可點。css .summary-kpis .metric-card:not(.clickable) 取消 pointer/hover(不裝可點)。
+  · ui-common.js enableDragScroll(el)：在捲動容器 mousedown 抓住拖曳→平移 scrollLeft/scrollTop(門檻3px、不攔表頭排序/按鈕/可點數字、move/up 綁 document 用完即移除)；buildDetailTable 的 .detail-viewport 套用並 export UI.enableDragScroll。css .drag-scroll{cursor:grab}/.dragging{grabbing+no-select}；.detail-viewport 捲軸加粗成明顯「拉把」(14px、有色 thumb、hover 變主色)。
+- 驗(預覽 XLSX 造真檔 render 總覽；注意 severity 欄名要用 profiles 別名『風險等級』非『Severity』否則 Unknown)：KPI 未結案3/已逾期1(已結案排除)/近期0/高風險2/結案率25%不可點；點高風險→明細2筆；.detail-viewport 有 drag-scroll、直接設 scrollLeft 可捲(sw900)、合成 clientX 拖曳 x400→150 scrollLeft=250、dragging class 上/下正確；console 無錯；V1.29;?v 全1.29。
+- 註：拉把目前套在 drill 明細表(.detail-viewport)——即使用者展開的寬表。若要人員追蹤/紅黑榜等常駐寬表也能拖，呼叫 UI.enableDragScroll 即可(未來延伸)。
 
-## 2026-07-10 V1.23 部門／負責人紅黑榜（第一個掛進功能開關的新模組）✅ 完成
-- 需求(使用者)：主管要一眼知道「哪個部門/誰逾期最多、結案率最差」→ 找誰談。做成模組、掛在功能開關。
-- 成果：summary.js 加 rankBy(sheets,dept,keyFn) 跨全部項目彙整(部門=r.unit、負責人=r.owner)，算 未結/已逾期/高風險未結/已結/結案率，並存各子集 records 供 drill；預設按已逾期多者在前。renderRankings 在總覽首頁(圖表下方)出兩張表(部門排行/負責人排行)；makeSortableTable 通用可排序表(欄首可排序、數字欄首點=大到小)。每個數字可點→UI.openDetail 看實際筆數。紅黑視覺：有逾期列 row-overdue(紅)、全數結案列 row-clean(綠, css #f0f9f1)。config/features.js 註冊 panel-red-list(群組『總覽（首頁）』, 預設開)；summary.render 用 Features.isOn 包起來。css .rank-wrap/.rank-block/.rank-table。
-- 驗(預覽範例)：總覽出現紅黑榜；部門排行資訊架構部 55未結/16逾期/27高風險/11已結/16.7%(對帳 55+11=66、11/66=16.7%)；負責人排行逾期者紅列在上(玄慈2逾期居首)、全結案綠列在下(包不同等100%)；點玄慈已逾期→彈窗2筆；點已結案欄首→排序;功能開關關掉紅黑榜→整塊消失(reload 持久化沿用框架)；console 無錯；V1.23;?v 全1.23。
-- 下一步(剩兩個新功能)：#2 SLA 達成率(要先定各嚴重度天數政策)、#1 跟上次比的趨勢(要存歷史快照)。都照同模式掛進功能開關。
-
-## 2026-07-10 V1.22 功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層）✅ 完成
-- 決策(使用者)：功能模組化、有開關；主管不喜歡就到「後台」關掉。確認採 A＋B 兩層(config 出廠預設＋個人 localStorage 覆寫)。先做框架＋設定面板，把現有分頁/面板納管，再逐一加新功能(紅黑榜/SLA/趨勢)。
+## 2026-07-11 V1.28 修 bug：已結案不再判逾期 ✅ 完成
+- 使用者回報：不少「已結案」卻顯示「已逾期」。原因：overdue 只看到期日(daysLeft<0)，沒管 closeBucket。
+- 修法(已結案一律不再用到期日判斷)：
+  · sheets.js(多表實際路徑)：overdue/overdueDays 加 closeBucket!=='closed' guard(源頭修正，summary/history 直接讀 sheet.records 也對)。
+  · analysis.js：isOverdue/withinDays/withinSixMonths/isTodayTrack 全加 !isClosed(r) guard；bandOf 開頭 closeBucket==='closed'→'noDue'(已結案不進已逾期等帶)；finalizeRecord 統一覆寫 r.overdue/overdueDays(close-aware)，確保各路徑一致。
+  · ui-common 明細表逾期天數欄/紅列不用改：它讀 r.overdue/overdueDays，源頭修好就自動正確。
 ```
 
 ## 最近 10 筆 commit
 
 ```
-76d0153 V1.26：紅黑榜排行預設只顯示前 5 名＋展開全部
-ddc625c V1.25：趨勢「跟上次比」＋歷史快照（三個新功能收官）
-1056942 V1.24：SLA 達成率（第二個新模組，掛功能開關）
-ac48a01 V1.23：部門／負責人紅黑榜（第一個掛進功能開關的新模組）
-871eb7c V1.22：功能開關框架＋設定面板（模組化 feature toggle，A＋B 兩層）
-26b0023 V1.21：面板改名＋署名改＋總覽項目表可排序（去括號備註）
-22a1c69 V1.20：結案狀態改全域（移到左側「部門」下面，持久化）
-b559c57 V1.19：交叉分析改「排除式」— 點嚴重度＝把它藏起來（其餘全留）
-0fc2fc4 V1.18：全站圖表／百分比可鑽取（是數字就能點看實際筆數）
-5043563 V1.17：交叉分析篩掉的列/欄整個消失（不淡化）＋去說明備註
+8104c7e chore：gitignore 真實資料/個人設定，新增 git-push.sh 一鍵推（日期戳）
+91cd0e0 V1.30：下鑽稽核補漏 ＋ 清乾淨備註
+772341e V1.29：總覽 KPI 可鑽取 ＋ 明細寬表抓取拖曳捲動（拉把）
+62ee44d V1.28：修 bug — 已結案不再判逾期
+a747a3d docs：接手指南補「打包正式版 SOP」章節（V1.27）
+f4d4f98 build：新增 build_dist.sh 產生正式包（白名單複製＋防呆）
+177c072 V1.27：打包正式版 — 移除「天龍八部」範例資料
+6d33be3 docs：更新 .project 接手文件到 V1.26
+4ef2455 V1.26：紅黑榜排行預設只顯示前 5 名＋展開全部
+1707f04 V1.25：趨勢「跟上次比」＋歷史快照（三個新功能收官）
 ```

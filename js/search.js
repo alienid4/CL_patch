@@ -1,7 +1,8 @@
 /* ============================================================
  * js/search.js
- * 查詢：全文搜尋 + 快速篩選。搜尋框常駐於分頁上方(首頁明顯處)，
+ * 查詢：全文搜尋 + 快速篩選（可複選）。搜尋框常駐於分頁上方，
  * 快速篩選與結果顯示於「查詢」分頁。結果可排序、匯出、另開新分頁。
+ * 多選規則：同一類（到期狀態／嚴重度／處置階段）內為 OR，跨類為 AND。
  * ============================================================ */
 (function (global) {
   'use strict';
@@ -9,7 +10,7 @@
   var U = global.Utils;
   var UI = global.UI;
 
-  var state = { result: null, activeKey: 'all' };
+  var state = { result: null, sel: {} };   // sel: 已選的篩選鍵集合（不含 all）
   var chipEls = {};
   var resultsEl = null;
 
@@ -29,6 +30,13 @@
     { key: 'chronic',        label: '反覆展延／例外' },
   ];
 
+  /* 只有「互斥／同維度」的鍵歸同一類（類內 OR）；未列出者各自獨立（跨類 AND） */
+  var OR_GROUP = {
+    overdue: 'due', soon: 'due', todayTrack: 'due', sixMonths: 'due',
+    critical: 'sev', high: 'sev', medium: 'sev',
+    stageException: 'stage', stageExtension: 'stage',
+  };
+
   /* 把一筆紀錄攤平成可搜尋字串 */
   function recordText(r) {
     return [
@@ -44,6 +52,16 @@
     for (var i = 0; i < QUICK.length; i++) if (QUICK[i].key === key) return QUICK[i].label;
     return key;
   }
+  function selKeys() { return Object.keys(state.sel); }
+
+  /* 點 chip：all 清空；其餘切換選取 */
+  function toggleChip(key) {
+    if (key === 'all') { state.sel = {}; }
+    else if (state.sel[key]) { delete state.sel[key]; }
+    else { state.sel[key] = true; }
+    syncChips();
+    run();
+  }
 
   /* 建立「查詢」分頁內容：快速篩選 chips + 結果區（搜尋框在分頁外，常駐） */
   function render(result) {
@@ -56,9 +74,9 @@
     chipEls = {};
     QUICK.forEach(function (q) {
       var chip = U.el('button', {
-        class: 'search-chip' + (q.key === state.activeKey ? ' active' : ''),
+        class: 'search-chip',
         text: q.label,
-        onclick: function () { state.activeKey = q.key; syncChips(); run(); },
+        onclick: (function (k) { return function () { toggleChip(k); }; })(q.key),
       });
       chipEls[q.key] = chip;
       chipWrap.appendChild(chip);
@@ -68,33 +86,56 @@
     resultsEl = U.el('div', { id: 'search-results', class: 'search-results' });
     box.appendChild(resultsEl);
 
+    syncChips();
     run();
   }
 
   function syncChips() {
+    var anySel = selKeys().length > 0;
     Object.keys(chipEls).forEach(function (k) {
-      chipEls[k].classList.toggle('active', k === state.activeKey);
+      var on = (k === 'all') ? !anySel : !!state.sel[k];
+      chipEls[k].classList.toggle('active', on);
     });
+  }
+
+  /* 依已選鍵分組：類內 OR、跨類 AND */
+  function buildPredicate() {
+    var Filters = global.Analysis.Filters;
+    var groups = {};
+    selKeys().forEach(function (k) {
+      var d = OR_GROUP[k] || k;                 // 未分組者各自成一類
+      (groups[d] = groups[d] || []).push(k);
+    });
+    var dims = Object.keys(groups);
+    if (!dims.length) return function () { return true; };
+    return function (r) {
+      return dims.every(function (d) {
+        return groups[d].some(function (k) {
+          var fn = Filters[k];
+          return fn ? fn(r) : true;
+        });
+      });
+    };
   }
 
   function run() {
     if (!state.result || !resultsEl) return;
     var input = getInput();
     var text = input ? input.value : '';
-    var Filters = global.Analysis.Filters;
     var records = state.result.records;
-    var fFn = Filters[state.activeKey] || function () { return true; };
+    var pass = buildPredicate();
     var terms = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
-    var list = records.filter(fFn).filter(function (r) {
+    var list = records.filter(pass).filter(function (r) {
       if (!terms.length) return true;
       var t = recordText(r);
       return terms.every(function (term) { return t.indexOf(term) >= 0; });
     });
 
     resultsEl.innerHTML = '';
+    var labels = selKeys().map(labelOf);
     var title = '查詢結果' +
-      (state.activeKey !== 'all' ? '（' + labelOf(state.activeKey) + '）' : '') +
+      (labels.length ? '（' + labels.join(' ＋ ') + '）' : '') +
       (terms.length ? '（關鍵字：' + terms.join(' ') + '）' : '');
     var bar = U.el('div', { class: 'search-resultbar' }, [
       U.el('span', { class: 'search-count', text: '共 ' + list.length + ' 筆' }),
@@ -121,7 +162,7 @@
 
   function clear() {
     var input = getInput(); if (input) input.value = '';
-    state.activeKey = 'all';
+    state.sel = {};
     syncChips();
     run();
   }

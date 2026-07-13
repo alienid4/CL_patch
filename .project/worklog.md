@@ -9,6 +9,13 @@
 
 ---
 
+## 2026-07-13 V1.31 查詢快速篩選改「可複選」（多條件疊加）✅ 完成
+- 使用者要求：查詢分頁的快速篩選 chips 原本單選(選一個列全部)，要能多選疊加，例：今日待追蹤＋High、今日待追蹤＋High＋例外管理中，一直收窄。
+- 設計：分面篩選——「同類 OR、跨類 AND」。同類(互斥/同維度)：到期狀態(已逾期/近期/今日待追蹤/六個月)、嚴重度(Critical/High/Medium)、處置階段(例外管理中/首次展延中)各為一類，類內多選＝OR(聯集，避免 High+Medium 變空集)；其餘(例外核准未到期/反覆展延例外)各自獨立，跨類一律 AND。避免了純 AND 下同嚴重度互斥→空集的困擾。
+- 成果：search.js 由 state.activeKey(單) 改 state.sel{}(集合)；chip 點擊 toggle，「全部」清空；buildPredicate() 依 OR_GROUP 分組(due/sev/stage)算「跨類 every、類內 some」；標題列出已選(A ＋ B ＋ C)；syncChips 反映多選、無選時「全部」亮。CSS 不動(.search-chip.active 支援多顆亮)。
+- 驗(預覽 8790 起 py 伺服器；DataTransfer 灌 docs/測試假資料_天龍八部.xlsx；某表7筆)：同類 OR High(0)＋Medium(3)=3；跨類 AND 今日待追蹤(4)＋Medium(3)=2、已逾期(4)＋例外管理中=1(破口)；多 chip 同時 active；全部清空回7；console 無錯；V1.31；?v 全 1.31。
+- 注意：預覽 launch.json 的 python 伺服器指到錯目錄(全 404)——用 py -m http.server 8790 --directory 正確路徑另起才可測。
+
 ## 2026-07-11 V1.30 下鑽稽核補漏 ＋ 清乾淨備註 ✅ 完成
 - 使用者要求：全站下鑽都檢查過了嗎？備註都拿掉了嗎？
 - 下鑽稽核(逐模組)：dashboard 指標卡/圖表✓、sev-repair 未結/已結/其他✓但**合計欄漏掉**→補上(cell(r.total,r.records,'X 全部'))含 tfoot 合計(concat 全狀態)；tracking 數字✓；stats 階段卡/chip/gov/圖✓；summary KPI(V1.29)/項目表(點列進項目)/紅黑榜/SLA/趨勢卡✓；matrix 格子✓；search 用明細表✓。今日行動/風險排序是預覽表(列不逐一下鑽,但有『查看全部』全量入口)——保留。
