@@ -1,6 +1,6 @@
 # ============================================================
-#  send_mail.ps1 — 半自動催辦寄送（配合網頁「Email 設定 → 匯出催辦批次」）
-#  流程：讀 mail-batch.json → 逐位負責人查 AD 取 email → 透過公司 relay 寄出
+#  send_mail.ps1 — 半自動催辦寄送（配合網頁「Email 設定 → 匯出勾選的人」）
+#  流程：讀 mail-batch.json → 逐位負責人查 AD 取 email → 顯示計畫 → Y/N 確認 → 才寄
 #  免安裝：ADSI(Windows 內建)查 AD；Send-MailMessage 寄信(免認證 relay)
 #  查無 email/離職者：先看 override.json，再轉寄「預設收件人(fallbackTo)」，最後列出跳過名單
 #  用法：雙擊 send.bat（或 powershell -ExecutionPolicy Bypass -File send_mail.ps1）
@@ -75,33 +75,60 @@ function Resolve-Email([string]$name) {
 }
 
 Write-Host "SMTP relay：$smtpHost`:$smtpPort（免認證）  寄件人：$from"
-Write-Host "負責人 $($data.owners.Count) 位，開始處理…`n"
+Write-Host "查 AD 解析 email 中…`n"
 
-$sent = 0; $fb = 0; $skipped = @()
+# ---- Pass 1：建立寄送計畫（先解析，不寄） ----
+$plan = @()
 foreach ($o in $data.owners) {
     $email = Resolve-Email $o.owner
-    $subj = $o.subject; $body = $o.body; $to = $null; $mode = ''
     if ($email) {
-        $to = $email; $mode = 'ad'
+        $plan += [pscustomobject]@{ Owner=$o.owner; Count=$o.count; To=$email; Mode='ad'; Subject=$o.subject; Body=$o.body }
     } elseif ($fallback.Count -gt 0) {
-        $to = $fallback; $mode = 'fallback'
-        $subj = "[原負責人 $($o.owner) 查無email/離職] " + $subj
-        $body = "※ 原負責人「$($o.owner)」查無 email（可能已離職），轉您處理。`r`n`r`n" + $body
+        $plan += [pscustomobject]@{ Owner=$o.owner; Count=$o.count; To=($fallback -join ','); Mode='fallback'; Subject=$o.subject; Body=$o.body }
     } else {
-        $skipped += $o.owner; continue
-    }
-    try {
-        $p = @{ SmtpServer=$smtpHost; Port=$smtpPort; From=$from; To=$to; Subject=$subj; Body=$body; Encoding=([System.Text.Encoding]::UTF8) }
-        if ($cc.Count -gt 0) { $p['Cc'] = $cc }
-        Send-MailMessage @p
-        if ($mode -eq 'ad') { $sent++; Write-Host ("  寄出　{0} -> {1}  ({2} 筆)" -f $o.owner, $email, $o.count) -ForegroundColor Green }
-        else { $fb++; Write-Host ("  轉主管 {0} -> {1}  ({2} 筆)" -f $o.owner, ($fallback -join ','), $o.count) -ForegroundColor Yellow }
-    } catch {
-        $skipped += ("{0}(寄送失敗:{1})" -f $o.owner, $_.Exception.Message)
-        Write-Host ("  失敗　{0}：{1}" -f $o.owner, $_.Exception.Message) -ForegroundColor Red
+        $plan += [pscustomobject]@{ Owner=$o.owner; Count=$o.count; To=$null; Mode='skip'; Subject=$o.subject; Body=$o.body }
     }
 }
 
+Write-Host "===== 寄送計畫 ====="
+foreach ($p in $plan) {
+    switch ($p.Mode) {
+        'ad'       { Write-Host ("  [寄出]   {0} -> {1}  ({2} 筆)" -f $p.Owner, $p.To, $p.Count) -ForegroundColor Green }
+        'fallback' { Write-Host ("  [轉主管] {0} 查無email -> {1}  ({2} 筆)" -f $p.Owner, $p.To, $p.Count) -ForegroundColor Yellow }
+        'skip'     { Write-Host ("  [跳過]   {0} 查無email且無轉寄  ({1} 筆)" -f $p.Owner, $p.Count) -ForegroundColor DarkGray }
+    }
+}
+$willSend = @($plan | Where-Object { $_.Mode -ne 'skip' })
+Write-Host ("`n共 {0} 位，實際會寄出 {1} 封。" -f $plan.Count, $willSend.Count) -ForegroundColor Cyan
+
+if ($willSend.Count -eq 0) { Write-Host "沒有可寄的對象，結束。" -ForegroundColor Yellow; exit 0 }
+$ans = Read-Host "確認寄出？(Y = 寄出 / 其他任意鍵 = 取消)"
+if ($ans -notmatch '^[Yy]') { Write-Host "已取消，未寄任何信。" -ForegroundColor Cyan; exit 0 }
+
+# ---- Pass 2：實際寄送 ----
+Write-Host "`n寄送中…"
+$sent = 0; $fb = 0; $failed = @()
+foreach ($p in $plan) {
+    if ($p.Mode -eq 'skip') { continue }
+    $subj = $p.Subject; $body = $p.Body; $to = $p.To
+    if ($p.Mode -eq 'fallback') {
+        $to   = $fallback
+        $subj = "[原負責人 $($p.Owner) 查無email/離職] " + $subj
+        $body = "※ 原負責人「$($p.Owner)」查無 email（可能已離職），轉您處理。`r`n`r`n" + $body
+    }
+    try {
+        $pp = @{ SmtpServer=$smtpHost; Port=$smtpPort; From=$from; To=$to; Subject=$subj; Body=$body; Encoding=([System.Text.Encoding]::UTF8) }
+        if ($cc.Count -gt 0) { $pp['Cc'] = $cc }
+        Send-MailMessage @pp
+        if ($p.Mode -eq 'ad') { $sent++ } else { $fb++ }
+        Write-Host ("  已寄 {0}" -f $p.Owner) -ForegroundColor Green
+    } catch {
+        $failed += ("{0}(失敗:{1})" -f $p.Owner, $_.Exception.Message)
+        Write-Host ("  失敗 {0}：{1}" -f $p.Owner, $_.Exception.Message) -ForegroundColor Red
+    }
+}
+
+$skipCount = @($plan | Where-Object { $_.Mode -eq 'skip' }).Count
 Write-Host "`n===== 完成 =====" -ForegroundColor Cyan
-Write-Host ("寄出：{0} 封　轉主管(查無/離職)：{1} 封　跳過/失敗：{2}" -f $sent, $fb, $skipped.Count)
-if ($skipped.Count -gt 0) { Write-Host ("未處理：{0}" -f ($skipped -join '、')) -ForegroundColor Yellow }
+Write-Host ("寄出：{0}　轉主管(查無/離職)：{1}　跳過：{2}　失敗：{3}" -f $sent, $fb, $skipCount, $failed.Count)
+if ($failed.Count -gt 0) { Write-Host ("失敗清單：{0}" -f ($failed -join '、')) -ForegroundColor Yellow }

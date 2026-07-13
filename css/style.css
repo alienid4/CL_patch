@@ -517,6 +517,15 @@ body.modal-open { overflow: hidden; }
 .email-preview { margin-top: 14px; padding: 12px; background: #f6f8fb; border: 1px solid var(--c-border);
   border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
   max-height: 320px; overflow: auto; }
+
+/* Email 催辦名單（可勾選） */
+.batch-list { margin-top: 14px; max-height: 300px; overflow: auto; border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 8px 10px; }
+.batch-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--c-border); }
+.batch-tools-label { flex: 1; font-size: 13px; font-weight: 700; color: var(--c-text); }
+.batch-row { display: flex; align-items: center; gap: 10px; padding: 5px 6px; border-radius: 5px; cursor: pointer; }
+.batch-row:hover { background: var(--c-primary-soft); }
+.batch-owner { flex: 1; font-size: 14px; }
+.batch-count { font-size: 12.5px; color: var(--c-text-soft); white-space: nowrap; }
 .quality-detail { display: flex; flex-direction: column; gap: 10px; }
 .q-issue-head { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f6f8fb; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
 .q-badge { background: var(--c-overdue); color: #fff; min-width: 30px; text-align: center; padding: 2px 8px; border-radius: 20px; font-weight: 700; }

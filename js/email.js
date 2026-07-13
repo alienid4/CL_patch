@@ -168,37 +168,52 @@
   function openSettings() {
     var cfg = loadCfg();
     var f = buildForm(cfg);
-    var preview = U.el('pre', { class: 'email-preview hidden' });
-
-    var body = U.el('div', {}, [f.node, preview]);
+    var listBox = U.el('div', { class: 'batch-list hidden' });
+    var body = U.el('div', {}, [f.node, listBox]);
+    var listState = { batch: [], checks: {} };
 
     function doSave() {
       var c = f.read();
       if (saveCfg(c)) UI.toast('Email 設定已儲存', 'success');
       else UI.toast('儲存失敗（瀏覽器空間不足）', 'error');
     }
-    function doPreview() {
+
+    function setAll(v) { Object.keys(listState.checks).forEach(function (k) { listState.checks[k].checked = v; }); }
+
+    /* 列出催辦名單（可勾選）：測試時只勾一個人即可 */
+    function doList() {
       var c = f.read();
-      var batch = buildBatch(c);
-      var txt = '共 ' + batch.length + ' 位負責人：\n' +
-        batch.map(function (b) { return '· ' + b.owner + '（' + b.count + ' 筆）'; }).join('\n');
-      if (batch.length) {
-        txt += '\n\n—— 範例（' + batch[0].owner + '）——\n主旨：' + batch[0].subject + '\n\n' + batch[0].body;
-      } else {
-        txt = '目前無符合條件的負責人。';
-      }
-      preview.textContent = txt;
-      preview.classList.remove('hidden');
-    }
-    function doExportBatch() {
-      var c = f.read();
-      saveCfg(c);
-      if (!c.smtpHost || !c.from) {
-        UI.toast('請先填 SMTP 主機、寄件人', 'error');
+      listState.batch = buildBatch(c);
+      listState.checks = {};
+      listBox.innerHTML = '';
+      listBox.classList.remove('hidden');
+      if (!listState.batch.length) {
+        listBox.appendChild(U.el('p', { class: 'empty-hint', text: '目前無符合條件的負責人。' }));
         return;
       }
-      var batch = buildBatch(c);
-      if (!batch.length) { UI.toast('目前無符合條件的負責人', 'error'); return; }
+      listBox.appendChild(U.el('div', { class: 'batch-tools' }, [
+        U.el('span', { class: 'batch-tools-label', text: '勾選要催辦的人（' + listState.batch.length + ' 位）' }),
+        U.el('button', { class: 'btn btn-secondary btn-sm', text: '全選', onclick: function () { setAll(true); } }),
+        U.el('button', { class: 'btn btn-secondary btn-sm', text: '全不選', onclick: function () { setAll(false); } }),
+      ]));
+      listState.batch.forEach(function (b) {
+        var cb = U.el('input', { type: 'checkbox' }); cb.checked = true;
+        listState.checks[b.owner] = cb;
+        listBox.appendChild(U.el('label', { class: 'batch-row' }, [
+          cb,
+          U.el('span', { class: 'batch-owner', text: b.owner }),
+          U.el('span', { class: 'batch-count', text: b.count + ' 筆' }),
+        ]));
+      });
+    }
+
+    function doExportSelected() {
+      var c = f.read();
+      saveCfg(c);
+      if (!c.smtpHost || !c.from) { UI.toast('請先填 SMTP 主機、寄件人', 'error'); return; }
+      if (!listState.batch.length) { UI.toast('請先按「列出催辦名單」', 'error'); return; }
+      var selected = listState.batch.filter(function (b) { var cb = listState.checks[b.owner]; return cb && cb.checked; });
+      if (!selected.length) { UI.toast('請至少勾選一位', 'error'); return; }
       downloadJSON({
         generatedAt: new Date().toISOString(),
         smtp: { host: c.smtpHost, port: c.smtpPort, auth: false },
@@ -206,15 +221,15 @@
         cc: parseList(c.cc),
         fallbackTo: parseList(c.fallbackTo),
         subjectPrefix: c.subjectPrefix,
-        owners: batch,
+        owners: selected,
       }, 'mail-batch.json');
-      UI.toast('已匯出 mail-batch.json（' + batch.length + ' 位負責人）', 'success');
+      UI.toast('已匯出 mail-batch.json（勾選 ' + selected.length + ' 位）', 'success');
     }
 
     var footer = U.el('div', { class: 'reminder-actions' }, [
       U.el('button', { class: 'btn btn-primary', text: '儲存設定', onclick: doSave }),
-      U.el('button', { class: 'btn btn-secondary', text: '預覽催辦', onclick: doPreview }),
-      U.el('button', { class: 'btn btn-secondary', text: '匯出催辦批次', onclick: doExportBatch }),
+      U.el('button', { class: 'btn btn-secondary', text: '列出催辦名單', onclick: doList }),
+      U.el('button', { class: 'btn btn-secondary', text: '匯出勾選的人', onclick: doExportSelected }),
     ]);
     UI.openModal('Email 設定', body, { footer: footer });
   }

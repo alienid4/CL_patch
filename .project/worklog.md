@@ -9,6 +9,13 @@
 
 ---
 
+## 2026-07-13 V1.38 催辦可勾選人選＋寄前 Y/N 確認 ✅ 完成
+- 使用者：5 人是否都發？→是，每人一封不同信。但測試想只發一人；前期要手動確認人選，後期才自動。理想流程：檢查→問要不要發→按 Yes 才寄。
+- 網頁(email.js)：Email 設定加「列出催辦名單」——各負責人一列 checkbox(預設全勾)＋全選/全不選；「匯出勾選的人」只匯出勾選者到 mail-batch.json(測試就全不選→勾一個)。css .batch-list/.batch-row/.batch-tools。
+- 腳本(send_mail.ps1)：改兩段——Pass1 先查 AD 建「寄送計畫」並印出(誰→哪個email／轉主管／跳過)；Read-Host Y/N 確認；Pass2 按 Y 才實際寄。取消不寄任何信。
+- 驗(預覽8790)：V1.38；列表 31 人、預設全勾、全不選=0、勾一個=1；footer 三鈕正確；ps1 parse OK；console 無錯。
+- 未測(需公司機器)：AD 查詢＋實際 relay 寄送(同 V1.37，請跑 send.bat 貼回結果)。
+
 ## 2026-07-13 V1.37 Email 半自動催辦：批次匯出＋本機 AD 寄送腳本 ✅ 完成
 - 決策：①半自動(匯出→雙擊寄)　②B 各負責人各別催辦　③relay 202.154.197.40:25 免認證、寄件人個人設定　④email 由腳本查 AD(ADSI)自動解，離職/查無→override→轉主管。relay IP 只存本機/匯出檔，絕不進 repo。
 - 網頁(email.js)：Email 設定改「每人一封」——移除單一收件人，加「副本(每封都副本)」「查無 email 轉寄(fallbackTo)」；buildBatch 依負責人分組(每人 subject/body)；按鈕改「預覽催辦」「匯出催辦批次」→ mail-batch.json {smtp,from,cc,fallbackTo,subjectPrefix,owners:[{owner,count,subject,body}]}。
