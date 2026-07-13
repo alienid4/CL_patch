@@ -100,6 +100,8 @@ html, body {
 .drop-note code { background: #eef2f7; padding: 2px 7px; border-radius: 5px; color: var(--c-primary); font-size: 12.5px; }
 .drop-version { color: var(--c-text-soft); font-size: 12.5px; margin: 18px 0 0; }
 .drop-version span { font-weight: 700; color: var(--c-primary); }
+.help-link { color: var(--c-primary); text-decoration: none; font-weight: 700; }
+.help-link:hover { text-decoration: underline; }
 
 /* ---------- 錯誤框 ---------- */
 .error-box {

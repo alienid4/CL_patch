@@ -99,6 +99,12 @@
       UI.toast('已清除暫存資料', 'success');
     });
 
+    // 使用說明（開啟圖文手冊）
+    if ($('help-btn')) $('help-btn').addEventListener('click', function () {
+      closeMore();
+      window.open('docs/使用說明.html', '_blank');
+    });
+
     // 功能開關（其他功能 → 設定面板）
     if ($('features-btn')) $('features-btn').addEventListener('click', function () {
       closeMore();
