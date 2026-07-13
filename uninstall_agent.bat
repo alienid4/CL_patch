@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM 移除寄信小幫手的開機自動啟動，並停止正在跑的小幫手
 set "VBS=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\CL_patch_MailAgent.vbs"
 
