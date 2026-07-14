@@ -9,9 +9,8 @@ dist/
 # 真實弱點資料檔（絕不進版控／不上 GitHub）
 *.xlsx
 
-# 公司 logo（商標，不上公開 GitHub；各機本機放置於 assets/）
+# 官方 logo（商標，不上公開 GitHub；各機本機放置於 assets/，會優先於內建 logo.svg）
 assets/logo.png
-assets/logo.svg
 assets/logo.jpg
 
 # 個人本機設定（不上 GitHub）

@@ -54,7 +54,7 @@ echo Updating page files ^(index.html, css, js, config, assets^)...
 robocopy "%SRC%\css"    "%HERE%\css"    /MIR /NFL /NDL /NJH /NJS >nul
 robocopy "%SRC%\js"     "%HERE%\js"     /MIR /NFL /NDL /NJH /NJS >nul
 robocopy "%SRC%\config" "%HERE%\config" /MIR /NFL /NDL /NJH /NJS >nul
-robocopy "%SRC%\assets" "%HERE%\assets" /MIR /NFL /NDL /NJH /NJS >nul
+robocopy "%SRC%\assets" "%HERE%\assets" /MIR /XF logo.png logo.jpg /NFL /NDL /NJH /NJS >nul
 copy /Y "%SRC%\index.html" "%HERE%\index.html" >nul
 
 echo Updating docs and helper scripts...
