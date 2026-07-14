@@ -279,7 +279,7 @@
     /* 測試本機小幫手是否在跑 */
     function doTestAgent() {
       fetch(AGENT + '/health').then(function (r) { return r.json(); })
-        .then(function (j) { UI.toast((j && j.ok) ? '本機小幫手已連線 ✓' : '小幫手回應異常', (j && j.ok) ? 'success' : 'error'); })
+        .then(function (j) { UI.toast((j && j.ok) ? ('本機小幫手已連線 ✓　' + (j.version || '')) : '小幫手回應異常', (j && j.ok) ? 'success' : 'error'); })
         .catch(function () { UI.toast('連不到小幫手，請先執行 install_agent.bat', 'error'); });
     }
 
@@ -290,8 +290,8 @@
       if (!log.length) {
         wrap.appendChild(U.el('p', { class: 'empty-hint', text: '尚無發信紀錄。' }));
       } else {
-        var cols = ['時間', '負責人', '收件人', '狀態', '錯誤'];
-        var keys = ['time', 'owner', 'to', 'status', 'error'];
+        var cols = ['時間', '負責人', '收件人', '副本', '狀態', '錯誤'];
+        var keys = ['time', 'owner', 'to', 'cc', 'status', 'error'];
         var table = U.el('table', { class: 'tracking-table' });
         var thead = U.el('thead'), htr = U.el('tr');
         cols.forEach(function (h) { htr.appendChild(U.el('th', { text: h })); });
@@ -313,8 +313,8 @@
       UI.openModal('發信紀錄（' + log.length + ' 筆）', wrap, { footer: footer });
     }
     function exportLog(log) {
-      var keys = ['time', 'owner', 'to', 'status', 'error'];
-      var rows = [['時間', '負責人', '收件人', '狀態', '錯誤']].concat(log.map(function (r) { return keys.map(function (k) { return r[k] || ''; }); }));
+      var keys = ['time', 'owner', 'to', 'cc', 'status', 'error'];
+      var rows = [['時間', '負責人', '收件人', '副本', '狀態', '錯誤']].concat(log.map(function (r) { return keys.map(function (k) { return r[k] || ''; }); }));
       var csv = rows.map(function (arr) {
         return arr.map(function (v) { var s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',');
       }).join('\r\n');
@@ -371,7 +371,7 @@
           if (!j || !j.ok) { UI.toast((j && j.error) || '寄送失敗', 'error'); return; }
           var stamp = nowStamp();
           appendLog((j.details || []).map(function (d) {
-            return { time: stamp, owner: d.owner, to: (d.to || ''), status: statusLabel(d.mode), error: (d.error || '') };
+            return { time: stamp, owner: d.owner, to: (d.to || ''), cc: (d.cc || ''), status: statusLabel(d.mode), error: (d.error || '') };
           }));
           listBox.innerHTML = ''; listBox.classList.remove('hidden');
           listBox.appendChild(U.el('div', { class: 'batch-tools' + (j.failed > 0 ? ' send-fail' : '') }, [

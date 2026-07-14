@@ -19,15 +19,18 @@ if (Test-Path $ovPath) {
     } catch {}
 }
 
+# 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
+$AGENT_VER = 'V1.55'
+
 # 發信紀錄檔（磁碟稽核；UTF-8 BOM，Excel 可直接開）
 $script:logPath = Join-Path $here 'mail_log.csv'
 function Csv-Field($s) { if ($null -eq $s) { return '' }; $s = [string]$s; if ($s -match '[",\r\n]') { return '"' + $s.Replace('"', '""') + '"' } return $s }
-function Write-MailLog([string]$owner, [string]$to, [string]$status, [string]$err) {
+function Write-MailLog([string]$owner, [string]$to, [string]$cc, [string]$status, [string]$err) {
     try {
         if (-not (Test-Path $script:logPath)) {
-            [IO.File]::WriteAllText($script:logPath, "時間,負責人,收件人,狀態,錯誤`r`n", (New-Object Text.UTF8Encoding($true)))
+            [IO.File]::WriteAllText($script:logPath, "時間,負責人,收件人,副本,狀態,錯誤`r`n", (New-Object Text.UTF8Encoding($true)))
         }
-        $line = ('{0},{1},{2},{3},{4}' -f (Get-Date -Format 'yyyy/MM/dd HH:mm'), (Csv-Field $owner), (Csv-Field $to), $status, (Csv-Field $err))
+        $line = ('{0},{1},{2},{3},{4},{5}' -f (Get-Date -Format 'yyyy/MM/dd HH:mm'), (Csv-Field $owner), (Csv-Field $to), (Csv-Field $cc), $status, (Csv-Field $err))
         [IO.File]::AppendAllText($script:logPath, $line + "`r`n", (New-Object Text.UTF8Encoding($false)))
     } catch {}
 }
@@ -75,19 +78,20 @@ function Do-Send($data) {
             $to = $fallback; $mode = 'fallback'
             $subj = "[原負責人 $($o.owner) 查無email/離職] " + $subj
             $body = "※ 原負責人「$($o.owner)」查無 email（可能已離職），轉您處理。`r`n`r`n" + $body
-        } else { $skipped++; $details += [pscustomobject]@{ owner = $o.owner; mode = 'skip' }; Write-MailLog $o.owner '' '跳過' ''; continue }
+        } else { $skipped++; $details += [pscustomobject]@{ owner = $o.owner; mode = 'skip' }; Write-MailLog $o.owner '' '' '跳過' ''; continue }
         try {
             $pp = @{ SmtpServer = $smtpHost; Port = $smtpPort; From = $from; To = $to; Subject = $subj; Body = $body; Encoding = ([System.Text.Encoding]::UTF8) }
             if ($cc.Count -gt 0) { $pp['Cc'] = $cc }
             Send-MailMessage @pp
             if ($mode -eq 'ad') { $sent++ } else { $fb++ }
-            $details += [pscustomobject]@{ owner = $o.owner; mode = $mode; to = ($to -join ',') }
+            $ccStr = ($cc -join ',')
+            $details += [pscustomobject]@{ owner = $o.owner; mode = $mode; to = ($to -join ','); cc = $ccStr }
             $st = if ($mode -eq 'ad') { '寄出' } else { '轉主管' }
-            Write-MailLog $o.owner ($to -join ',') $st ''
+            Write-MailLog $o.owner ($to -join ',') $ccStr $st ''
         } catch {
             $failed++
-            $details += [pscustomobject]@{ owner = $o.owner; mode = 'fail'; error = $_.Exception.Message }
-            Write-MailLog $o.owner ($to -join ',') '失敗' $_.Exception.Message
+            $details += [pscustomobject]@{ owner = $o.owner; mode = 'fail'; to = ($to -join ','); cc = ($cc -join ','); error = $_.Exception.Message }
+            Write-MailLog $o.owner ($to -join ',') ($cc -join ',') '失敗' $_.Exception.Message
         }
     }
     return [pscustomobject]@{ ok = $true; sent = $sent; fallback = $fb; skipped = $skipped; failed = $failed; details = $details }
@@ -112,7 +116,7 @@ while ($listener.IsListening) {
         $path = $req.Url.AbsolutePath
         $out = $null
         if ($path -eq '/health') {
-            $out = [pscustomobject]@{ ok = $true; agent = 'mail-agent'; version = '1.0' }
+            $out = [pscustomobject]@{ ok = $true; agent = 'mail-agent'; version = $AGENT_VER }
         } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send')) {
             $reader = New-Object System.IO.StreamReader($req.InputStream, [System.Text.Encoding]::UTF8)
             $bodyText = $reader.ReadToEnd(); $reader.Close()
