@@ -53,6 +53,7 @@ html, body {
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand-logo { font-size: 32px; }
+.brand-logo-img { height: 34px; width: auto; display: block; }
 .brand h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: .5px; }
 .brand-sub { margin: 2px 0 0; font-size: 13px; opacity: .8; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
