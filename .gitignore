@@ -6,6 +6,10 @@ node_modules/
 dist/
 *.zip
 
+# 公司內部規範文件（標示「請勿外流」，絕不上公開 GitHub）
+Cathay規範/
+合規落差對照表.md
+
 # 真實弱點資料檔（絕不進版控／不上 GitHub）
 *.xlsx
 
