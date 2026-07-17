@@ -156,9 +156,18 @@
     "id": "email-send-script",
     "desc": "Email 實際寄送：本機 send_mail.ps1 讀 mail-task.json 走公司 relay 寄(E2 手動)＋工作排程器自動(E3)",
     "done_when": "E2:雙擊腳本能透過免認證 relay 寄出 mail-task.json 的內容；E3:排程每天自動寄(腳本自解析最新 xlsx)",
-    "status": "todo",
+    "status": "doing",
     "attempts": 0,
     "created": "2026-07-10",
-    "notes": "暫停(使用者指示 2026-07-10：等要開發再做)。Email 設定介面 V1.11 已完成。開發前先問環境：能否跑.ps1、relay 主機:埠、有無 Excel、排程時間。"
+    "notes": "半自動『網頁寄出』已完成(V1.44~V1.57)：本機 mail_agent.ps1(localhost:8899, /health /plan /send)＋網頁『寄出』按鈕；ADSI 查 AD 解 email、override.json 補漏、查無→轉主管 fallback；CC/副本給自己；發信失敗逐筆告警＋發信紀錄(網頁 localStorage + mail_agent 寫 mail_log.csv)；/health 回報 AGENT_VER 供確認背景版本。開機自動啟動走 Startup 資料夾 .vbs。★踩雷筆記：update.bat 只換 .ps1 檔，背景 agent 需手動重啟才生效(CC 沒送出就是這原因)。剩 E3 排程全自動未做。"
+  },
+  {
+    "id": "cathay-webspec-compliance",
+    "desc": "評估對齊公司前端標準化規範的落差(細節見本機文件，不放公開 repo)",
+    "done_when": "架構部裁示適用範圍(全面重寫 or 只採編碼規範 or 豁免)後，依裁示執行",
+    "status": "blocked",
+    "attempts": 0,
+    "created": "2026-07-17",
+    "notes": "使用者決策(2026-07-17)：先只產落差對照表，不動碼。細節見本機 合規落差對照表.md 與 交接摘要_2026-07-17.md(皆 gitignore，內部規範原始檔亦 gitignore，均不上公開 repo)。結論：合規≈換平台重寫、且會失去離線單機免登入優點，待裁示。"
   }
 ]

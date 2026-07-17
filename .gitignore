@@ -31,3 +31,6 @@ mail_log.csv
 
 # update.bat 自我更新的暫存
 update.bat.new
+
+# 交接摘要（內部工作脈絡，留本機不上公開 repo）
+交接摘要_*.md

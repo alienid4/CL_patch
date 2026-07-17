@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `8104c7e`
+- 目前 HEAD: `4d18fbe`
 
 ## 強制層檢查即時結果
 
@@ -63,46 +63,46 @@
 
 ```
 
-## 2026-07-13 V1.31 查詢快速篩選改「可複選」（多條件疊加）✅ 完成
-- 使用者要求：查詢分頁的快速篩選 chips 原本單選(選一個列全部)，要能多選疊加，例：今日待追蹤＋High、今日待追蹤＋High＋例外管理中，一直收窄。
-- 設計：分面篩選——「同類 OR、跨類 AND」。同類(互斥/同維度)：到期狀態(已逾期/近期/今日待追蹤/六個月)、嚴重度(Critical/High/Medium)、處置階段(例外管理中/首次展延中)各為一類，類內多選＝OR(聯集，避免 High+Medium 變空集)；其餘(例外核准未到期/反覆展延例外)各自獨立，跨類一律 AND。避免了純 AND 下同嚴重度互斥→空集的困擾。
-- 成果：search.js 由 state.activeKey(單) 改 state.sel{}(集合)；chip 點擊 toggle，「全部」清空；buildPredicate() 依 OR_GROUP 分組(due/sev/stage)算「跨類 every、類內 some」；標題列出已選(A ＋ B ＋ C)；syncChips 反映多選、無選時「全部」亮。CSS 不動(.search-chip.active 支援多顆亮)。
-- 驗(預覽 8790 起 py 伺服器；DataTransfer 灌 docs/測試假資料_天龍八部.xlsx；某表7筆)：同類 OR High(0)＋Medium(3)=3；跨類 AND 今日待追蹤(4)＋Medium(3)=2、已逾期(4)＋例外管理中=1(破口)；多 chip 同時 active；全部清空回7；console 無錯；V1.31；?v 全 1.31。
-- 注意：預覽 launch.json 的 python 伺服器指到錯目錄(全 404)——用 py -m http.server 8790 --directory 正確路徑另起才可測。
+## 2026-07-13 V1.41 agent 可用功能開關關閉 ✅ 完成
+- 使用者：不喜歡 agent 能不能關模組。→ 能。
+- 成果：config/features.js 加 email-agent(group 'Email', default true)；email.js footer 依 Features.isOn('email-agent') 決定——開:寄出/測試小幫手/匯出(備用)；關:只留「匯出寄送檔」(回 send.bat 模式)。要連背景服務也移除則跑 uninstall_agent.bat。
+- 驗(預覽8790)：V1.41；開→footer 有寄出/測試小幫手；關(features{email-agent:false})→只剩匯出寄送檔；功能開關面板已登錄；console 無錯。
 
-## 2026-07-11 V1.30 下鑽稽核補漏 ＋ 清乾淨備註 ✅ 完成
-- 使用者要求：全站下鑽都檢查過了嗎？備註都拿掉了嗎？
-- 下鑽稽核(逐模組)：dashboard 指標卡/圖表✓、sev-repair 未結/已結/其他✓但**合計欄漏掉**→補上(cell(r.total,r.records,'X 全部'))含 tfoot 合計(concat 全狀態)；tracking 數字✓；stats 階段卡/chip/gov/圖✓；summary KPI(V1.29)/項目表(點列進項目)/紅黑榜/SLA/趨勢卡✓；matrix 格子✓；search 用明細表✓。今日行動/風險排序是預覽表(列不逐一下鑽,但有『查看全部』全量入口)——保留。
-- 備註清除：dashboard 指標卡 title:'點擊看明細' tooltip 移除；優先清單教學句『僅顯示前20筆,可點查看全部…』整行刪(有查看全部按鈕)；matrix empty『已隱藏全部,改按上方清除全部復原』→『已隱藏全部。』；history empty『尚無歷史;之後每次匯入…』→『尚無歷史資料。』；趨勢『只有1期…下次匯入即可比較』→只留『目前只有1期(日期)』。保留:明細表 Name/Host 過長 title(=Excel顯示全文,使用者認可)、chart 標題、共N筆/共N項目等功能性計數。
-- 驗(預覽 XLSX 造真檔 render dashboard)：metric 卡無 title；sev-repair 合計欄可點(Critical 1未結+1已結=2)→『Critical 全部(2筆)』2列；優先清單無教學句；console 無錯；V1.30;?v全1.30。
-
-## 2026-07-11 V1.29 總覽 KPI 可鑽取 ＋ 明細寬表抓取拖曳捲動(拉把) ✅ 完成
-- 使用者回報(總覽頁)：①上排 KPI(未結案/已逾期/近期到期/高風險未結)不能點；②展開的寬明細表拉到最右很難拉，要個「拉把」。
+## 2026-07-13 V1.40 全在網頁寄信：本機小幫手(agent) ＋ 網頁「寄出」按鈕 ✅ 完成
+- 使用者：不想點 bat，全部在網頁完成。→ 純網頁不能寄(鐵牆)，唯一解=本機常駐 agent，網頁 fetch localhost 呼叫它查 AD+寄。使用者同意「設定一次、背景常駐」。
 - 成果：
-  · summary.js KPI 卡加 collect(pred) 跨全部項目彙整該類未結案紀錄→onclick UI.openDetail；未結案/已逾期/近期到期/高風險未結 可點，整體結案率不可點。css .summary-kpis .metric-card:not(.clickable) 取消 pointer/hover(不裝可點)。
-  · ui-common.js enableDragScroll(el)：在捲動容器 mousedown 抓住拖曳→平移 scrollLeft/scrollTop(門檻3px、不攔表頭排序/按鈕/可點數字、move/up 綁 document 用完即移除)；buildDetailTable 的 .detail-viewport 套用並 export UI.enableDragScroll。css .drag-scroll{cursor:grab}/.dragging{grabbing+no-select}；.detail-viewport 捲軸加粗成明顯「拉把」(14px、有色 thumb、hover 變主色)。
-- 驗(預覽 XLSX 造真檔 render 總覽；注意 severity 欄名要用 profiles 別名『風險等級』非『Severity』否則 Unknown)：KPI 未結案3/已逾期1(已結案排除)/近期0/高風險2/結案率25%不可點；點高風險→明細2筆；.detail-viewport 有 drag-scroll、直接設 scrollLeft 可捲(sw900)、合成 clientX 拖曳 x400→150 scrollLeft=250、dragging class 上/下正確；console 無錯；V1.29;?v 全1.29。
-- 註：拉把目前套在 drill 明細表(.detail-viewport)——即使用者展開的寬表。若要人員追蹤/紅黑榜等常駐寬表也能拖，呼叫 UI.enableDragScroll 即可(未來延伸)。
+  · mail_agent.ps1：.NET HttpListener 只聽 http://localhost:8899；GET /health、POST /plan(查AD不寄回計畫)、POST /send(實寄)；ADSI 查 email(override 優先，唯一命中才用)；Send-MailMessage 免認證 relay；CORS *＋Access-Control-Allow-Private-Network:true(供 file:// / 跨埠 fetch)。不寫死公司資訊(全來自 web 送來的批次/AD)。
+  · install_agent.bat(schtasks ONLOGON 背景隱藏、設定一次開機自動)、start_agent.bat(測試可見)、uninstall_agent.bat。
+  · email.js：Email 設定加「寄出」(→/plan 顯示計畫→確認寄出→/send)、「測試小幫手」(/health)；buildPayload 共用；「匯出（備用）」保留給 send.bat。css .plan-actions/.plan-*。
+- 驗(在本機實起 agent 測 web↔agent)：/health ok；/plan 200 回計畫(本機查不到天龍八部名→正確 fallback 轉主管)；UI：列出→勾記憶(玄慈/阿朱)→寄出→計畫顯示「→轉主管」＋「確認寄出(2)」；console 無錯；V1.40。未按確認(避免真寄)。
+- 未測(需公司機器)：真 AD 解析＋真 relay 寄。流程本身已驗通。
+- 用法：跑一次 install_agent.bat(開機自動背景)→之後網頁「Email 設定→列出→勾選→寄出→確認」全在網頁完成。
 
-## 2026-07-11 V1.28 修 bug：已結案不再判逾期 ✅ 完成
-- 使用者回報：不少「已結案」卻顯示「已逾期」。原因：overdue 只看到期日(daysLeft<0)，沒管 closeBucket。
-- 修法(已結案一律不再用到期日判斷)：
-  · sheets.js(多表實際路徑)：overdue/overdueDays 加 closeBucket!=='closed' guard(源頭修正，summary/history 直接讀 sheet.records 也對)。
-  · analysis.js：isOverdue/withinDays/withinSixMonths/isTodayTrack 全加 !isClosed(r) guard；bandOf 開頭 closeBucket==='closed'→'noDue'(已結案不進已逾期等帶)；finalizeRecord 統一覆寫 r.overdue/overdueDays(close-aware)，確保各路徑一致。
-  · ui-common 明細表逾期天數欄/紅列不用改：它讀 r.overdue/overdueDays，源頭修好就自動正確。
+## 2026-07-13 V1.39 催辦人選記憶（選一次下次自動帶入）✅ 完成
+- 使用者：第一次做選擇後就當預設帶入，以後不用再選。
+- 成果：email.js 加 SEL_KEY(vulnDashboard.emailSel)；doExportSelected 匯出時 saveSel(勾選的負責人名)；doList 用 loadSel 套用——有記憶就只勾記住的、沒記憶(從未選過)預設全勾。全選/全不選仍可臨時調整。
+- 驗(預覽8790)：V1.39；清記憶→全31勾；設記憶[玄慈,阿朱]→只勾這兩位；console 無錯。
+
+## 2026-07-13 V1.38 催辦可勾選人選＋寄前 Y/N 確認 ✅ 完成
+- 使用者：5 人是否都發？→是，每人一封不同信。但測試想只發一人；前期要手動確認人選，後期才自動。理想流程：檢查→問要不要發→按 Yes 才寄。
+- 網頁(email.js)：Email 設定加「列出催辦名單」——各負責人一列 checkbox(預設全勾)＋全選/全不選；「匯出勾選的人」只匯出勾選者到 mail-batch.json(測試就全不選→勾一個)。css .batch-list/.batch-row/.batch-tools。
+- 腳本(send_mail.ps1)：改兩段——Pass1 先查 AD 建「寄送計畫」並印出(誰→哪個email／轉主管／跳過)；Read-Host Y/N 確認；Pass2 按 Y 才實際寄。取消不寄任何信。
+- 驗(預覽8790)：V1.38；列表 31 人、預設全勾、全不選=0、勾一個=1；footer 三鈕正確；ps1 parse OK；console 無錯。
+- 未測(需公司機器)：AD 查詢＋實際 relay 寄送(同 V1.37，請跑 send.bat 貼回結果)。
+
 ```
 
 ## 最近 10 筆 commit
 
 ```
-8104c7e chore：gitignore 真實資料/個人設定，新增 git-push.sh 一鍵推（日期戳）
-91cd0e0 V1.30：下鑽稽核補漏 ＋ 清乾淨備註
-772341e V1.29：總覽 KPI 可鑽取 ＋ 明細寬表抓取拖曳捲動（拉把）
-62ee44d V1.28：修 bug — 已結案不再判逾期
-a747a3d docs：接手指南補「打包正式版 SOP」章節（V1.27）
-f4d4f98 build：新增 build_dist.sh 產生正式包（白名單複製＋防呆）
-177c072 V1.27：打包正式版 — 移除「天龍八部」範例資料
-6d33be3 docs：更新 .project 接手文件到 V1.26
-4ef2455 V1.26：紅黑榜排行預設只顯示前 5 名＋展開全部
-1707f04 V1.25：趨勢「跟上次比」＋歷史快照（三個新功能收官）
+4d18fbe V1.57：全站字級等比放大 ×1.18（顧慮老花眼可讀性）
+9226404 V1.56：.gitignore 加擋公司內部規範文件（Cathay規範/、合規落差對照表.md），防止外流至公開 repo
+e511881 V1.55：CC 可驗證 — 小幫手回報版本 + 發信紀錄加「副本」欄
+3c715f8 V1.54：logo 加白色圓角底 chip，避免綠 logo 貼綠頁首看不清
+ca1aabf V1.53：內建國泰綠佔位 logo（assets/logo.svg），官方 logo.png 可覆蓋
+fe2f878 V1.52：左上角改讀本機 logo（assets/logo.png，讀不到退回盾牌）
+f851c08 V1.51：使用說明移除「更新到最新版」節（upload/GitHub/update 部署資訊不外露）
+3161518 V1.50：發信失敗告警 + 發信紀錄
+a9839b2 V1.49：Email 加「副本給自己（寄件人）」選項（預設開）
+fa99fbc 放回一次性開發包_4.0_分享版(開發方法論分享包)
 ```
