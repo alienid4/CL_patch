@@ -4,7 +4,7 @@
     {
       "name": "vuln-dashboard",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "8778", "--directory", "C:\\Users\\User\\OneDrive\\2025 Data\\AI LAB\\CL_patch"],
+      "runtimeArgs": ["-m", "http.server", "8778", "--directory", "C:\\Users\\leea6\\OneDrive\\2025 Data\\AI LAB\\CL_patch"],
       "port": 8778
     }
   ]

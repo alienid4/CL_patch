@@ -20,7 +20,7 @@ if (Test-Path $ovPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.55'
+$AGENT_VER = 'V1.58'
 
 # 發信紀錄檔（磁碟稽核；UTF-8 BOM，Excel 可直接開）
 $script:logPath = Join-Path $here 'mail_log.csv'
@@ -80,7 +80,8 @@ function Do-Send($data) {
             $body = "※ 原負責人「$($o.owner)」查無 email（可能已離職），轉您處理。`r`n`r`n" + $body
         } else { $skipped++; $details += [pscustomobject]@{ owner = $o.owner; mode = 'skip' }; Write-MailLog $o.owner '' '' '跳過' ''; continue }
         try {
-            $pp = @{ SmtpServer = $smtpHost; Port = $smtpPort; From = $from; To = $to; Subject = $subj; Body = $body; Encoding = ([System.Text.Encoding]::UTF8) }
+            # ErrorAction Stop：SMTP 失敗多屬非終止錯誤，不加會略過 catch 而被誤記成「寄出」
+            $pp = @{ SmtpServer = $smtpHost; Port = $smtpPort; From = $from; To = $to; Subject = $subj; Body = $body; Encoding = ([System.Text.Encoding]::UTF8); ErrorAction = 'Stop' }
             if ($cc.Count -gt 0) { $pp['Cc'] = $cc }
             Send-MailMessage @pp
             if ($mode -eq 'ad') { $sent++ } else { $fb++ }

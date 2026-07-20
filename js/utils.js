@@ -15,6 +15,13 @@
     return stripTime(new Date());
   }
 
+  /* 由年月日建 Date；不合法日期(如 2025/2/31)回 null 而非靜默滾到下個月 */
+  function mkDate(y, m, d) {
+    var dt = new Date(y, m - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+    return dt;
+  }
+
   /* --------------------------------------------------------
    * 強韌的日期解析。可吃：
    *   - JS Date 物件(SheetJS cellDates 產生)
@@ -39,9 +46,13 @@
     var s = String(v).trim();
     if (!s) return null;
 
-    // 中文年月日
+    // 中文年月日（同樣支援民國年：<1911 視為民國，+1911）
     var cm = s.match(/^(\d{3,4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);
-    if (cm) return new Date(+cm[1], +cm[2] - 1, +cm[3]);
+    if (cm) {
+      var cy = +cm[1];
+      if (cy < 1911) cy += 1911;
+      return mkDate(cy, +cm[2], +cm[3]);
+    }
 
     // yyyy/m/d、yyyy-m-d、yyyy.m.d
     var m = s.match(/^(\d{3,4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
@@ -49,7 +60,7 @@
       var y = +m[1];
       // 支援民國年(<1911 視為民國，+1911)
       if (y < 1911) y += 1911;
-      return new Date(y, +m[2] - 1, +m[3]);
+      return mkDate(y, +m[2], +m[3]);
     }
 
     var d2 = new Date(s);
@@ -109,6 +120,9 @@
     var node = document.createElement(tag);
     if (attrs) {
       Object.keys(attrs).forEach(function (k) {
+        // null/undefined 一律不設屬性：布林屬性(disabled/checked…)若 setAttribute(k,null)
+        // 會被字串化成 "null" 而生效，造成「本該啟用卻停用」
+        if (attrs[k] === null || attrs[k] === undefined) return;
         if (k === 'class') node.className = attrs[k];
         else if (k === 'html') node.innerHTML = attrs[k];
         else if (k === 'text') node.textContent = attrs[k];

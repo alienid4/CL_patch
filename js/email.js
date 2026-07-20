@@ -220,6 +220,7 @@
     var listBox = U.el('div', { class: 'batch-list hidden' });
     var body = U.el('div', {}, [f.node, listBox]);
     var listState = { batch: [], checks: {} };
+    var sending = false;                        // 寄送中旗標，擋重複點擊
 
     function doSave() {
       var c = f.read();
@@ -357,15 +358,26 @@
       });
       listBox.appendChild(U.el('div', { class: 'plan-actions' }, [
         U.el('button', { class: 'btn btn-primary btn-sm', text: '確認寄出（' + willSend + '）',
-          onclick: function () { doConfirmSend(payload); } }),
+          onclick: function () { doConfirmSend(payload, this); } }),
         U.el('button', { class: 'btn btn-secondary btn-sm', text: '取消',
           onclick: function () { listBox.classList.add('hidden'); } }),
       ]));
     }
 
-    function doConfirmSend(payload) {
-      UI.toast('寄送中…', 'info');
-      fetch(AGENT + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    function doConfirmSend(payload, btn) {
+      if (sending) return;                       // 防重複點擊：寄送中再按一次會重複寄信
+      sending = true;
+      if (btn) { btn.disabled = true; btn.textContent = '寄送中…'; }
+      function done() {
+        sending = false;
+        if (btn) { btn.disabled = false; btn.textContent = '確認寄出'; }
+      }
+      // 逾時保護：AD 不通或 relay 卡住時，不要永遠停在沒有回應的畫面
+      var ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ac) ac.abort(); }, 120000);
+      UI.toast('寄送中…（請勿重複按）', 'info');
+      fetch(AGENT + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify(payload), signal: ac ? ac.signal : undefined })
         .then(function (r) { return r.json(); })
         .then(function (j) {
           if (!j || !j.ok) { UI.toast((j && j.error) || '寄送失敗', 'error'); return; }
@@ -388,7 +400,14 @@
           if (j.failed > 0) UI.toast('⚠ 有 ' + j.failed + ' 封寄送失敗！點「發信紀錄」看細節', 'error');
           else UI.toast('寄出 ' + j.sent + ' 封', 'success');
         })
-        .catch(function () { UI.toast('寄送時連不到小幫手', 'error'); });
+        .catch(function (e) {
+          if (e && e.name === 'AbortError') {
+            UI.toast('小幫手逾時未回應（可能仍在寄）。請先看「發信紀錄」確認，勿直接重寄', 'error');
+          } else {
+            UI.toast('寄送時連不到小幫手', 'error');
+          }
+        })
+        .then(function () { clearTimeout(timer); done(); });
     }
 
     var useAgent = !global.Features || global.Features.isOn('email-agent');
