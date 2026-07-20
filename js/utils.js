@@ -37,10 +37,13 @@
     }
 
     if (typeof v === 'number' && isFinite(v)) {
-      // Excel 序號起點 1899/12/30
-      var ms = Math.round((v - 25569) * 86400 * 1000);
+      // Excel 序號起點 1899/12/30。只取整數日，小數(時分秒)一律捨去：
+      // 原本用 UTC 毫秒換算再以本地時區取年月日，UTC+8 下「16:00 之後」會被算成隔天
+      var days = Math.floor(v);
+      var ms = (days - 25569) * 86400 * 1000;
       var d = new Date(ms);
-      return isNaN(d.getTime()) ? null : stripTime(d);
+      if (isNaN(d.getTime())) return null;
+      return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
     }
 
     var s = String(v).trim();
@@ -87,15 +90,31 @@
     return d.getFullYear() + '/' + mm + '/' + dd;
   }
 
-  /* 正規化字串：trim + 全形空白轉半形 */
+  /* 特殊字元一律以碼位建構，避免原始碼中出現肉眼看不見的字面字元
+   * （那種寫法只要檔案被重新編碼就可能靜默損壞） */
+  var CH = String.fromCharCode;
+  var ZERO_WIDTH_RE = new RegExp('[' + CH(0x200B) + '-' + CH(0x200D) + CH(0xFEFF) + ']', 'g'); // ZWSP/ZWNJ/ZWJ/BOM
+  var IDEO_SPACE_RE = new RegExp(CH(0x3000), 'g');                                             // 全形空白
+  var FULLWIDTH_RE  = new RegExp('[' + CH(0xFF01) + '-' + CH(0xFF5E) + ']', 'g');              // 全形英數符號
+
+  /* 正規化字串：去零寬字元 + 全形空白轉半形 + trim
+   * 零寬字元常隨系統匯出夾帶，肉眼看不到卻會讓欄位比對失敗 */
   function normStr(v) {
     if (v === null || v === undefined) return '';
-    return String(v).replace(/　/g, ' ').trim();
+    return String(v).replace(ZERO_WIDTH_RE, '').replace(IDEO_SPACE_RE, ' ').trim();
   }
 
-  /* 正規化用於比對的鍵：去空白、小寫 */
+  /* 全形英數/符號 → 半形（U+FF01–FF5E 減 0xFEE0） */
+  function toHalfWidth(s) {
+    return s.replace(FULLWIDTH_RE, function (ch) {
+      return CH(ch.charCodeAt(0) - 0xFEE0);
+    });
+  }
+
+  /* 正規化用於比對的鍵：去空白、全形轉半形、小寫
+   * 「Ｐｌｕｇｉｎ　ＩＤ」這種全形表頭原本比對不到，會讓整張表欄位對不上 */
   function normKey(v) {
-    return normStr(v).replace(/\s+/g, '').toLowerCase();
+    return toHalfWidth(normStr(v)).replace(/\s+/g, '').toLowerCase();
   }
 
   /* HTML escape，避免 Excel 內容含 <> 破版或 XSS */

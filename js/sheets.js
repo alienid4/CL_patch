@@ -80,10 +80,13 @@
   }
 
   /* 表8 特例：單位欄含人名「資訊架構部-林偉竹 (EDR偵測規則)」→ 拆 */
+  /* 破折號：半形 - / en dash / em dash / 全形－ 都算（資料實際三種都出現過）
+   * 以碼位建構，避免原始碼夾帶難以辨識的字面字元 */
+  var DASH_RE = new RegExp('[-' + String.fromCharCode(0x2013) + String.fromCharCode(0x2014) + String.fromCharCode(0xFF0D) + ']');
   function splitUnitOwner(raw) {
     var s = U.normStr(raw);
-    var idx = s.indexOf('-');
-    if (idx < 0) idx = s.indexOf('–'); // en dash
+    var m = s.match(DASH_RE);
+    var idx = m ? m.index : -1;
     if (idx < 0) return { unit: s, owner: '' };
     var unit = s.slice(0, idx).trim();
     var owner = s.slice(idx + 1).replace(/[（(].*$/, '').trim(); // 去尾註 (…)
@@ -106,7 +109,7 @@
     // 單位/負責人（表8：無 owner 欄且單位含「-」→ 拆）
     var unit = U.normStr(pick(row, map.unit));
     var owner = map.owner ? U.normStr(pick(row, map.owner)) : '';
-    if (!map.owner && unit.indexOf('-') >= 0) {
+    if (!map.owner && DASH_RE.test(unit)) {
       var so = splitUnitOwner(unit); unit = so.unit; owner = so.owner;
     }
     if (!owner) owner = '(未指定)';
