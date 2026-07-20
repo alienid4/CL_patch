@@ -372,6 +372,7 @@
   function todayActions(records) {
     var exDays = CFG.todayExceptionExpiryDays || 7;
     var list = records.filter(function (r) {
+      if (isClosed(r)) return false;                 // 已結案不該出現在待辦(母體含已結案時)
       if (r.realDue && r.daysLeft <= 0) return true; // 逾期或今日到期
       if (r.stage === 'exception' && r.realDue && r.daysLeft >= 0 && r.daysLeft <= exDays) return true;
       return false;
@@ -425,7 +426,10 @@
     var od = (r.closeBucket !== 'closed' && r.daysLeft !== null && r.daysLeft < 0);
     r.overdue = od;
     r.overdueDays = od ? -r.daysLeft : 0;
-    r.riskScore = riskScore(r.severity, r.realDue, r.daysLeft, r.overdueDays);
+    // 已結案不套「逾期越久分數越高」的加權，否則會洗版風險排行
+    r.riskScore = (r.closeBucket === 'closed')
+      ? riskScore(r.severity, null, null, 0)
+      : riskScore(r.severity, r.realDue, r.daysLeft, r.overdueDays);
     if (r.department === undefined) r.department = r.unit || '';
     if (!r.owner) r.owner = '(未指定)';
     return r;

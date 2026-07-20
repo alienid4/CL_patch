@@ -52,30 +52,62 @@ function Write-MailLog([string]$owner, [string]$to, [string]$cc, [string]$status
     } catch {}
 }
 
-function Resolve-Email([string]$name) {
-    if ($script:override.ContainsKey($name)) { return $script:override[$name] }
+# 回傳 @{ email=<字串或$null>; reason='override'|'ad'|'ambiguous'|'notfound'|'error'; candidates=@() }
+# 舊版只回 email，導致「同名多筆」與「真的查不到」都顯示成『查無 email』，使用者無從判斷
+function Resolve-EmailInfo([string]$name) {
+    if ($script:override.ContainsKey($name)) {
+        return @{ email = $script:override[$name]; reason = 'override'; candidates = @() }
+    }
     try {
-        $safe = $name -replace '[()\*\\/]', ''
+        # 先把括號連同內容整段拿掉（「王小明(資安室)」→「王小明」），
+        # 只拿掉括號符號會變成「王小明資安室」而在 AD 查無
+        $safe = $name -replace '[(（][^)）]*[)）]', ''
+        $safe = ($safe -replace '[\*\\/()（）]', '').Trim()
+        if (-not $safe) { return @{ email = $null; reason = 'notfound'; candidates = @() } }
+
         $s = New-Object System.DirectoryServices.DirectorySearcher
         $s.Filter = "(&(objectCategory=person)(objectClass=user)(anr=$safe))"
         [void]$s.PropertiesToLoad.Add('mail')
-        $mails = @()
-        foreach ($e in $s.FindAll()) { if ($e.Properties['mail'].Count -gt 0) { $mails += [string]$e.Properties['mail'][0] } }
-        $mails = @($mails | Select-Object -Unique)
-        if ($mails.Count -eq 1) { return $mails[0] }
-    } catch {}
-    return $null
+        [void]$s.PropertiesToLoad.Add('samaccountname')
+        $found = @()
+        foreach ($e in $s.FindAll()) {
+            if ($e.Properties['mail'].Count -gt 0) {
+                $found += [pscustomobject]@{
+                    mail = [string]$e.Properties['mail'][0]
+                    sam  = if ($e.Properties['samaccountname'].Count -gt 0) { [string]$e.Properties['samaccountname'][0] } else { '' }
+                }
+            }
+        }
+        $found = @($found | Sort-Object mail -Unique)
+        if ($found.Count -eq 1) { return @{ email = $found[0].mail; reason = 'ad'; candidates = @() } }
+        if ($found.Count -gt 1) {
+            # 多筆時優先取「非管理者帳號」(adm_/a-/admin 前綴)，仍唯一才自動採用
+            $normal = @($found | Where-Object { $_.sam -notmatch '^(adm[_-]|a[_-]|admin)' })
+            if ($normal.Count -eq 1) { return @{ email = $normal[0].mail; reason = 'ad'; candidates = @() } }
+            return @{ email = $null; reason = 'ambiguous'; candidates = @($found | ForEach-Object { $_.mail }) }
+        }
+        return @{ email = $null; reason = 'notfound'; candidates = @() }
+    } catch {
+        return @{ email = $null; reason = 'error'; candidates = @() }
+    }
 }
+
+# 相容舊呼叫：只要 email
+function Resolve-Email([string]$name) { return (Resolve-EmailInfo $name).email }
 
 function Build-Plan($data) {
     $fallback = @($data.fallbackTo) | Where-Object { $_ }
     $plan = @()
     foreach ($o in $data.owners) {
-        $email = Resolve-Email $o.owner
+        $info = Resolve-EmailInfo $o.owner
+        $email = $info.email
         if ($email) { $mode = 'ad'; $to = $email }
         elseif ($fallback.Count -gt 0) { $mode = 'fallback'; $to = ($fallback -join ',') }
         else { $mode = 'skip'; $to = $null }
-        $plan += [pscustomobject]@{ owner = $o.owner; count = $o.count; to = $to; mode = $mode }
+        $plan += [pscustomobject]@{
+            owner = $o.owner; count = $o.count; to = $to; mode = $mode
+            reason = $info.reason; candidates = @($info.candidates)
+        }
     }
     return $plan
 }

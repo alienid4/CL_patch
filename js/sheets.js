@@ -57,12 +57,16 @@
     return out.length ? out : null;
   }
 
-  /* ---- 結案分桶：open / closed / other ---- */
+  /* ---- 結案分桶：open / closed / other ----
+   * 先判「未結」類（含『結案中』這種帶「結案」二字但其實未完成的），再判「已結」類，
+   * 避免子字串誤判。對應不到的落入 other，由上層顯示「未分類狀態」而非靜默丟棄。 */
+  var OPEN_WORDS = ['未結', '進行中', '處理中', '追蹤中', '未完成', '未修補', '未修復', '結案中', '修補中', '改善中'];
+  var CLOSED_WORDS = ['已結案', '結案', '已修補', '已修復', '已完成', '完成', '已改善', '改善完成', '已解決', '無需修補'];
   function classifyClose(rawStatus, closeDate) {
     var s = U.normStr(rawStatus);
     if (s) {
-      if (s.indexOf('未結') >= 0 || s.indexOf('進行中') >= 0) return 'open';
-      if (s.indexOf('結案') >= 0 || s.indexOf('已修補') >= 0) return 'closed';
+      for (var i = 0; i < OPEN_WORDS.length; i++) if (s.indexOf(OPEN_WORDS[i]) >= 0) return 'open';
+      for (var j = 0; j < CLOSED_WORDS.length; j++) if (s.indexOf(CLOSED_WORDS[j]) >= 0) return 'closed';
       return 'other';
     }
     return closeDate ? 'closed' : 'open';
@@ -149,6 +153,21 @@
     var map = resolveProfile(headers);
     var records = [];
     var rawCount = 0;
+    var warnings = [];
+
+    // 欄位全對不上 → 多半是「真正表頭不在第一列」(第一列是大標題)，
+    // 若不提醒，會產出一整批空白紀錄而使用者毫無所覺
+    var KEY_FIELDS = ['severity', 'name', 'host', 'unit', 'owner', 'fixDeadline', 'closeStatus', 'closeDate'];
+    var hit = KEY_FIELDS.filter(function (k) { return !!map[k]; });
+    if (hit.length === 0) {
+      warnings.push('「' + name + '」的欄位全部無法辨識，可能表頭不在第一列（第一列是標題？）或欄位名稱不符，資料將顯示為空白。');
+    } else if (hit.length <= 2) {
+      warnings.push('「' + name + '」只辨識出 ' + hit.length + ' 個欄位，部分內容可能顯示不完整。');
+    }
+    // 重複表頭：同名欄位後者會覆蓋前者，左邊那欄資料會整欄遺失
+    var seen = {}, dup = [];
+    headers.forEach(function (h) { if (!h) return; if (seen[h]) { if (dup.indexOf(h) < 0) dup.push(h); } seen[h] = 1; });
+    if (dup.length) warnings.push('「' + name + '」有重複的欄位名稱（' + dup.join('、') + '），僅最後一欄的資料會被讀取。');
     for (var i = 1; i < matrix.length; i++) {
       var arr = matrix[i];
       if (arr.every(function (c) { return U.normStr(c) === ''; })) continue;
@@ -157,7 +176,7 @@
       for (var c = 0; c < headers.length; c++) obj[headers[c]] = arr[c] === undefined ? '' : arr[c];
       buildRecords(obj, map, name).forEach(function (r) { records.push(r); });
     }
-    return { name: name, headers: headers, rawCount: rawCount, records: records, profile: map };
+    return { name: name, headers: headers, rawCount: rawCount, records: records, profile: map, warnings: warnings };
   }
 
   /* ---- 主入口：ArrayBuffer → 各數字表結果（依表號排序） ---- */

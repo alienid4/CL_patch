@@ -461,6 +461,26 @@
     banner.innerHTML = '';
     var q = result.quality;
 
+    // 解析警告(欄位對不上/重複表頭)與「未分類結案狀態」優先顯示：
+    // 這兩種會讓資料看起來正常卻其實不完整，必須讓使用者知道
+    var sheet = state.sheets && state.sheets[state.activeIdx];
+    var parseWarns = (sheet && sheet.warnings) || [];
+    var otherRecs = ((sheet && sheet.records) || []).filter(function (r) { return r.closeBucket === 'other'; });
+    if (parseWarns.length || otherRecs.length) {
+      banner.className = 'quality-banner warn';
+      banner.appendChild(U.el('span', { class: 'q-icon', text: '⚠' }));
+      var msgs = parseWarns.slice();
+      if (otherRecs.length) msgs.push('有 ' + otherRecs.length + ' 筆的結案狀態無法歸類為未結案或已結案，未被計入任何統計。');
+      banner.appendChild(U.el('span', { class: 'q-text', text: msgs.join('　') }));
+      if (otherRecs.length) {
+        banner.appendChild(U.el('button', {
+          class: 'btn btn-secondary btn-sm', text: '看未分類清單',
+          onclick: function () { UI.openDetail('未分類結案狀態（' + otherRecs.length + ' 筆）', otherRecs); },
+        }));
+      }
+      return;
+    }
+
     if (!q || q.count === 0) {
       banner.className = 'quality-banner ok';
       banner.appendChild(U.el('span', { text: '✅ 資料品質檢核通過，未發現異常。' }));

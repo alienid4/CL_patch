@@ -374,9 +374,16 @@
         U.el('span', { class: 'batch-tools-label', text: '寄送計畫（將寄出 ' + willSend + ' 封）' }),
       ]));
       plan.forEach(function (p) {
+        // 區分「同名多筆」與「真的查無」：兩者原本都顯示「查無 email」，
+        // 使用者去 AD 一查明明有這個人，會誤以為程式壞了
+        var why = p.reason === 'ambiguous'
+                    ? ('AD 同名多筆，請用 override.json 指定'
+                       + (p.candidates && p.candidates.length ? '（' + p.candidates.join('、') + '）' : ''))
+                  : p.reason === 'error' ? 'AD 查詢失敗'
+                  : '查無 email';
         var label = p.mode === 'ad' ? ('→ ' + p.to)
-                  : p.mode === 'fallback' ? ('→ 轉主管 ' + p.to)
-                  : '查無 email，跳過';
+                  : p.mode === 'fallback' ? ('→ 轉主管 ' + p.to + '（' + why + '）')
+                  : why + '，跳過';
         listBox.appendChild(U.el('div', { class: 'batch-row plan-' + p.mode }, [
           U.el('span', { class: 'batch-owner', text: p.owner }),
           U.el('span', { class: 'batch-count', text: label }),
