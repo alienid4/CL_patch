@@ -22,6 +22,7 @@
     subjectPrefix: '【弱點修補提醒】',
     scopeOverdue: true,
     scopeSoon: false,
+    agentToken: '',        // 小幫手存取權杖（見 agent_token.txt；防其他網頁盜用小幫手發信）
   };
 
   function loadCfg() {
@@ -178,6 +179,8 @@
     var cOverdue = U.el('input', { type: 'checkbox' }); cOverdue.checked = !!cfg.scopeOverdue;
     var cSoon = U.el('input', { type: 'checkbox' }); cSoon.checked = !!cfg.scopeSoon;
     var cSelf = U.el('input', { type: 'checkbox' }); cSelf.checked = !!cfg.ccSelf;
+    var iToken = U.el('input', { type: 'text', class: 'email-input', value: cfg.agentToken || '',
+      placeholder: '貼上小幫手資料夾內 agent_token.txt 的內容' });
 
     var form = U.el('div', { class: 'email-form' }, [
       field('SMTP 主機', iHost),
@@ -189,6 +192,7 @@
       ]),
       field('查無 email 轉寄', iFallback),
       field('主旨前綴', iSubj),
+      field('小幫手權杖', iToken),
       U.el('div', { class: 'email-field' }, [
         U.el('span', { class: 'email-field-label', text: '寄送範圍' }),
         U.el('div', { class: 'email-scope' }, [
@@ -209,6 +213,7 @@
         subjectPrefix: iSubj.value,
         scopeOverdue: cOverdue.checked,
         scopeSoon: cSoon.checked,
+        agentToken: iToken.value.trim(),
       };
     }
     return { node: form, read: read };
@@ -280,7 +285,20 @@
     /* 測試本機小幫手是否在跑 */
     function doTestAgent() {
       fetch(AGENT + '/health').then(function (r) { return r.json(); })
-        .then(function (j) { UI.toast((j && j.ok) ? ('本機小幫手已連線 ✓　' + (j.version || '')) : '小幫手回應異常', (j && j.ok) ? 'success' : 'error'); })
+        .then(function (j) {
+          if (!j || !j.ok) { UI.toast('小幫手回應異常', 'error'); return; }
+          // 埠可能被別的服務佔用（它也可能回 ok:true）→ 必須確認真的是 mail-agent
+          if (j.agent !== 'mail-agent') {
+            UI.toast('這個埠被其他程式占用（回應者不是寄信小幫手），請先關掉占用程式再啟動小幫手', 'error');
+            return;
+          }
+          var hasTok = !!(loadCfg().agentToken || '').trim();
+          if (j.needToken && !hasTok) {
+            UI.toast('小幫手已連線 ' + (j.version || '') + '，但尚未設定權杖：請貼上 agent_token.txt 的內容', 'error');
+          } else {
+            UI.toast('本機小幫手已連線 ✓　' + (j.version || ''), 'success');
+          }
+        })
         .catch(function () { UI.toast('連不到小幫手，請先執行 install_agent.bat', 'error'); });
     }
 
@@ -317,7 +335,7 @@
       var keys = ['time', 'owner', 'to', 'cc', 'status', 'error'];
       var rows = [['時間', '負責人', '收件人', '副本', '狀態', '錯誤']].concat(log.map(function (r) { return keys.map(function (k) { return r[k] || ''; }); }));
       var csv = rows.map(function (arr) {
-        return arr.map(function (v) { var s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',');
+        return arr.map(function (v) { var s = String(v == null ? '' : v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',');
       }).join('\r\n');
       var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
       var url = URL.createObjectURL(blob);
@@ -327,12 +345,20 @@
       UI.toast('已匯出 發信紀錄.csv', 'success');
     }
 
+    /* 送小幫手的標頭：帶存取權杖，避免其他網頁盜用小幫手發信 */
+    function agentHeaders() {
+      var h = { 'Content-Type': 'application/json' };
+      var t = (loadCfg().agentToken || '').trim();
+      if (t) h['X-Agent-Token'] = t;
+      return h;
+    }
+
     /* 寄出：先查 AD 出計畫 → 顯示 → 確認才寄 */
     function doSend() {
       var g = getSelected(); if (!g) return;
       var payload = buildPayload(g.c, g.selected);
       UI.toast('查 AD 解析中…', 'info');
-      fetch(AGENT + '/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      fetch(AGENT + '/plan', { method: 'POST', headers: agentHeaders(), body: JSON.stringify(payload) })
         .then(function (r) { return r.json(); })
         .then(function (j) {
           if (!j || !j.ok) { UI.toast((j && j.error) || '小幫手錯誤', 'error'); return; }
@@ -376,7 +402,7 @@
       var ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       var timer = setTimeout(function () { if (ac) ac.abort(); }, 120000);
       UI.toast('寄送中…（請勿重複按）', 'info');
-      fetch(AGENT + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      fetch(AGENT + '/send', { method: 'POST', headers: agentHeaders(),
                                body: JSON.stringify(payload), signal: ac ? ac.signal : undefined })
         .then(function (r) { return r.json(); })
         .then(function (j) {

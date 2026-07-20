@@ -20,7 +20,24 @@ if (Test-Path $ovPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.58'
+$AGENT_VER = 'V1.59'
+
+# ── 存取權杖 ─────────────────────────────────────────────
+# 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
+# 以你的名義發信。啟動時產生一次性 token 寫到 agent_token.txt，網頁需帶 token 才受理。
+$script:token = [guid]::NewGuid().ToString('N')
+$tokenPath = Join-Path $here 'agent_token.txt'
+# 注意：token 檔要等監聽成功才寫，否則啟動失敗(埠被占用)也留下新 token，使用者會誤以為已就緒
+
+# 允許的來源：本機看板（file:// 會送 Origin: null，或不送 Origin）
+function Test-Origin($req) {
+    $o = $req.Headers['Origin']
+    if ([string]::IsNullOrEmpty($o) -or $o -eq 'null') { return $true }   # file:// 開啟的看板
+    return ($o -match '^https?://(localhost|127\.0\.0\.1)(:\d+)?$')
+}
+function Test-Token($req) {
+    return ($req.Headers['X-Agent-Token'] -eq $script:token)
+}
 
 # 發信紀錄檔（磁碟稽核；UTF-8 BOM，Excel 可直接開）
 $script:logPath = Join-Path $here 'mail_log.csv'
@@ -102,22 +119,38 @@ $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 try { $listener.Start() }
 catch { Write-Host "啟動失敗（埠 $Port 可能已被占用）：$($_.Exception.Message)" -ForegroundColor Red; exit 1 }
+try { [IO.File]::WriteAllText($tokenPath, $script:token, (New-Object Text.UTF8Encoding($false))) } catch {}
 Write-Host "mail-agent 已啟動：http://localhost:$Port/   （關閉本視窗即停止）"
+Write-Host ""
+Write-Host "存取權杖（第一次使用請貼到網頁 Email 設定的「小幫手權杖」欄）：" -ForegroundColor Yellow
+Write-Host "  $script:token" -ForegroundColor Cyan
+Write-Host "  （也已寫入 $tokenPath；每次重啟會換新，換了要重貼）"
 
 while ($listener.IsListening) {
     try { $ctx = $listener.GetContext() } catch { break }
     $req = $ctx.Request; $res = $ctx.Response
     try {
-        $res.Headers['Access-Control-Allow-Origin'] = '*'
+        # CORS：只回請求端自己的 Origin（且需通過白名單），不再無條件 '*'
+        $org = $req.Headers['Origin']
+        if (Test-Origin $req) {
+            $res.Headers['Access-Control-Allow-Origin'] = if ([string]::IsNullOrEmpty($org)) { 'null' } else { $org }
+        }
         $res.Headers['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
-        $res.Headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        $res.Headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Agent-Token'
         $res.Headers['Access-Control-Allow-Private-Network'] = 'true'
         if ($req.HttpMethod -eq 'OPTIONS') { $res.StatusCode = 204; $res.Close(); continue }
 
         $path = $req.Url.AbsolutePath
         $out = $null
-        if ($path -eq '/health') {
-            $out = [pscustomobject]@{ ok = $true; agent = 'mail-agent'; version = $AGENT_VER }
+        if (-not (Test-Origin $req)) {
+            $res.StatusCode = 403
+            $out = [pscustomobject]@{ ok = $false; error = '來源不被允許' }
+        } elseif ($path -eq '/health') {
+            # /health 不需 token（網頁用它確認小幫手是否在跑），但不回傳 token
+            $out = [pscustomobject]@{ ok = $true; agent = 'mail-agent'; version = $AGENT_VER; needToken = $true }
+        } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send') -and -not (Test-Token $req)) {
+            $res.StatusCode = 401
+            $out = [pscustomobject]@{ ok = $false; error = "未授權：請在 Email 設定貼上 agent_token.txt 的內容" }
         } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send')) {
             $reader = New-Object System.IO.StreamReader($req.InputStream, [System.Text.Encoding]::UTF8)
             $bodyText = $reader.ReadToEnd(); $reader.Close()
