@@ -288,7 +288,8 @@
     });
 
     var footer = U.el('div', { class: 'reminder-actions' }, [copyAll, copyBody, mailto]);
-    UI.openModal(title, content, { footer: footer });
+    // sticky：催辦內容常在複製到一半，誤點關掉就得重產
+    UI.openModal(title, content, { footer: footer, sticky: true });
   }
 
   global.Tracking = { render: render };

@@ -359,7 +359,7 @@
           onclick: function () { try { localStorage.removeItem(LOG_KEY); } catch (e) {} UI.toast('已清空發信紀錄', 'success'); UI.closeModal(); /* 只收這一層，回到 Email 設定 */ } }),
       ]);
       // stack:true → 關閉後回到原本的 Email 設定畫面(含已勾選的催辦名單)，而不是整個關掉
-      UI.openModal('發信紀錄（' + log.length + ' 筆）', wrap, { footer: footer, stack: true });
+      UI.openModal('發信紀錄（' + log.length + ' 筆）', wrap, { footer: footer, stack: true, sticky: true });
     }
     function exportLog(log) {
       var keys = ['time', 'owner', 'to', 'cc', 'status', 'error'];
@@ -497,7 +497,8 @@
     } else {
       footBtns.push(U.el('button', { class: 'btn btn-primary', text: '匯出寄送檔', onclick: doExportSelected }));
     }
-    UI.openModal('Email 設定', body, { footer: U.el('div', { class: 'reminder-actions' }, footBtns) });
+    // sticky：表單填到一半誤點空白處不該整組關掉（要關按右上 ✕）
+    UI.openModal('Email 設定', body, { footer: U.el('div', { class: 'reminder-actions' }, footBtns), sticky: true });
   }
 
   function init() {

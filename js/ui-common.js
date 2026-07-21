@@ -20,8 +20,13 @@
   /* -------- Modal --------
    * 全站共用同一個 overlay。若在 modal 內再開 modal（例如 Email 設定 → 發信紀錄），
    * 直接覆寫會把原本的表單與勾選狀態整個清掉，關閉後回不去。
-   * 因此提供 opts.stack：把目前這層的節點暫存，關閉時還原上一層。 */
+   * 因此提供 opts.stack：把目前這層的節點暫存，關閉時還原上一層。
+   *
+   * opts.sticky：這層「不會被誤觸關掉」——點 overlay 空白處與按 Esc 都無效，
+   * 只有右上 ✕ 或畫面上的按鈕能關。用於有使用者輸入、關掉就得重來的流程
+   * (Email 設定、催辦內容)。唯讀的明細 modal 不要設，那些好關比較方便。 */
   var modalStack = [];
+  var stickyNow = false;
 
   function openModal(title, contentNode, opts) {
     opts = opts || {};
@@ -36,8 +41,11 @@
       while (bodyEl.firstChild) savedBody.appendChild(bodyEl.firstChild);
       var savedFoot = document.createDocumentFragment();
       while (footEl.firstChild) savedFoot.appendChild(footEl.firstChild);
-      modalStack.push({ title: titleEl.textContent, body: savedBody, foot: savedFoot });
+      // 連同上一層的 sticky 一起存，收掉這層時要還原回去
+      modalStack.push({ title: titleEl.textContent, body: savedBody, foot: savedFoot, sticky: stickyNow });
     }
+
+    stickyNow = !!opts.sticky;
 
     titleEl.textContent = title;
     bodyEl.innerHTML = '';
@@ -61,17 +69,23 @@
       titleEl.textContent = prev.title;
       bodyEl.innerHTML = ''; bodyEl.appendChild(prev.body);
       footEl.innerHTML = ''; footEl.appendChild(prev.foot);
+      stickyNow = prev.sticky;      // 回到上一層，sticky 也跟著還原
       return;
     }
     overlay.classList.remove('show');
     document.body.classList.remove('modal-open');
+    stickyNow = false;
   }
 
   /* 完全關閉(清空堆疊)：需要一次收掉整組 modal 時用 */
   function closeAllModals() {
     modalStack.length = 0;
+    stickyNow = false;
     closeModal();
   }
+
+  /* 目前這層是否禁止誤觸關閉（給 main.js 的 overlay 點擊與 Esc 判斷用） */
+  function isModalSticky() { return stickyNow; }
 
   /* -------- 明細表欄位定義(供 drill-down / 搜尋 / 新分頁共用) --------
    * disp: 顯示字串；sortVal: 排序鍵(數字/時間戳/字串，null 一律排最後)
@@ -370,6 +384,7 @@
     openModal: openModal,
     closeModal: closeModal,
     closeAllModals: closeAllModals,
+    isModalSticky: isModalSticky,
     buildDetailTable: buildDetailTable,
     openDetail: openDetail,
     popOutTable: popOutTable,
