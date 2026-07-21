@@ -17,13 +17,27 @@
     toast._t = setTimeout(function () { box.className = 'toast'; }, 2600);
   }
 
-  /* -------- Modal -------- */
+  /* -------- Modal --------
+   * 全站共用同一個 overlay。若在 modal 內再開 modal（例如 Email 設定 → 發信紀錄），
+   * 直接覆寫會把原本的表單與勾選狀態整個清掉，關閉後回不去。
+   * 因此提供 opts.stack：把目前這層的節點暫存，關閉時還原上一層。 */
+  var modalStack = [];
+
   function openModal(title, contentNode, opts) {
     opts = opts || {};
     var overlay = document.getElementById('modal-overlay');
     var titleEl = document.getElementById('modal-title');
     var bodyEl = document.getElementById('modal-body');
     var footEl = document.getElementById('modal-footer');
+
+    if (opts.stack && overlay.classList.contains('show')) {
+      // 用 DocumentFragment 保存節點本身(而非 innerHTML)，才能保留輸入值與事件
+      var savedBody = document.createDocumentFragment();
+      while (bodyEl.firstChild) savedBody.appendChild(bodyEl.firstChild);
+      var savedFoot = document.createDocumentFragment();
+      while (footEl.firstChild) savedFoot.appendChild(footEl.firstChild);
+      modalStack.push({ title: titleEl.textContent, body: savedBody, foot: savedFoot });
+    }
 
     titleEl.textContent = title;
     bodyEl.innerHTML = '';
@@ -38,8 +52,25 @@
 
   function closeModal() {
     var overlay = document.getElementById('modal-overlay');
+    // 若有上一層，先還原上一層而不是整個關掉
+    if (modalStack.length) {
+      var prev = modalStack.pop();
+      var titleEl = document.getElementById('modal-title');
+      var bodyEl = document.getElementById('modal-body');
+      var footEl = document.getElementById('modal-footer');
+      titleEl.textContent = prev.title;
+      bodyEl.innerHTML = ''; bodyEl.appendChild(prev.body);
+      footEl.innerHTML = ''; footEl.appendChild(prev.foot);
+      return;
+    }
     overlay.classList.remove('show');
     document.body.classList.remove('modal-open');
+  }
+
+  /* 完全關閉(清空堆疊)：需要一次收掉整組 modal 時用 */
+  function closeAllModals() {
+    modalStack.length = 0;
+    closeModal();
   }
 
   /* -------- 明細表欄位定義(供 drill-down / 搜尋 / 新分頁共用) --------
@@ -321,6 +352,7 @@
     toast: toast,
     openModal: openModal,
     closeModal: closeModal,
+    closeAllModals: closeAllModals,
     buildDetailTable: buildDetailTable,
     openDetail: openDetail,
     popOutTable: popOutTable,

@@ -20,7 +20,7 @@ if (Test-Path $ovPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.59'
+$AGENT_VER = 'V1.65'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -42,14 +42,24 @@ function Test-Token($req) {
 # 發信紀錄檔（磁碟稽核；UTF-8 BOM，Excel 可直接開）
 $script:logPath = Join-Path $here 'mail_log.csv'
 function Csv-Field($s) { if ($null -eq $s) { return '' }; $s = [string]$s; if ($s -match '[",\r\n]') { return '"' + $s.Replace('"', '""') + '"' } return $s }
+$script:logErrors = @()
 function Write-MailLog([string]$owner, [string]$to, [string]$cc, [string]$status, [string]$err) {
+    # $line 先算好：若失敗發生在寫表頭階段，catch 的備援才不會寫進空值
+    $line = ('{0},{1},{2},{3},{4},{5}' -f (Get-Date -Format 'yyyy/MM/dd HH:mm'), (Csv-Field $owner), (Csv-Field $to), (Csv-Field $cc), $status, (Csv-Field $err))
     try {
         if (-not (Test-Path $script:logPath)) {
             [IO.File]::WriteAllText($script:logPath, "時間,負責人,收件人,副本,狀態,錯誤`r`n", (New-Object Text.UTF8Encoding($true)))
         }
-        $line = ('{0},{1},{2},{3},{4},{5}' -f (Get-Date -Format 'yyyy/MM/dd HH:mm'), (Csv-Field $owner), (Csv-Field $to), (Csv-Field $cc), $status, (Csv-Field $err))
         [IO.File]::AppendAllText($script:logPath, $line + "`r`n", (New-Object Text.UTF8Encoding($false)))
-    } catch {}
+    } catch {
+        # 寫檔失敗常見於「使用者正用 Excel 開著 mail_log.csv」→ 檔案被鎖。
+        # 原本靜默吞掉會造成稽核紀錄斷層而無人知曉，改為回報給網頁提示。
+        $script:logErrors += $_.Exception.Message
+        try {
+            $alt = [IO.Path]::ChangeExtension($script:logPath, $null) + (Get-Date -Format 'yyyyMMdd') + '.csv'
+            [IO.File]::AppendAllText($alt, $line + "`r`n", (New-Object Text.UTF8Encoding($true)))
+        } catch {}
+    }
 }
 
 # 回傳 @{ email=<字串或$null>; reason='override'|'ad'|'ambiguous'|'notfound'|'error'; candidates=@() }
@@ -119,6 +129,7 @@ function Do-Send($data) {
     $cc       = @($data.cc) | Where-Object { $_ }
     $fallback = @($data.fallbackTo) | Where-Object { $_ }
     $sent = 0; $fb = 0; $skipped = 0; $failed = 0; $details = @()
+    $script:logErrors = @()   # 本批次的稽核檔寫入錯誤
     foreach ($o in $data.owners) {
         $email = Resolve-Email $o.owner
         $subj = $o.subject; $body = $o.body; $to = $null; $mode = ''
@@ -144,7 +155,10 @@ function Do-Send($data) {
             Write-MailLog $o.owner ($to -join ',') ($cc -join ',') '失敗' $_.Exception.Message
         }
     }
-    return [pscustomobject]@{ ok = $true; sent = $sent; fallback = $fb; skipped = $skipped; failed = $failed; details = $details }
+    return [pscustomobject]@{
+        ok = $true; sent = $sent; fallback = $fb; skipped = $skipped; failed = $failed; details = $details
+        logError = if ($script:logErrors.Count -gt 0) { $script:logErrors[0] } else { $null }
+    }
 }
 
 $listener = New-Object System.Net.HttpListener

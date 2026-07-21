@@ -340,9 +340,10 @@
       var footer = U.el('div', { class: 'reminder-actions' }, [
         U.el('button', { class: 'btn btn-secondary', text: '匯出 CSV', disabled: log.length ? null : 'disabled', onclick: function () { exportLog(log); } }),
         U.el('button', { class: 'btn btn-secondary', text: '清空紀錄', disabled: log.length ? null : 'disabled',
-          onclick: function () { try { localStorage.removeItem(LOG_KEY); } catch (e) {} UI.toast('已清空發信紀錄', 'success'); UI.closeModal(); } }),
+          onclick: function () { try { localStorage.removeItem(LOG_KEY); } catch (e) {} UI.toast('已清空發信紀錄', 'success'); UI.closeModal(); /* 只收這一層，回到 Email 設定 */ } }),
       ]);
-      UI.openModal('發信紀錄（' + log.length + ' 筆）', wrap, { footer: footer });
+      // stack:true → 關閉後回到原本的 Email 設定畫面(含已勾選的催辦名單)，而不是整個關掉
+      UI.openModal('發信紀錄（' + log.length + ' 筆）', wrap, { footer: footer, stack: true });
     }
     function exportLog(log) {
       var keys = ['time', 'owner', 'to', 'cc', 'status', 'error'];
@@ -377,7 +378,11 @@
           if (!j || !j.ok) { UI.toast((j && j.error) || '小幫手錯誤', 'error'); return; }
           renderPlan(payload, j.owners || []);
         })
-        .catch(function () { UI.toast('連不到小幫手，請先啟動（install_agent.bat）', 'error'); });
+        // 區分「真的連不到」與「連到了但回應有問題」，後者叫使用者重跑 install 只會更困惑
+        .catch(function (e) {
+          if (e && e.name === 'TypeError') UI.toast('連不到小幫手，請先啟動（install_agent.bat）', 'error');
+          else UI.toast('小幫手回應異常：' + (e && e.message ? e.message : '未知錯誤'), 'error');
+        });
     }
 
     function renderPlan(payload, plan) {
@@ -443,6 +448,9 @@
               U.el('span', { class: 'batch-count', text: statusLabel(d.mode) + (info ? '　' + info : '') }),
             ]));
           });
+          if (j.logError) {
+            UI.toast('信已寄出，但小幫手的稽核檔寫入失敗（' + j.logError + '）。若正用 Excel 開著 mail_log.csv 請先關閉', 'error');
+          }
           if (j.failed > 0) UI.toast('⚠ 有 ' + j.failed + ' 封寄送失敗！點「發信紀錄」看細節', 'error');
           else UI.toast('寄出 ' + j.sent + ' 封', 'success');
         })
