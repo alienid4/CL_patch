@@ -20,7 +20,7 @@ if (Test-Path $ovPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.65'
+$AGENT_VER = 'V1.71'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -161,16 +161,42 @@ function Do-Send($data) {
     }
 }
 
-$listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("http://localhost:$Port/")
-try { $listener.Start() }
-catch { Write-Host "啟動失敗（埠 $Port 可能已被占用）：$($_.Exception.Message)" -ForegroundColor Red; exit 1 }
-try { [IO.File]::WriteAllText($tokenPath, $script:token, (New-Object Text.UTF8Encoding($false))) } catch {}
-Write-Host "mail-agent 已啟動：http://localhost:$Port/   （關閉本視窗即停止）"
+# 埠被其他程式占用時自動往後找可用埠（網頁端會依序探測同一組候選埠）
+$listener = $null
+$usedPort = $null
+foreach ($p in $Port..($Port + 5)) {
+    $try = New-Object System.Net.HttpListener
+    $try.Prefixes.Add("http://localhost:$p/")
+    try { $try.Start(); $listener = $try; $usedPort = $p; break }
+    catch { try { $try.Close() } catch {} }
+}
+if (-not $listener) {
+    Write-Host "啟動失敗：連接埠 $Port ~ $($Port + 5) 都無法使用。" -ForegroundColor Red
+    Write-Host "請確認是否有其他程式占用，或關閉後重試。" -ForegroundColor Red
+    exit 1
+}
+
+# 權杖檔：限縮為「僅目前使用者可讀」，避免同機其他帳戶取得寄信授權
+try {
+    [IO.File]::WriteAllText($tokenPath, $script:token, (New-Object Text.UTF8Encoding($false)))
+    $acl = New-Object System.Security.AccessControl.FileSecurity
+    $acl.SetAccessRuleProtection($true, $false)     # 停用繼承，且不複製既有規則
+    $me = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+        $me, 'FullControl', 'Allow')))
+    Set-Acl -Path $tokenPath -AclObject $acl
+    $aclNote = '（已限縮為僅你本人可讀）'
+} catch { $aclNote = '（權限限縮失敗，請自行確認該檔存取權）' }
+
+Write-Host "mail-agent 已啟動：http://localhost:$usedPort/   （關閉本視窗即停止）"
+if ($usedPort -ne $Port) {
+    Write-Host "註：埠 $Port 已被占用，改用 $usedPort（網頁會自動找到）" -ForegroundColor Yellow
+}
 Write-Host ""
 Write-Host "存取權杖（第一次使用請貼到網頁 Email 設定的「小幫手權杖」欄）：" -ForegroundColor Yellow
 Write-Host "  $script:token" -ForegroundColor Cyan
-Write-Host "  （也已寫入 $tokenPath；每次重啟會換新，換了要重貼）"
+Write-Host "  已寫入 $tokenPath $aclNote"
+Write-Host "  每次重啟會換新，換了要重貼。"
 
 while ($listener.IsListening) {
     try { $ctx = $listener.GetContext() } catch { break }

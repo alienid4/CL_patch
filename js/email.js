@@ -147,7 +147,26 @@
   }
 
   /* 本機小幫手位址（背景常駐、只聽 localhost） */
-  var AGENT = 'http://localhost:8899';
+  /* 小幫手位址：8899 可能被其他程式占用，小幫手會自動往後找埠，
+   * 這裡依序探測同一組候選埠，並驗證回應方確實是本服務（避免誤連別的程式）。 */
+  var AGENT_PORTS = [8899, 8900, 8901, 8902, 8903, 8904];
+  var AGENT = 'http://localhost:' + AGENT_PORTS[0];   // 預設值；探測成功後更新
+
+  function probeAgent() {
+    var i = 0;
+    function next() {
+      if (i >= AGENT_PORTS.length) return Promise.reject(new TypeError('agent not found'));
+      var base = 'http://localhost:' + AGENT_PORTS[i++];
+      return fetch(base + '/health')
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok && j.agent === 'mail-agent') { AGENT = base; return j; }
+          return next();                                  // 有回應但不是本服務 → 換下一個
+        })
+        .catch(function () { return next(); });
+    }
+    return next();
+  }
 
   /* 組成寄送批次 payload（匯出檔 / 送小幫手共用） */
   function buildPayload(c, selected) {
@@ -297,19 +316,16 @@
 
     /* 測試本機小幫手是否在跑 */
     function doTestAgent() {
-      fetch(AGENT + '/health').then(function (r) { return r.json(); })
+      // probeAgent 已驗證回應方確為 mail-agent，並記住實際使用的埠
+      probeAgent()
         .then(function (j) {
-          if (!j || !j.ok) { UI.toast('小幫手回應異常', 'error'); return; }
-          // 埠可能被別的服務佔用（它也可能回 ok:true）→ 必須確認真的是 mail-agent
-          if (j.agent !== 'mail-agent') {
-            UI.toast('這個埠被其他程式占用（回應者不是寄信小幫手），請先關掉占用程式再啟動小幫手', 'error');
-            return;
-          }
           var hasTok = !!(loadCfg().agentToken || '').trim();
+          var port = AGENT.replace(/^.*:/, '');
+          var portNote = (port === String(AGENT_PORTS[0])) ? '' : '（埠 ' + port + '）';
           if (j.needToken && !hasTok) {
-            UI.toast('小幫手已連線 ' + (j.version || '') + '，但尚未設定權杖：請貼上 agent_token.txt 的內容', 'error');
+            UI.toast('小幫手已連線 ' + (j.version || '') + portNote + '，但尚未設定權杖：請貼上 agent_token.txt 的內容', 'error');
           } else {
-            UI.toast('本機小幫手已連線 ✓　' + (j.version || ''), 'success');
+            UI.toast('本機小幫手已連線 ✓　' + (j.version || '') + portNote, 'success');
           }
         })
         .catch(function () { UI.toast('連不到小幫手，請先執行 install_agent.bat', 'error'); });
@@ -372,7 +388,11 @@
       var g = getSelected(); if (!g) return;
       var payload = buildPayload(g.c, g.selected);
       UI.toast('查 AD 解析中…', 'info');
-      fetch(AGENT + '/plan', { method: 'POST', headers: agentHeaders(), body: JSON.stringify(payload) })
+      // 先探測小幫手實際在哪個埠（可能因占用而改用備用埠），再送出
+      probeAgent()
+        .then(function () {
+          return fetch(AGENT + '/plan', { method: 'POST', headers: agentHeaders(), body: JSON.stringify(payload) });
+        })
         .then(function (r) { return r.json(); })
         .then(function (j) {
           if (!j || !j.ok) { UI.toast((j && j.error) || '小幫手錯誤', 'error'); return; }

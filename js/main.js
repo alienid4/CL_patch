@@ -474,6 +474,32 @@
     return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
+  /* -------- 跨午夜自動重算 --------
+   * 逾期天數是在「解析當下」算的，看板長時間開著跨過午夜就會停在昨天的基準。
+   * 偵測到日期變更時，用已存的檔案重新解析一次，並保留目前的檢視位置。 */
+  var dayKey = todayKey();
+  function checkDayRollover() {
+    var now = todayKey();
+    if (now === dayKey) return;
+    dayKey = now;
+    if (!state.sheets) return;
+    var saved = loadState();
+    if (!saved || !saved.b64) return;
+    var keepMode = state.mode, keepIdx = state.activeIdx;
+    try {
+      loadWorkbook(b64ToAb(saved.b64), saved.fileName);
+      state.activeIdx = keepIdx;
+      if (keepMode === 'sheet') selectSheet(keepIdx); else showSummary();
+      UI.toast('已跨日，逾期天數以今日（' + now + '）重新計算', 'info');
+    } catch (e) { /* 重算失敗就維持原畫面，不影響使用 */ }
+  }
+  // 回到分頁時檢查一次；另每 10 分鐘檢查，涵蓋一直開著沒切走的情況
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) checkDayRollover();
+  });
+  window.addEventListener('focus', checkDayRollover);
+  setInterval(checkDayRollover, 10 * 60 * 1000);
+
   function tryRestore() {
     var saved = loadState();
     if (!saved) return;
