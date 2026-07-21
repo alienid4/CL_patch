@@ -9,17 +9,22 @@
 解析弱點掃描報告 Excel，產生追蹤看板。無伺服器、無資料庫、不對外連線。
 
 - **Remote**: `https://github.com/alienid4/CL_patch`（**公開**）
-- **工作目錄**: `C:\AiProject\CL_Patch\code`（**已搬離 OneDrive，勿再放回去**）
+- **本 repo 位置**: `C:\AiProject\CL_Patch\APP\`（**已搬離 OneDrive，勿再放回去**）
 - 選用模組：本機寄信小幫手（PowerShell，僅聽 localhost，需存取權杖）
 
-## 相關位置（不在本 repo）
+## 專案目錄結構（頂層四分類）
 
-| 內容 | 位置 |
-|---|---|
-| 測試報告、資安改善報告、交接摘要、合規落差對照表 | `C:\AiProject\CL_Patch\報告文件\` |
-| 公司內部規範文件 | `C:\AiProject\CL_Patch\公司規範\` |
+本 repo 只是專案的 `APP\` 那一格。同層還有三個目錄，**都不進版控**：
 
-這些**一律不進本 repo**（內部文件／含安全細節）。
+```
+C:\AiProject\CL_Patch\
+  ├─ APP\    ← 本 repo（程式碼）
+  ├─ AI\     交接摘要、合規落差對照表（AI 產出文件）
+  ├─ DOC\    測試報告、資安改善報告、Cathay規範\（參考資料）
+  └─ DATA\   真實弱點資料（絕不進版控、不出這台機器）
+```
+
+需要查測試報告或內部規範時**往上一層找**，不要把它們複製進 repo。
 
 ---
 
