@@ -2,12 +2,12 @@
 # ============================================================
 # 產生「正式包」：只複製要對外發布的檔案到 dist/，
 # 排除真實資料檔(*.xlsx)與所有開發檔(.project/docs/一次性開發包…)。
-# 用法：bash build_dist.sh
+# 用法：bash dev/build_dist.sh   （於 repo 根執行；本腳本自行切回根目錄）
 #   之後在 PowerShell 打包 zip：
 #     Compress-Archive -Path dist/* -DestinationPath 弱點彙總Dashboard_版本.zip -Force
 # ============================================================
 set -e
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 VER=$(grep "APP_VERSION" config/version.js | grep -oE "V[0-9]+\.[0-9]+" | head -1)
 DIST="dist"

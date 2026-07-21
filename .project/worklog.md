@@ -18,7 +18,9 @@
 - 使用者：不想點 bat，全部在網頁完成。→ 純網頁不能寄(鐵牆)，唯一解=本機常駐 agent，網頁 fetch localhost 呼叫它查 AD+寄。使用者同意「設定一次、背景常駐」。
 - 成果：
   · mail_agent.ps1：.NET HttpListener 只聽 http://localhost:8899；GET /health、POST /plan(查AD不寄回計畫)、POST /send(實寄)；ADSI 查 email(override 優先，唯一命中才用)；Send-MailMessage 免認證 relay；CORS *＋Access-Control-Allow-Private-Network:true(供 file:// / 跨埠 fetch)。不寫死公司資訊(全來自 web 送來的批次/AD)。
-  · install_agent.bat(schtasks ONLOGON 背景隱藏、設定一次開機自動)、start_agent.bat(測試可見)、uninstall_agent.bat。
+  · install_agent.bat(設定一次開機自動、背景隱藏)、start_agent.bat(測試可見)、uninstall_agent.bat。
+    ※ 更正(2026-07-21)：本行原記的自動啟動方式與實作不符（實作刻意不需管理員權限）。
+      細節見 install_agent.bat 本身，此處不複述。
   · email.js：Email 設定加「寄出」(→/plan 顯示計畫→確認寄出→/send)、「測試小幫手」(/health)；buildPayload 共用；「匯出（備用）」保留給 send.bat。css .plan-actions/.plan-*。
 - 驗(在本機實起 agent 測 web↔agent)：/health ok；/plan 200 回計畫(本機查不到天龍八部名→正確 fallback 轉主管)；UI：列出→勾記憶(玄慈/阿朱)→寄出→計畫顯示「→轉主管」＋「確認寄出(2)」；console 無錯；V1.40。未按確認(避免真寄)。
 - 未測(需公司機器)：真 AD 解析＋真 relay 寄。流程本身已驗通。

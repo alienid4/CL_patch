@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `f625762`
+- 目前 HEAD: `dbf084a`
 
 ## 強制層檢查即時結果
 
@@ -34,7 +34,7 @@
 
 ## 待辦進度（backlog.json）
 
-- 完成 15｜待做 3｜卡住 1
+- 完成 16｜待做 3｜卡住 1
 - **下一件：`vuln-aggregate` — 第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔**
   - 怎樣算對：提供聚合檢視:同弱點合併顯示影響台數、可展開看各主機；不破壞逐筆明細
 - 🛑 卡住：`cathay-webspec-compliance` 評估對齊公司前端標準化規範的落差(細節見本機文件，不放公開 repo)（試 0 次）
@@ -60,6 +60,7 @@
 | todo | one-page-print | 第一批A5｜一頁列印/PDF:本部門(或全域)摘要可直接貼週報/對上交代 |
 | doing | email-send-script | Email 實際寄送：本機 send_mail.ps1 讀 mail-task.json 走公司 relay 寄(E2 手動)＋工作排程器自動(E3) |
 | blocked | cathay-webspec-compliance | 評估對齊公司前端標準化規範的落差(細節見本機文件，不放公開 repo) |
+| done | blackwhite-box-test | 發布前黑白箱測試與缺陷修復 |
 
 ## 工作筆記 worklog（最新在最上；斷在半路就看這段接手）
 
@@ -74,7 +75,9 @@
 - 使用者：不想點 bat，全部在網頁完成。→ 純網頁不能寄(鐵牆)，唯一解=本機常駐 agent，網頁 fetch localhost 呼叫它查 AD+寄。使用者同意「設定一次、背景常駐」。
 - 成果：
   · mail_agent.ps1：.NET HttpListener 只聽 http://localhost:8899；GET /health、POST /plan(查AD不寄回計畫)、POST /send(實寄)；ADSI 查 email(override 優先，唯一命中才用)；Send-MailMessage 免認證 relay；CORS *＋Access-Control-Allow-Private-Network:true(供 file:// / 跨埠 fetch)。不寫死公司資訊(全來自 web 送來的批次/AD)。
-  · install_agent.bat(schtasks ONLOGON 背景隱藏、設定一次開機自動)、start_agent.bat(測試可見)、uninstall_agent.bat。
+  · install_agent.bat(設定一次開機自動、背景隱藏)、start_agent.bat(測試可見)、uninstall_agent.bat。
+    ※ 更正(2026-07-21)：本行原記的自動啟動方式與實作不符（實作刻意不需管理員權限）。
+      細節見 install_agent.bat 本身，此處不複述。
   · email.js：Email 設定加「寄出」(→/plan 顯示計畫→確認寄出→/send)、「測試小幫手」(/health)；buildPayload 共用；「匯出（備用）」保留給 send.bat。css .plan-actions/.plan-*。
 - 驗(在本機實起 agent 測 web↔agent)：/health ok；/plan 200 回計畫(本機查不到天龍八部名→正確 fallback 轉主管)；UI：列出→勾記憶(玄慈/阿朱)→寄出→計畫顯示「→轉主管」＋「確認寄出(2)」；console 無錯；V1.40。未按確認(避免真寄)。
 - 未測(需公司機器)：真 AD 解析＋真 relay 寄。流程本身已驗通。
@@ -90,13 +93,12 @@
 - 網頁(email.js)：Email 設定加「列出催辦名單」——各負責人一列 checkbox(預設全勾)＋全選/全不選；「匯出勾選的人」只匯出勾選者到 mail-batch.json(測試就全不選→勾一個)。css .batch-list/.batch-row/.batch-tools。
 - 腳本(send_mail.ps1)：改兩段——Pass1 先查 AD 建「寄送計畫」並印出(誰→哪個email／轉主管／跳過)；Read-Host Y/N 確認；Pass2 按 Y 才實際寄。取消不寄任何信。
 - 驗(預覽8790)：V1.38；列表 31 人、預設全勾、全不選=0、勾一個=1；footer 三鈕正確；ps1 parse OK；console 無錯。
-- 未測(需公司機器)：AD 查詢＋實際 relay 寄送(同 V1.37，請跑 send.bat 貼回結果)。
-
 ```
 
 ## 最近 10 筆 commit
 
 ```
+dbf084a 下班交接：刷新 CURRENT_STATE、backlog 補記黑白箱測試與路徑更新 [skip-version]
 f625762 CLAUDE.md 更新路徑與專案目錄結構（頂層四分類）[skip-version]
 46d0571 新增 CLAUDE.md：專案規則與鐵律 [skip-version]
 f3ecf03 移出方法論分享包（與弱點看板無關）[skip-version]
@@ -106,5 +108,4 @@ fd57e04 V1.72：資安說明第5節重構為「部署模式與安全邊界」；
 878b6d5 專案紀錄措辭調整：移除部署流程實作細節 [skip-version]
 70082ea V1.70：資安說明改為正式資安說明書格式（供資安人員審閱）
 425994f V1.69：新增「資安說明」文件，掛在其他功能底下
-e50b90b V1.68：補完兩項先前只做一半的修復
 ```
