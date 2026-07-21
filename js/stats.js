@@ -41,8 +41,9 @@
     /* ---- 摘要列 ---- */
     var info = document.getElementById('stats-scope');
     info.innerHTML = '';
+    // 用動態母體標籤：選「已結案」時不該再寫「未結案 N 筆」
     info.appendChild(U.el('span', { html:
-      '未結案 <b>' + U.num(ss.total) + '</b> 筆，依處置階段分類。' }));
+      U.esc(result.closeLabel || '未結案') + ' <b>' + U.num(ss.total) + '</b> 筆，依處置階段分類。' }));
 
     /* ---- 階段卡片 ---- */
     var grid = document.getElementById('stage-grid');
@@ -74,7 +75,7 @@
       var head = U.el('div', { class: 'stage-title', text: st.label });
       var big = U.el('div', { class: 'stage-big', text: U.num(st.total) });
       big.style.color = STAGE_COLORS[st.key];
-      var pctEl = U.el('div', { class: 'stage-sub', text: '占未結案 ' + pct + '%' });
+      var pctEl = U.el('div', { class: 'stage-sub', text: '占' + (result.closeLabel || '未結案') + ' ' + pct + '%' });
 
       // 可點的子指標
       var subs = U.el('div', { class: 'stage-subs' });

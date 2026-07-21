@@ -167,16 +167,28 @@
     } else if (hit.length <= 2) {
       warnings.push('「' + name + '」只辨識出 ' + hit.length + ' 個欄位，部分內容可能顯示不完整。');
     }
-    // 重複表頭：同名欄位後者會覆蓋前者，左邊那欄資料會整欄遺失
-    var seen = {}, dup = [];
-    headers.forEach(function (h) { if (!h) return; if (seen[h]) { if (dup.indexOf(h) < 0) dup.push(h); } seen[h] = 1; });
-    if (dup.length) warnings.push('「' + name + '」有重複的欄位名稱（' + dup.join('、') + '），僅最後一欄的資料會被讀取。');
+    // 重複表頭：原本直接用欄名當 key，後者會覆蓋前者，左邊那欄資料整欄遺失。
+    // 改為「保留第一欄原名、後續同名改成 欄名#2」——欄位對應吃到的是第一欄
+    // （多半才是使用者預期的那欄），重複欄的資料也不會消失。
+    var seen = {}, dup = [], keys = [];
+    headers.forEach(function (h) {
+      if (!h) { keys.push(h); return; }
+      if (seen[h]) {
+        seen[h]++;
+        if (dup.indexOf(h) < 0) dup.push(h);
+        keys.push(h + '#' + seen[h]);
+      } else {
+        seen[h] = 1;
+        keys.push(h);
+      }
+    });
+    if (dup.length) warnings.push('「' + name + '」有重複的欄位名稱（' + dup.join('、') + '），以最左邊那欄為準，其餘已改名為「欄名#2」保留。');
     for (var i = 1; i < matrix.length; i++) {
       var arr = matrix[i];
       if (arr.every(function (c) { return U.normStr(c) === ''; })) continue;
       rawCount++;
       var obj = {};
-      for (var c = 0; c < headers.length; c++) obj[headers[c]] = arr[c] === undefined ? '' : arr[c];
+      for (var c = 0; c < keys.length; c++) obj[keys[c]] = arr[c] === undefined ? '' : arr[c];
       buildRecords(obj, map, name).forEach(function (r) { records.push(r); });
     }
     return { name: name, headers: headers, rawCount: rawCount, records: records, profile: map, warnings: warnings };
