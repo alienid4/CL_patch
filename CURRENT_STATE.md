@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `4d18fbe`
+- 目前 HEAD: `f625762`
 
 ## 強制層檢查即時結果
 
@@ -34,9 +34,10 @@
 
 ## 待辦進度（backlog.json）
 
-- 完成 15｜待做 3｜卡住 0
+- 完成 15｜待做 3｜卡住 1
 - **下一件：`vuln-aggregate` — 第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔**
   - 怎樣算對：提供聚合檢視:同弱點合併顯示影響台數、可展開看各主機；不破壞逐筆明細
+- 🛑 卡住：`cathay-webspec-compliance` 評估對齊公司前端標準化規範的落差(細節見本機文件，不放公開 repo)（試 0 次）
 
 | 狀態 | id | 要做什麼 |
 |---|---|---|
@@ -57,7 +58,8 @@
 | done | trend-history | 主管：趨勢(跟上次比)＋歷史快照 |
 | todo | vuln-aggregate | 第一批A4｜同一 Plugin ID 跨主機收合成一件(影響N台)，降低窗口逐筆負擔 |
 | todo | one-page-print | 第一批A5｜一頁列印/PDF:本部門(或全域)摘要可直接貼週報/對上交代 |
-| todo | email-send-script | Email 實際寄送：本機 send_mail.ps1 讀 mail-task.json 走公司 relay 寄(E2 手動)＋工作排程器自動(E3) |
+| doing | email-send-script | Email 實際寄送：本機 send_mail.ps1 讀 mail-task.json 走公司 relay 寄(E2 手動)＋工作排程器自動(E3) |
+| blocked | cathay-webspec-compliance | 評估對齊公司前端標準化規範的落差(細節見本機文件，不放公開 repo) |
 
 ## 工作筆記 worklog（最新在最上；斷在半路就看這段接手）
 
@@ -95,14 +97,14 @@
 ## 最近 10 筆 commit
 
 ```
-4d18fbe V1.57：全站字級等比放大 ×1.18（顧慮老花眼可讀性）
-9226404 V1.56：.gitignore 加擋公司內部規範文件（Cathay規範/、合規落差對照表.md），防止外流至公開 repo
-e511881 V1.55：CC 可驗證 — 小幫手回報版本 + 發信紀錄加「副本」欄
-3c715f8 V1.54：logo 加白色圓角底 chip，避免綠 logo 貼綠頁首看不清
-ca1aabf V1.53：內建國泰綠佔位 logo（assets/logo.svg），官方 logo.png 可覆蓋
-fe2f878 V1.52：左上角改讀本機 logo（assets/logo.png，讀不到退回盾牌）
-f851c08 V1.51：使用說明移除「更新到最新版」節（upload/GitHub/update 部署資訊不外露）
-3161518 V1.50：發信失敗告警 + 發信紀錄
-a9839b2 V1.49：Email 加「副本給自己（寄件人）」選項（預設開）
-fa99fbc 放回一次性開發包_4.0_分享版(開發方法論分享包)
+f625762 CLAUDE.md 更新路徑與專案目錄結構（頂層四分類）[skip-version]
+46d0571 新增 CLAUDE.md：專案規則與鐵律 [skip-version]
+f3ecf03 移出方法論分享包（與弱點看板無關）[skip-version]
+322a2e1 launch.json 移除寫死的絕對路徑，改用工作目錄（跨機器可攜）[skip-version]
+fd57e04 V1.72：資安說明第5節重構為「部署模式與安全邊界」；目錄整理
+480f798 V1.71：修掉三項可修復項目（權杖落地／埠占用／跨午夜）
+878b6d5 專案紀錄措辭調整：移除部署流程實作細節 [skip-version]
+70082ea V1.70：資安說明改為正式資安說明書格式（供資安人員審閱）
+425994f V1.69：新增「資安說明」文件，掛在其他功能底下
+e50b90b V1.68：補完兩項先前只做一半的修復
 ```
