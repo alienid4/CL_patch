@@ -384,11 +384,14 @@
     applyTabVisibility(result.caps || {});
     $('file-name-tag').textContent = state.fileName + '　(工作表：' + sheetName + ')';
     renderQuality(result);
+    // 關掉的分頁不再白白計算與建立 Chart（原本只隱藏按鈕，內容照樣渲染）
+    var F = global.Features;
+    function on(id) { return !F || !F.isOn || F.isOn(id); }
     global.Dashboard.render(result);
-    global.Tracking.render(result);
-    global.Matrix.render(result);
-    global.Stats.render(result);
-    global.Search.render(result);
+    if (on('tab-tracking')) global.Tracking.render(result);
+    if (on('tab-matrix'))   global.Matrix.render(result);
+    if (on('tab-stats'))    global.Stats.render(result);
+    if (on('tab-search'))   global.Search.render(result);
     // scope-info 反映目前篩選
     var deptLabel = (opts.dept && opts.dept !== '__all__') ? opts.dept : '全部部門';
     var closeLabel = result.closeLabel || { open: '未結案', closed: '已結案', all: '全部狀態' }[opts.close || 'open'];

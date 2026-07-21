@@ -50,9 +50,12 @@
 
     // 安全名單卡(置頂強調)
     var safe = ss.safeList;
+    // 0 筆時不綁點擊(比照其他可點數字)，避免點開空白 modal
     var safeCard = U.el('div', {
-      class: 'stage-card stage-safe',
-      onclick: function () { UI.openDetail('例外核准未到期（' + safe.length + ' 筆）', safe); },
+      class: 'stage-card stage-safe' + (safe.length ? '' : ' not-clickable'),
+      onclick: safe.length
+        ? function () { UI.openDetail('例外核准未到期（' + safe.length + ' 筆）', safe); }
+        : null,
     }, [
       U.el('div', { class: 'stage-title', text: '例外核准未到期' }),
       U.el('div', { class: 'stage-big', text: U.num(safe.length) }),

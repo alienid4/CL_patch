@@ -473,6 +473,9 @@ body.modal-open { overflow: hidden; }
   cursor: pointer;
 }
 .stage-safe .stage-big { color: #2e7d32; }
+/* 0 筆的卡片不可點：不給游標提示，避免使用者點開空白視窗 */
+.stage-card.not-clickable { cursor: default; }
+.stage-card.not-clickable:hover { transform: none; box-shadow: var(--shadow); }
 
 .stage-subs { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .stage-chip {

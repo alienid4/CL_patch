@@ -236,7 +236,16 @@
   function popOutTable(title, records, extraCols) {
     var cols = (extraCols && extraCols.length) ? extraCols.concat(DETAIL_COLUMNS) : DETAIL_COLUMNS;
     function esc2(v) { return U.esc(v === null || v === undefined ? '' : v); }
-    var thead = cols.map(function (c) { return '<th data-t="' + (typeof c.sortVal(records[0] || {}) === 'number' ? 'num' : 'str') + '">' + esc2(c.h) + '<span class="ind"></span></th>'; }).join('');
+    // 欄位型別掃全欄取第一個非空值判定：原本只看 records[0]，
+    // 首筆若沒有到期日(sortVal 回 null)整欄會被當字串排序，導致逾期 100 天排在 9 天之後
+    function colType(c) {
+      for (var i = 0; i < records.length; i++) {
+        var v = c.sortVal(records[i]);
+        if (v !== null && v !== undefined) return (typeof v === 'number') ? 'num' : 'str';
+      }
+      return 'str';
+    }
+    var thead = cols.map(function (c) { return '<th data-t="' + colType(c) + '">' + esc2(c.h) + '<span class="ind"></span></th>'; }).join('');
     var rowsHtml = records.slice().sort(function (a, b) { return cmp(ts(a.realDue), ts(b.realDue)); }).map(function (r) {
       var tds = cols.map(function (c) {
         var val = c.disp(r);
@@ -264,11 +273,19 @@
       '.ind{color:#009142;font-weight:700;}</style></head><body>' +
       '<h1>' + esc2(title) + '</h1><div class="meta">共 ' + records.length + ' 筆 · 點欄位標題排序 · 可自由左右捲動</div>' +
       '<div class="wrap"><table><thead><tr>' + thead + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' +
+      // 排序規則與畫面內的 sortCmp 一致：空值一律墊底(不論升冪或降冪)，
+      // 原本空值取 -Infinity，升冪時會全部擠到最前面，同一份資料兩種呈現
       '<script>(function(){var t=document.querySelector("table");var ths=t.tHead.rows[0].cells;var dir=1,cur=-1;' +
-      'function val(td,type){var s=td.getAttribute("data-s");if(s===null)s=td.textContent.trim();return type==="num"?parseFloat(s.replace(/[^0-9.\\-]/g,""))||-Infinity:s.toLowerCase();}' +
+      'function raw(td){var s=td.getAttribute("data-s");return (s===null||s==="")?null:s;}' +
+      'function val(s,type){return type==="num"?(parseFloat(String(s).replace(/[^0-9.\\-]/g,""))):String(s).toLowerCase();}' +
       'for(var i=0;i<ths.length;i++){(function(ci){ths[ci].addEventListener("click",function(){var type=ths[ci].getAttribute("data-t");if(cur===ci)dir=-dir;else{cur=ci;dir=1;}' +
       'for(var k=0;k<ths.length;k++){var sp=ths[k].querySelector(".ind");if(sp)sp.textContent=(k===ci)?(dir===1?" \\u25B2":" \\u25BC"):"";}' +
-      'var tb=t.tBodies[0];var rows=[].slice.call(tb.rows);rows.sort(function(a,b){var va=val(a.cells[ci],type),vb=val(b.cells[ci],type);return (va<vb?-1:va>vb?1:0)*dir;});' +
+      'var tb=t.tBodies[0];var rows=[].slice.call(tb.rows);rows.sort(function(a,b){' +
+      'var ra=raw(a.cells[ci]),rb=raw(b.cells[ci]);' +
+      'if(ra===null&&rb===null)return 0;if(ra===null)return 1;if(rb===null)return -1;' +
+      'var va=val(ra,type),vb=val(rb,type);' +
+      'if(type==="num"){if(isNaN(va)&&isNaN(vb))return 0;if(isNaN(va))return 1;if(isNaN(vb))return -1;}' +
+      'return (va<vb?-1:va>vb?1:0)*dir;});' +
       'rows.forEach(function(r){tb.appendChild(r);});});})(i);}})();<\/script></body></html>';
 
     var w = window.open('', '_blank');

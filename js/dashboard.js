@@ -139,9 +139,10 @@
     box.style.display = '';
     var sr = result.severityRepair;
 
+    // 本表固定涵蓋全部結案狀態(算結案率必需)，與上方指標卡母體不同 → 明確標示避免誤解
     box.appendChild(U.el('div', { class: 'panel-bar' }, [
       U.el('h3', { text: '各嚴重度結案進度' }),
-      U.el('span', { class: 'panel-bar-note', text: '共 ' + U.num(sr.totals.total) + ' 筆' }),
+      U.el('span', { class: 'panel-bar-note', text: '共 ' + U.num(sr.totals.total) + ' 筆　·　此表固定涵蓋全部結案狀態（用於計算結案率）' }),
     ]));
 
     if (!sr.rows.length) { box.appendChild(U.el('p', { class: 'empty-hint', text: '無資料。' })); return; }
@@ -305,9 +306,14 @@
     });
     table.appendChild(tbody);
     box.appendChild(U.el('div', { class: 'table-scroll' }, [table]));
+    // 「查看全部」原本只把同一份前 10 名再開一次；改為即時算出完整排序
+    var allRecs = result.records || [];
     box.appendChild(U.el('div', { class: 'panel-actions' }, [
-      U.el('button', { class: 'btn btn-secondary btn-sm', text: '查看全部（' + list.length + ' 筆）',
-        onclick: function () { UI.openDetail('風險排序（' + list.length + ' 筆）', list); } }),
+      U.el('button', { class: 'btn btn-secondary btn-sm', text: '查看全部（' + allRecs.length + ' 筆）',
+        onclick: function () {
+          var full = global.Analysis.riskRanking(allRecs, allRecs.length);
+          UI.openDetail('風險排序（全部 ' + full.length + ' 筆）', full);
+        } }),
     ]));
   }
 
