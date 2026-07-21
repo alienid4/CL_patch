@@ -43,7 +43,7 @@
 - 安全：.gitignore 加 override.json / mail-batch.json / mail-task.json(含實 email/IP)；.gitattributes 加 *.ps1 eol=crlf。
 - 驗(預覽8790)：V1.37；buildBatch 依負責人分 31 人、每人自己主旨(玄慈2筆…)；表單有 查無email轉寄、無單一收件人；ps1 PSParser 解析 OK；email.js node OK；console 無錯。
 - **未測(需使用者機器)**：ps1 的 AD 查詢與實際 relay 寄送——我無法連公司 AD/relay，請你在公司電腦跑 send.bat 實測、把畫面貼回來，依實況修(鐵律:無測試環境,寫我經驗,你跑會踩雷再迭代)。
-- 註：send_mail.ps1/send.bat 在 repo 根，隨初次資料夾下載取得；update.bat 目前只更新網頁檔(不含根 .bat/.ps1)。
+- 註：send_mail.ps1/send.bat 在 repo 根，隨初次資料夾取得；例行更新目前只涵蓋網頁檔(不含根 .bat/.ps1)。
 
 ## 2026-07-13 V1.36 總覽首頁也改子分頁（免下拉）✅ 完成
 - 使用者：總覽下面好幾個功能沒做子tab，再查一次還有沒有這種情形。→ 主管總覽(summary.js)整頁還是往下疊。
@@ -61,7 +61,7 @@
 
 ## 2026-07-13 V1.34 移除治理雷達＋upload.bat 不上 GitHub ✅ 完成
 - 使用者：治理雷達沒必要就拿掉(並改手冊)；手冊放其他功能(V1.33已在，確認)；upload.bat 公司端易混淆，別推 GitHub。
-- 成果：①移除例外統計的「治理雷達」子分頁＋#gov-radar DOM；stats.js 移除 renderGovernance 呼叫(函式留著=無害死碼,可日後清)；使用說明.html 第5節去掉「治理雷達」。②upload.bat git rm --cached＋加 .gitignore(NB 本機檔保留,公司端下載的 zip 不含它,只留 update.bat)。
+- 成果：①移除例外統計的「治理雷達」子分頁＋#gov-radar DOM；stats.js 移除 renderGovernance 呼叫(函式留著=無害死碼,可日後清)；使用說明.html 第5節去掉「治理雷達」。②NB 端推送工具改為不進版控(本機檔保留,公司端取得的內容不含它)。
 - 驗(預覽8790)：V1.34；例外統計只剩 階段統計/圖表；gov-radar 不存在；圖表仍正常；console 無錯。upload.bat 已 untrack、本機仍在。
 
 ## 2026-07-13 V1.33 系統內建圖文使用說明 ✅ 完成

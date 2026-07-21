@@ -159,7 +159,7 @@
     "status": "doing",
     "attempts": 0,
     "created": "2026-07-10",
-    "notes": "半自動『網頁寄出』已完成(V1.44~V1.57)：本機 mail_agent.ps1(localhost:8899, /health /plan /send)＋網頁『寄出』按鈕；ADSI 查 AD 解 email、override.json 補漏、查無→轉主管 fallback；CC/副本給自己；發信失敗逐筆告警＋發信紀錄(網頁 localStorage + mail_agent 寫 mail_log.csv)；/health 回報 AGENT_VER 供確認背景版本。開機自動啟動走 Startup 資料夾 .vbs。★踩雷筆記：update.bat 只換 .ps1 檔，背景 agent 需手動重啟才生效(CC 沒送出就是這原因)。剩 E3 排程全自動未做。"
+    "notes": "半自動『網頁寄出』已完成(V1.44~V1.57)：本機 mail_agent.ps1(localhost:8899, /health /plan /send)＋網頁『寄出』按鈕；ADSI 查 AD 解 email、override.json 補漏、查無→轉主管 fallback；CC/副本給自己；發信失敗逐筆告警＋發信紀錄(網頁 localStorage + mail_agent 寫 mail_log.csv)；/health 回報 AGENT_VER 供確認背景版本。開機自動啟動走 Startup 資料夾 .vbs。★踩雷筆記：更新只會換掉 .ps1 檔案，背景 agent 需手動重啟才生效(CC 沒送出就是這原因)。剩 E3 排程全自動未做。"
   },
   {
     "id": "cathay-webspec-compliance",
