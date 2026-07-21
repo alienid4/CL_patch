@@ -22,7 +22,7 @@
   function metricGroups(result) {
     var s = result.summary;
     var A = global.Analysis;
-    var bandCls = { overdue: 'm-overdue', d30: 'm-warn', d90: 'm-warn2', d180: 'm-info', over180: 'm-info', noDue: 'm-none' };
+    var bandCls = { overdue: 'm-overdue', d30: 'm-warn', d90: 'm-warn2', d180: 'm-info', over180: 'm-info', noDue: 'm-none', closed: 'm-done' };
     function sevFilter(sev) { return function (r) { return r.severity === sev; }; }
 
     // 嚴重度卡(依序 + 其他未歸類)
@@ -39,7 +39,7 @@
     });
 
     var groups = [
-      { title: '總覽', cards: [{ label: '未結案', value: s.total, cls: 'm-total', filter: function () { return true; } }] },
+      { title: '總覽', cards: [{ label: (result.closeLabel || '未結案'), value: s.total, cls: 'm-total', filter: function () { return true; } }] },
       { title: '到期時間帶', cards: A.BANDS.map(function (b) {
           return { label: b.label, value: s.bands[b.key], cls: bandCls[b.key] || 'm-info',
             filter: (function (key) { return function (r) { return A.bandOf(r) === key; }; })(b.key) };

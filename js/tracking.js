@@ -59,7 +59,7 @@
 
     var table = U.el('table', { class: 'tracking-table sortable' });
 
-    var headDefs = [{ label: '負責人', key: 'owner' }, { label: '未結案', key: 'open' }]
+    var headDefs = [{ label: '負責人', key: 'owner' }, { label: (result.closeLabel || '未結案'), key: 'open' }]
       .concat(BANDS.map(function (b) { return { label: b.label, key: 'band:' + b.key }; }))
       .concat([{ label: '催辦', key: null }]);
 

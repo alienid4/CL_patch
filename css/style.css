@@ -282,6 +282,9 @@ html, body {
 .m-medium .metric-value { color: #c17d00; }
 .m-none { border-top-color: #90a4ae; }
 .m-none .metric-value { color: #607d8b; }
+.m-done { border-top-color: var(--c-primary); }
+.m-done .metric-value { color: var(--c-primary-dark); }
+.close-picker-note { font-size: 13px; color: var(--c-text-soft); margin-left: 6px; }
 
 /* ---------- 圖表 ---------- */
 .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }

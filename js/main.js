@@ -271,9 +271,17 @@
     });
     csel.value = state.closeStatus;
     csel.addEventListener('change', function () { setCloseStatus(csel.value); });
-    nav.appendChild(U.el('div', { class: 'dept-picker close-picker' }, [
+    // 總覽頁的表格本來就同時列「未結案／已結案」兩欄，是完整全貌，
+    // 不隨此篩選變動；若不停用，使用者會看到左側計數變了但右側數字不動而以為壞掉
+    var isSummary = (state.mode === 'summary');
+    csel.disabled = isSummary;
+    var closeRow = U.el('div', { class: 'dept-picker close-picker' }, [
       U.el('span', { class: 'dept-picker-label', text: '結案狀態' }), csel,
-    ]));
+    ]);
+    if (isSummary) {
+      closeRow.appendChild(U.el('span', { class: 'close-picker-note', text: '總覽已含未結／已結全貌' }));
+    }
+    nav.appendChild(closeRow);
 
     // 總覽置頂
     nav.appendChild(U.el('button', {
@@ -327,6 +335,7 @@
     state.mode = 'summary';
     $('summary-view').classList.remove('hidden');
     $('sheet-view').classList.add('hidden');
+    renderSheetNav();          // 重繪以更新「結案狀態」選單的停用狀態
     setNavActive();
     global.Summary.render(state.sheets, function (i) { selectSheet(i); saveActiveIdx(i); }, state.myDept);
     if ($('file-name-tag')) $('file-name-tag').textContent = state.fileName + '　(總覽)';
@@ -342,6 +351,7 @@
     if (global.History) global.History.destroyChart();
     $('summary-view').classList.add('hidden');
     $('sheet-view').classList.remove('hidden');
+    renderSheetNav();          // 重繪以恢復「結案狀態」選單可用
     setNavActive();
     // 部門與結案狀態沿用左側全站設定(不重設)
     applyFilters();
@@ -358,6 +368,8 @@
     var scoped = (closeSel === 'all') ? deptFiltered : deptFiltered.filter(function (r) { return r.closeBucket === closeSel; });
     var result = global.Analysis.assembleResult(deptFiltered, scoped, { allCount: recs.length });
     result.caps = s.caps;
+    // 母體標籤：面板不要再寫死「未結案」，否則選「已結案」時標題與內容矛盾
+    result.closeLabel = { open: '未結案', closed: '已結案', all: '全部狀態' }[closeSel] || '未結案';
     state.result = result;
     renderResult(result, s.name, { dept: deptSel, close: closeSel, deptCount: deptFiltered.length });
   }
@@ -374,7 +386,7 @@
     global.Search.render(result);
     // scope-info 反映目前篩選
     var deptLabel = (opts.dept && opts.dept !== '__all__') ? opts.dept : '全部部門';
-    var closeLabel = { open: '未結案', closed: '已結案', all: '全部狀態' }[opts.close || 'open'];
+    var closeLabel = result.closeLabel || { open: '未結案', closed: '已結案', all: '全部狀態' }[opts.close || 'open'];
     var scope = $('scope-info');
     scope.innerHTML = '';
     scope.appendChild(U.el('span', { html:

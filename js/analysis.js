@@ -136,9 +136,11 @@
     { key: 'd180',     label: '91–180天' },
     { key: 'over180',  label: '180天以上' },
     { key: 'noDue',    label: '無到期日' },
+    { key: 'closed',   label: '已結案' },
   ];
   function bandOf(r) {
-    if (r.closeBucket === 'closed') return 'noDue';   // 已結案：無活躍到期時間帶，不計入已逾期等帶
+    // 已結案自成一帶：原本併入「無到期日」，導致點開該欄看到一堆有到期日的紀錄，與欄名矛盾
+    if (r.closeBucket === 'closed') return 'closed';
     if (!r.realDue) return 'noDue';
     if (r.daysLeft < 0) return 'overdue';
     if (r.daysLeft <= 30) return 'd30';
@@ -206,10 +208,13 @@
         label: st.label,
         records: recs,
         total: recs.length,
+        // 四個子項與 total 必須能對帳：全部統一排除已結案，另立 closed 欄收尾
+        // （原本只有 overdue 排除已結案，導致「已逾期但後來結案」的紀錄四欄都不含它）
         overdue: recs.filter(isOverdue).length,
-        soon: recs.filter(function (r) { return r.realDue && r.daysLeft >= 0 && r.daysLeft <= soon; }).length,
-        safe: recs.filter(function (r) { return r.realDue && r.daysLeft > soon; }).length,
-        noDue: recs.filter(function (r) { return !r.realDue; }).length,
+        soon: recs.filter(function (r) { return !isClosed(r) && r.realDue && r.daysLeft >= 0 && r.daysLeft <= soon; }).length,
+        safe: recs.filter(function (r) { return !isClosed(r) && r.realDue && r.daysLeft > soon; }).length,
+        noDue: recs.filter(function (r) { return !isClosed(r) && !r.realDue; }).length,
+        closed: recs.filter(isClosed).length,
       };
     });
     // 例外保護中(安全名單)
@@ -220,7 +225,11 @@
     STAGE_DEFS.forEach(function (st) {
       bandMatrix[st.key] = {}; bandKeys.forEach(function (b) { bandMatrix[st.key][b] = 0; });
     });
-    records.forEach(function (r) { bandMatrix[r.stage][bandOf(r)]++; });
+    // 防呆：stage 若為非預期值(舊資料/外部匯入)，不要讓整頁因存取 undefined 而崩潰
+    records.forEach(function (r) {
+      var row = bandMatrix[r.stage] || bandMatrix.none;
+      if (row) row[bandOf(r)] = (row[bandOf(r)] || 0) + 1;
+    });
 
     return {
       stages: stages,
@@ -540,8 +549,9 @@
     critical: function (r) { return isSeverity(r, 'Critical'); },
     high:     function (r) { return isSeverity(r, 'High'); },
     medium:   function (r) { return isSeverity(r, 'Medium'); },
-    // 快到期(soonDays 內、未逾期)
-    soon:     function (r) { return r.realDue && r.daysLeft >= 0 && r.daysLeft <= (CFG.soonDays || 30); },
+    // 快到期(soonDays 內、未逾期)。同群組的 overdue/sixMonths/todayTrack 都排除已結案，
+    // 這裡原本沒排除，導致同一組快速篩選語意不一致、筆數無法互相對帳
+    soon:     function (r) { return !isClosed(r) && r.realDue && r.daysLeft >= 0 && r.daysLeft <= (CFG.soonDays || 30); },
     // 處置階段
     stageException: function (r) { return r.stage === 'exception'; },
     stageExtension: function (r) { return r.stage === 'extension'; },
