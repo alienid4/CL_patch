@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>國泰證券弱點彙總 — 資安說明</title>
+<style>
+  :root{
+    --c:#009142; --cd:#00703a; --soft:#e5f4ec; --bd:#e2e8f0; --tx:#1f2937; --mut:#64748b;
+    --warn:#f9a825; --danger:#c62828;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#eef2f4;color:var(--tx);
+    font-family:"Segoe UI","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;line-height:1.65;}
+  .page{max-width:920px;margin:0 auto;background:#fff;box-shadow:0 2px 24px rgba(0,0,0,.06);}
+  header{background:linear-gradient(120deg,var(--c),var(--cd));color:#fff;padding:32px 40px;}
+  header .logo{font-size:40px;}
+  header h1{margin:8px 0 4px;font-size:26px;letter-spacing:.5px;}
+  header p{margin:0;opacity:.9;font-size:15px;}
+  nav.toc{background:var(--soft);padding:16px 40px;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;}
+  nav.toc a{color:var(--cd);text-decoration:none;font-weight:600;}
+  nav.toc a:hover{text-decoration:underline;}
+  section{padding:28px 40px;border-bottom:1px solid var(--bd);}
+  h2{font-size:20px;color:var(--cd);margin:0 0 8px;display:flex;align-items:center;gap:10px;}
+  h2 .n{background:var(--c);color:#fff;width:28px;height:28px;border-radius:50%;display:inline-flex;
+    align-items:center;justify-content:center;font-size:15px;flex:none;}
+  .lead{color:var(--mut);margin:0 0 18px;font-size:14.5px;}
+  .fig{margin:6px 0 16px;text-align:center;}
+  .fig svg{max-width:100%;height:auto;border:1px solid var(--bd);border-radius:10px;background:#fbfdfc;}
+  ul.steps{margin:8px 0 0;padding-left:20px;}
+  ul.steps li{margin:6px 0;font-size:14.5px;}
+  .tip{background:var(--soft);border-left:4px solid var(--c);border-radius:8px;padding:12px 16px;font-size:14px;margin-top:14px;}
+  .tip b{color:var(--cd);}
+  .warn{background:#fff8e1;border-left:4px solid var(--warn);border-radius:8px;padding:12px 16px;font-size:14px;margin-top:14px;}
+  code{background:#eef2f0;padding:2px 7px;border-radius:5px;color:var(--cd);font-size:13px;}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;}
+  th{background:var(--soft);color:var(--cd);text-align:left;padding:9px 12px;border-bottom:2px solid var(--bd);}
+  td{padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:top;}
+  .yes{color:var(--cd);font-weight:700;}
+  .no{color:var(--danger);font-weight:700;}
+  footer{padding:20px 40px;color:var(--mut);font-size:13px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="logo">🔒</div>
+  <h1>資安說明</h1>
+  <p>你的資料放在哪裡、誰看得到、留下什麼紀錄</p>
+</header>
+
+<nav class="toc">
+  <a href="#s1">1 資料不會離開你的電腦</a>
+  <a href="#s2">2 催辦寄信的保護</a>
+  <a href="#s3">3 留下可查的紀錄</a>
+  <a href="#s4">4 發布前做過的檢查</a>
+  <a href="#s5">5 使用注意事項</a>
+</nav>
+
+<!-- 1 -->
+<section id="s1">
+  <h2><span class="n">1</span>資料不會離開你的電腦</h2>
+  <p class="lead">這是最常被問的一題：我把弱點報告拖進去，資料會被傳到哪裡？</p>
+
+  <div class="fig">
+    <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="40" width="280" height="120" rx="12" fill="#e5f4ec" stroke="#009142" stroke-width="2"/>
+      <text x="180" y="72" text-anchor="middle" font-size="14" fill="#00703a" font-weight="700">你的電腦</text>
+      <text x="180" y="98" text-anchor="middle" font-size="12.5" fill="#1f2937">Excel 檔案</text>
+      <text x="180" y="120" text-anchor="middle" font-size="12.5" fill="#1f2937">瀏覽器解析 · 產生看板</text>
+      <text x="180" y="142" text-anchor="middle" font-size="12.5" fill="#00703a" font-weight="700">全程都在這裡</text>
+
+      <line x1="330" y1="100" x2="420" y2="100" stroke="#c62828" stroke-width="2.5" stroke-dasharray="7,5"/>
+      <line x1="360" y1="82" x2="392" y2="118" stroke="#c62828" stroke-width="3"/>
+      <line x1="392" y1="82" x2="360" y2="118" stroke="#c62828" stroke-width="3"/>
+      <text x="375" y="145" text-anchor="middle" font-size="12" fill="#c62828" font-weight="700">不會上傳</text>
+
+      <rect x="440" y="55" width="240" height="90" rx="12" fill="#f6f8fc" stroke="#94a3b8" stroke-dasharray="5,4"/>
+      <text x="560" y="90" text-anchor="middle" font-size="13.5" fill="#64748b">外部網站／雲端</text>
+      <text x="560" y="114" text-anchor="middle" font-size="12.5" fill="#64748b">完全沒有連線</text>
+    </svg>
+  </div>
+
+  <table>
+    <tr><th>項目</th><th>說明</th></tr>
+    <tr><td><b>檔案上傳？</b></td><td><span class="no">不會。</span>Excel 只在你的瀏覽器裡解析，不會送到任何伺服器</td></tr>
+    <tr><td><b>需要網路？</b></td><td><span class="no">不需要。</span>拔掉網路線也能正常使用</td></tr>
+    <tr><td><b>需要安裝？</b></td><td><span class="no">不需要。</span>用瀏覽器開啟即可</td></tr>
+    <tr><td><b>需要登入？</b></td><td><span class="no">不需要。</span>沒有帳號密碼，也不會蒐集個人資訊</td></tr>
+    <tr><td><b>資料存在哪？</b></td><td>暫存在你自己電腦的瀏覽器裡，方便下次開啟時還原。可隨時用「其他功能 → 清除暫存資料」清掉</td></tr>
+  </table>
+
+  <div class="tip">
+    <b>換句話說：</b>這支工具就像 Excel 的檢視器，只是畫面比較好看。你的弱點資料從頭到尾都在自己的電腦上。
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <h2><span class="n">2</span>催辦寄信的保護</h2>
+  <p class="lead">寄信是唯一會「對外」的動作，所以特別加了保護。</p>
+
+  <p>網頁本身無法直接寄信，必須透過一支在你電腦背景執行的<b>寄信小幫手</b>。為了避免它被其他程式盜用，小幫手設有兩道關卡：</p>
+
+  <ul class="steps">
+    <li><b>只接受本機連線</b>：外部網路完全連不到它</li>
+    <li><b>需要存取權杖</b>：每次啟動會產生一組新的密碼，沒帶正確密碼一律拒絕</li>
+  </ul>
+
+  <div class="tip">
+    <b>為什麼需要權杖？</b>小幫手在背景執行時，如果沒有這道鎖，你電腦上開啟的其他網頁理論上也能叫它寄信。
+    加上權杖後，只有這個看板能使用它。
+  </div>
+
+  <p style="margin-top:18px;"><b>第一次使用要做的設定（只要一次）：</b></p>
+  <ul class="steps">
+    <li>啟動小幫手後，資料夾內會出現 <code>agent_token.txt</code></li>
+    <li>打開它，把裡面那串文字複製起來</li>
+    <li>貼到看板的「其他功能 → Email 設定 → 小幫手權杖」欄位，儲存</li>
+  </ul>
+
+  <div class="warn">
+    <b>注意：</b>小幫手每次<b>重新啟動</b>都會換一組新權杖。如果寄信時出現「未授權」，
+    表示小幫手重開過了，重新複製貼上一次即可。
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <h2><span class="n">3</span>留下可查的紀錄</h2>
+  <p class="lead">催辦最怕的是「到底催過沒有」講不清楚。</p>
+
+  <p>每一封催辦信都會留下紀錄，包含：</p>
+  <ul class="steps">
+    <li>寄送時間、負責人、收件人、副本</li>
+    <li>狀態（寄出／轉主管／跳過／<b>失敗</b>）</li>
+    <li>失敗時附上原因</li>
+  </ul>
+
+  <p style="margin-top:14px;">查看方式：<b>其他功能 → Email 設定 → 發信紀錄</b>，可匯出 CSV。
+  小幫手同時會在資料夾內寫一份 <code>mail_log.csv</code>，用 Excel 直接開得起來。</p>
+
+  <div class="tip">
+    <b>寄失敗會告訴你。</b>系統會逐筆標示失敗項目並跳出提醒，不會只顯示「已送出」讓你以為成功。
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <h2><span class="n">4</span>發布前做過的檢查</h2>
+  <p class="lead">在開放給大家使用之前，這套工具做過一次完整的自我檢測。</p>
+
+  <table>
+    <tr><th>檢測方式</th><th>內容</th></tr>
+    <tr><td><b>功能實測</b></td><td>實際操作驗證，包含 50 項統計數字逐一比對明細筆數，確認算得對</td></tr>
+    <tr><td><b>程式碼審查</b></td><td>全部程式逐行檢查，找出邏輯錯誤與邊界狀況</td></tr>
+  </table>
+
+  <p style="margin-top:16px;">檢測列管的 <b>35 項問題已全數修正完畢</b>，修正重點包含：</p>
+  <ul class="steps">
+    <li><b>數字正確性</b>：修正部分結案狀態未被辨識、日期格式（民國年等）計算錯誤的問題</li>
+    <li><b>寄信可靠性</b>：修正寄送失敗被誤判為成功、可能重複寄信的問題</li>
+    <li><b>資料完整性</b>：欄位對應不到時會主動警告，不會靜靜顯示空白讓人誤判</li>
+    <li><b>存取控制</b>：強化寄信小幫手的驗證機制</li>
+  </ul>
+
+  <div class="tip">
+    每一項修正都經過實際測試驗證，最後並執行完整回歸測試，確認沒有因為修改而產生新問題。
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <h2><span class="n">5</span>使用注意事項</h2>
+  <p class="lead">工具本身不外傳資料，但有幾件事還是要靠使用習慣。</p>
+
+  <ul class="steps">
+    <li><b>弱點報告本身是機敏資料</b>：請勿隨意轉寄含真實主機、弱點細節的原始 Excel</li>
+    <li><b>共用電腦請記得清除</b>：離開前用「其他功能 → 清除暫存資料」清掉本機暫存</li>
+    <li><b>發信紀錄含同仁信箱</b>：匯出的 CSV 請比照個資保管，不要外流</li>
+    <li><b>不要把權杖檔案外傳</b>：<code>agent_token.txt</code> 等同你的寄信授權</li>
+  </ul>
+
+  <div class="warn">
+    <b>有疑問或發現異常</b>，請直接聯繫系統維護窗口，不要自行修改程式檔案。
+  </div>
+</section>
+
+<footer>國泰證券弱點彙總 · 資安說明 · 本說明隨系統一起更新</footer>
+</div>
+</body>
+</html>

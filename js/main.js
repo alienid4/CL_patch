@@ -105,6 +105,12 @@
       window.open('docs/使用說明.html', '_blank');
     });
 
+    // 資安說明（資料保護、寄信權杖、發信紀錄、注意事項）
+    if ($('security-btn')) $('security-btn').addEventListener('click', function () {
+      closeMore();
+      window.open('docs/資安說明.html', '_blank');
+    });
+
     // 功能開關（其他功能 → 設定面板）
     if ($('features-btn')) $('features-btn').addEventListener('click', function () {
       closeMore();
