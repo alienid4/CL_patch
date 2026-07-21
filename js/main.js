@@ -196,8 +196,11 @@
     readArrayBuffer(file).then(function (buf) {
       loadWorkbook(buf, file.name);
       saveWorkbook(buf, file.name);
-      // 每次「匯入檔案」自動記一份歷史快照(自動還原/範例載入不記；同檔同日覆蓋)
-      if (global.History) global.History.record(state.sheets, file.name, todayKey());
+      // 快照失敗不該影響主流程：畫面其實已正確渲染，原本卻會被外層 catch 誤報成「解析失敗」
+      if (global.History) {
+        try { global.History.record(state.sheets, file.name, todayKey()); }
+        catch (e) { UI.toast('趨勢快照未能記錄（不影響本次解析）', 'error'); }
+      }
       setLoading(false);
       UI.toast('解析完成：' + file.name + '（' + state.sheets.length + ' 張表）', 'success');
     }).catch(function (err) {
@@ -219,7 +222,9 @@
   /* buf → 建各表 result、渲染左側導覽、預設落在「總覽」首頁 */
   function loadWorkbook(buf, fileName) {
     var sheets = global.Multi.buildAll(buf);
-    if (!sheets.length) { showError('找不到「數字-」開頭的工作表。'); throw new Error('無數字工作表'); }
+    // 訊息寫在例外裡：原本先 showError 再 throw，外層 catch 會用「解析失敗：無數字工作表」
+    // 蓋掉這句能直接指出命名規則的提示
+    if (!sheets.length) throw new Error('找不到「數字-」開頭的工作表（例如「1-系統弱點掃描弱點」）。請確認檔案或工作表命名。');
     state.sheets = sheets;
     state.fileName = fileName || state.fileName;
     if (state.activeIdx >= sheets.length) state.activeIdx = 0;
@@ -420,11 +425,18 @@
       UI.toast('檔案較大，未能記住（下次需重新匯入）', 'error');
     }
   }
+  /* activeIdx 獨立成一個 key：原本為了改一個整數，要把含數 MB base64 的整包
+   * parse→stringify→寫回，大檔時每點一次工作表都會卡頓 */
+  var ACTIVE_KEY = 'vulnDashboard.activeIdx';
   function saveActiveIdx(i) {
+    try { localStorage.setItem(ACTIVE_KEY, String(i)); } catch (e) {}
+  }
+  function loadActiveIdx(fallback) {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY); if (!raw) return;
-      var p = JSON.parse(raw); p.activeIdx = i; localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-    } catch (e) {}
+      var v = localStorage.getItem(ACTIVE_KEY);
+      var n = parseInt(v, 10);
+      return isNaN(n) ? (fallback || 0) : n;
+    } catch (e) { return fallback || 0; }
   }
   function loadState() {
     try {
@@ -457,7 +469,7 @@
     var saved = loadState();
     if (!saved) return;
     try {
-      state.activeIdx = saved.activeIdx || 0;
+      state.activeIdx = loadActiveIdx(saved.activeIdx || 0);   // 新 key 優先，相容舊存檔
       loadWorkbook(b64ToAb(saved.b64), saved.fileName);
       var when = fmtSavedAt(saved.savedAt);
       UI.toast('已還原上次匯入：' + (saved.fileName || '') + (when ? '（' + when + '）' : ''), 'success');

@@ -14,8 +14,20 @@
 
   function registry() { return global.APP_FEATURES || []; }
   function find(id) { var r = registry(); for (var i = 0; i < r.length; i++) if (r[i].id === id) return r[i]; return null; }
-  function overrides() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
-  function saveOverrides(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+  /* 型別守門：合法 JSON 但不是物件(例如陣列或字串)會讓 hasOwnProperty 判定失準 */
+  function overrides() {
+    try {
+      var v = JSON.parse(localStorage.getItem(KEY));
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    } catch (e) { return {}; }
+  }
+  function saveOverrides(o) {
+    try { localStorage.setItem(KEY, JSON.stringify(o)); return true; }
+    catch (e) {
+      if (global.UI && global.UI.toast) global.UI.toast('本機儲存空間不足，功能開關未能保存', 'error');
+      return false;
+    }
+  }
 
   /* 開關判定：個人覆寫優先，否則出廠預設（未登錄的 id 一律視為開） */
   function isOn(id) {

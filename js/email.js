@@ -40,7 +40,12 @@
   /* 記住上次勾選的催辦人選（跨檔沿用）；null = 從未選過 → 預設全勾 */
   var SEL_KEY = 'vulnDashboard.emailSel';
   function loadSel() {
-    try { var raw = localStorage.getItem(SEL_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    try {
+      var raw = localStorage.getItem(SEL_KEY);
+      if (!raw) return null;
+      var v = JSON.parse(raw);
+      return Array.isArray(v) ? v : null;      // 型別不對就當作沒選過，不要讓後續操作丟例外
+    } catch (e) { return null; }
   }
   function saveSel(names) {
     try { localStorage.setItem(SEL_KEY, JSON.stringify(names || [])); } catch (e) {}
@@ -48,13 +53,21 @@
 
   /* 發信紀錄（存本機，最多留 500 筆） */
   var LOG_KEY = 'vulnDashboard.emailLog';
-  function loadLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch (e) { return []; } }
-  function appendLog(entries) {
+  function loadLog() {
     try {
-      var log = loadLog().concat(entries || []);
-      if (log.length > 500) log = log.slice(log.length - 500);
-      localStorage.setItem(LOG_KEY, JSON.stringify(log));
-    } catch (e) {}
+      var v = JSON.parse(localStorage.getItem(LOG_KEY));
+      return Array.isArray(v) ? v : [];        // 型別不對時回空陣列，否則 concat 會丟例外
+    } catch (e) { return []; }
+  }
+  /* 寫入失敗原本靜默：使用者會看到舊紀錄而誤以為信沒寄出，進而重寄 */
+  function appendLog(entries) {
+    var log = loadLog().concat(entries || []);
+    if (log.length > 500) log = log.slice(log.length - 500);
+    try { localStorage.setItem(LOG_KEY, JSON.stringify(log)); return true; }
+    catch (e) {
+      UI.toast('信已寄出，但發信紀錄未能寫入本機（儲存空間不足）。請改看小幫手的 mail_log.csv', 'error');
+      return false;
+    }
   }
   function nowStamp() {
     var d = new Date(); function p(n) { return String(n).padStart(2, '0'); }

@@ -14,8 +14,24 @@
   var CAP = 12;
   var trendChart = null;
 
-  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
-  function save(arr) { try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {} }
+  /* 型別守門：JSON 合法但型別不對(舊版格式/外部寫入)會讓後續 push 丟例外，
+   * 而該例外原本被吞掉或誤報成「解析失敗」 */
+  function load() {
+    try {
+      var v = JSON.parse(localStorage.getItem(KEY));
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+  /* 配額耗盡原本靜默失敗：歷史悄悄停在舊的一期，「跟上次比」的數字從此都是錯的 */
+  function save(arr) {
+    try { localStorage.setItem(KEY, JSON.stringify(arr)); return true; }
+    catch (e) {
+      if (global.UI && global.UI.toast) {
+        global.UI.toast('本機儲存空間不足，趨勢快照未能保存（可到「清除暫存資料」釋放）', 'error');
+      }
+      return false;
+    }
+  }
   function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
   function keyOf(r) { return (r.host || '') + '||' + (r.pluginId || ''); }
 
