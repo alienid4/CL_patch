@@ -8,26 +8,6 @@
   var U = global.Utils;
   var CFG = global.APP_CONFIG;
 
-  /* 依 colMap 從原始列取值 */
-  function pick(row, colMap, key) {
-    var header = colMap[key];
-    if (!header) return '';
-    var v = row[header];
-    return v === undefined ? '' : v;
-  }
-
-  /* 正規化嚴重度為標準詞 */
-  function normSeverity(v) {
-    var s = U.normStr(v).toLowerCase();
-    if (!s) return 'Unknown';
-    if (s.indexOf('critical') >= 0) return 'Critical';
-    if (s.indexOf('high') >= 0) return 'High';
-    if (s.indexOf('medium') >= 0) return 'Medium';
-    if (s.indexOf('low') >= 0) return 'Low';
-    if (s.indexOf('info') >= 0 || s.indexOf('none') >= 0) return 'Info';
-    return U.normStr(v); // 保留原值(可能是數字風險值)
-  }
-
   /* 解析備註中的處置申請次數(展延/例外)。
    * 以 iForm 出現次數為「申請次數」；展延/例外關鍵字作分項。 */
   function parseActions(remark) {
@@ -50,70 +30,6 @@
     else if (daysLeft <= (CFG.soonDays || 30)) mult = 1.5;  // 快到期
     else mult = 1;                                          // 尚遠
     return Math.round(w * mult * 10) / 10;
-  }
-
-  /* 把一列原始資料轉為標準紀錄 */
-  function buildRecord(row, colMap) {
-    var fixDeadline = U.parseDate(pick(row, colMap, 'fixDeadline'));
-    var firstExtension = U.parseDate(pick(row, colMap, 'firstExtension'));
-    var exceptionApproval = U.parseDate(pick(row, colMap, 'exceptionApproval'));
-
-    // 真正到期日：例外核准 → 首次展延 → 修補期限
-    var realDue = exceptionApproval || firstExtension || fixDeadline || null;
-    var daysLeft = U.daysFromToday(realDue); // 負=逾期
-
-    // 處置階段：有例外核准 → 例外管理中；否則有首次展延 → 首次展延中；
-    //           否則有修補期限 → 原始修補期限；三者皆無 → 未定期限
-    var stage = exceptionApproval ? 'exception'
-              : firstExtension    ? 'extension'
-              : fixDeadline       ? 'original'
-              :                     'none';
-    // 安全名單：例外管理中且新到期日(例外核准期限)尚未到 → 目前受例外保護
-    var safeException = (stage === 'exception' && daysLeft !== null && daysLeft >= 0);
-
-    var remarkStr = U.normStr(pick(row, colMap, 'remark'));
-    var actions = parseActions(remarkStr);
-    var overdueDays = (daysLeft !== null && daysLeft < 0) ? -daysLeft : 0;
-
-    return {
-      stage:             stage,
-      safeException:     safeException,
-      actionCount:       actions.total,
-      extCount:          actions.ext,
-      excCount:          actions.exc,
-      chronic:           actions.total >= (CFG.chronicThreshold || 2),
-      riskScore:         riskScore(normSeverity(pick(row, colMap, 'severity')), realDue, daysLeft, overdueDays),
-      pluginId:          U.normStr(pick(row, colMap, 'pluginId')),
-      risk:              U.normStr(pick(row, colMap, 'risk')),
-      severity:          normSeverity(pick(row, colMap, 'severity')),
-      host:              U.normStr(pick(row, colMap, 'host')),
-      protocol:          U.normStr(pick(row, colMap, 'protocol')),
-      port:              U.normStr(pick(row, colMap, 'port')),
-      name:              U.normStr(pick(row, colMap, 'name')),
-      synopsis:          U.normStr(pick(row, colMap, 'synopsis')),
-      description:       U.normStr(pick(row, colMap, 'description')),
-      solution:          U.normStr(pick(row, colMap, 'solution')),
-      seeAlso:           U.normStr(pick(row, colMap, 'seeAlso')),
-      pluginOutput:      U.normStr(pick(row, colMap, 'pluginOutput')),
-      fixDeadline:       fixDeadline,
-      firstExtension:    firstExtension,
-      exceptionApproval: exceptionApproval,
-      realDue:           realDue,
-      daysLeft:          daysLeft,
-      overdue:           (daysLeft !== null && daysLeft < 0),
-      overdueDays:       (daysLeft !== null && daysLeft < 0) ? -daysLeft : 0,
-      overdueStatus:     U.normStr(pick(row, colMap, 'overdueStatus')),
-      systemCategory:    U.normStr(pick(row, colMap, 'systemCategory')),
-      assetName:         U.normStr(pick(row, colMap, 'assetName')),
-      department:        U.normStr(pick(row, colMap, 'department')),
-      owner:             U.normStr(pick(row, colMap, 'owner')) || '(未指定)',
-      retestStatus:      U.normStr(pick(row, colMap, 'retestStatus')),
-      closeStatus:       U.normStr(pick(row, colMap, 'closeStatus')),
-      closeDate:         U.parseDate(pick(row, colMap, 'closeDate')),
-      remark:            U.normStr(pick(row, colMap, 'remark')),
-      year:              U.normStr(pick(row, colMap, 'year')),
-      pureSystem:        U.normStr(pick(row, colMap, 'pureSystem')),
-    };
   }
 
   /* -------- 分類判斷 --------
@@ -482,61 +398,6 @@
     };
   }
 
-  /* 主入口：原始 rows + colMap → 分析結果 */
-  function analyze(rows, colMap) {
-    var all = rows.map(function (r) { return buildRecord(r, colMap); });
-
-    var dept = CFG.filter.department;
-    var open = CFG.filter.openStatus;
-
-    // 分析母體：負責單位 = 資訊架構部 且 結案狀態 = 未結案
-    var scoped = all.filter(function (r) {
-      return U.normKey(r.department) === U.normKey(dept) &&
-             U.normKey(r.closeStatus) === U.normKey(open);
-    });
-
-    // 僅符合單位(不論結案) — 供顯示資料涵蓋範圍參考
-    var deptAll = all.filter(function (r) {
-      return U.normKey(r.department) === U.normKey(dept);
-    });
-
-    // 結案狀態拆解(資訊架構部)：未結案 + 結案 + 其他 = 單位總數
-    var statusMap = {};
-    deptAll.forEach(function (r) {
-      var k = r.closeStatus || '(空白)';
-      if (!statusMap[k]) statusMap[k] = { status: k, count: 0, records: [] };
-      statusMap[k].count++; statusMap[k].records.push(r);
-    });
-    var statusItems = Object.keys(statusMap).map(function (k) { return statusMap[k]; })
-      .sort(function (a, b) { return b.count - a.count; });
-    var openKey = U.normKey(open);
-    var statusBreakdown = {
-      items: statusItems,
-      total: deptAll.length,
-      openCount: (statusMap[open] ? statusMap[open].count : scoped.length),
-      // 「結案」類：狀態含「結」但非「未結案」
-      closedCount: statusItems.filter(function (s) {
-        return U.normKey(s.status) !== openKey && s.status.indexOf('結') >= 0;
-      }).reduce(function (a, s) { return a + s.count; }, 0),
-    };
-
-    return {
-      allCount: all.length,
-      deptAllCount: deptAll.length,
-      records: scoped,
-      summary: summarize(scoped),
-      owners: byOwner(scoped),
-      stageStats: byStage(scoped),
-      statusBreakdown: statusBreakdown,
-      severityRepair: severityRepair(deptAll, open),
-      governance: governance(scoped),
-      dueMatrix: dueMatrix(scoped, CFG.dueMatrixMonths),
-      todayActions: todayActions(scoped),
-      riskRanking: riskRanking(scoped),
-      quality: qualityIssues(scoped),
-    };
-  }
-
   /* 供 UI 重用的分類過濾器(drill-down) */
   var Filters = {
     open:     function (r) { return true; },              // 母體已是未結案
@@ -564,7 +425,6 @@
   };
 
   global.Analysis = {
-    analyze: analyze,
     assembleResult: assembleResult,
     finalizeRecord: finalizeRecord,
     summarize: summarize,

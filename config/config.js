@@ -1,51 +1,10 @@
 /* ============================================================
  * config/config.js
  * 全域設定 — 所有可調參數集中在此，方便日後維護。
- * 依「欄位名稱」讀取，不依賴欄位位置。欄位順序改變仍可運作。
+ * 註：各工作表的「欄位名稱對應」定義在 config/profiles.js（依欄名讀取，
+ *     不依賴欄位位置，欄位順序改變仍可運作）。
  * ============================================================ */
 window.APP_CONFIG = {
-  /* Excel 工作表名稱 */
-  sheetName: '1-系統弱點掃描弱點',
-
-  /* 找不到指定工作表時，是否退而使用第一個工作表 */
-  fallbackToFirstSheet: true,
-
-  /* --------------------------------------------------------
-   * 欄位對應表
-   * key   = 程式內部使用的欄位代號
-   * value = { aliases: 可能的 Excel 標題(容錯多寫幾個), required: 是否必要 }
-   * 讀檔時會用 aliases 逐一比對(去除前後空白、忽略大小寫、全半形空白)。
-   * -------------------------------------------------------- */
-  columns: {
-    pluginId:          { aliases: ['Plugin ID', 'PluginID', 'Plugin_ID'], required: true },
-    risk:              { aliases: ['Risk', '風險', 'Risk Factor', 'RiskFactor'], required: false },
-    severity:          { aliases: ['Severity', '嚴重度', '風險等級',
-                                   'Risk Severity', 'RiskSeverity', 'Risk/Severity', 'Risk-Severity', 'Risk_Severity'],
-                          required: true },
-    host:              { aliases: ['Host'], required: true },
-    protocol:          { aliases: ['Protocol'], required: false },
-    port:              { aliases: ['Port'], required: false },
-    name:              { aliases: ['Name'], required: true },
-    synopsis:          { aliases: ['Synopsis'], required: false },
-    description:       { aliases: ['Description'], required: false },
-    solution:          { aliases: ['Solution'], required: false },
-    seeAlso:           { aliases: ['See Also', 'SeeAlso'], required: false },
-    pluginOutput:      { aliases: ['Plugin Output', 'PluginOutput'], required: false },
-    fixDeadline:       { aliases: ['修補期限'], required: true },
-    firstExtension:    { aliases: ['首次展延上限', '首次展延'], required: false },
-    exceptionApproval: { aliases: ['例外核准期限', '例外核准'], required: false },
-    overdueStatus:     { aliases: ['逾期狀態'], required: false },
-    systemCategory:    { aliases: ['系統類別'], required: false },
-    assetName:         { aliases: ['資產名稱'], required: false },
-    department:        { aliases: ['負責單位'], required: true },
-    owner:             { aliases: ['負責人'], required: true },
-    retestStatus:      { aliases: ['複測狀態'], required: false },
-    closeStatus:       { aliases: ['結案狀態'], required: true },
-    closeDate:         { aliases: ['結案日期'], required: false },
-    remark:            { aliases: ['備註'], required: false },
-    year:              { aliases: ['年度'], required: false },
-    pureSystem:        { aliases: ['純期系統', '純測系統'], required: false },
-  },
 
   /* --------------------------------------------------------
    * 分析條件
