@@ -422,6 +422,8 @@
         var label = p.mode === 'ad' ? ('→ ' + p.to)
                   : p.mode === 'fallback' ? ('→ 轉主管 ' + p.to + '（' + why + '）')
                   : why + '，跳過';
+        // AD 命中且該負責人在 AD 有直屬主管 → 這封會加副本給主管，先讓使用者看到
+        if (p.mode === 'ad' && p.managerCc) { label += '　（副本主管 ' + p.managerCc + '）'; }
         listBox.appendChild(U.el('div', { class: 'batch-row plan-' + p.mode }, [
           U.el('span', { class: 'batch-owner', text: p.owner }),
           U.el('span', { class: 'batch-count', text: label }),

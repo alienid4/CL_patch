@@ -20,7 +20,7 @@ if (Test-Path $ovPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.71'
+$AGENT_VER = 'V1.72 (mgr-cc)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -62,43 +62,66 @@ function Write-MailLog([string]$owner, [string]$to, [string]$cc, [string]$status
     }
 }
 
-# 回傳 @{ email=<字串或$null>; reason='override'|'ad'|'ambiguous'|'notfound'|'error'; candidates=@() }
+# 由主管的 DN 取其 email。任何失敗（沒填 manager、繫結失敗、沒 mail）一律回 $null，
+# 絕不丟例外——這只是「加值副本」，查不到就當沒這功能，不能因此影響本人寄信。
+function Resolve-ManagerEmail([string]$mgrDN) {
+    if ([string]::IsNullOrWhiteSpace($mgrDN)) { return $null }
+    try {
+        $m = [ADSI]"LDAP://$mgrDN"
+        if ($m.Properties['mail'].Count -gt 0) {
+            $mm = [string]$m.Properties['mail'][0]
+            if (-not [string]::IsNullOrWhiteSpace($mm)) { return $mm }
+        }
+        return $null
+    } catch { return $null }
+}
+
+# 回傳 @{ email=<字串或$null>; reason='override'|'ad'|'ambiguous'|'notfound'|'error'; candidates=@(); managerEmail=<字串或$null> }
 # 舊版只回 email，導致「同名多筆」與「真的查不到」都顯示成『查無 email』，使用者無從判斷
+# managerEmail：只有唯一命中該負責人時才解析他的直屬主管信箱，供「每封 CC 主管」用；查不到回 $null
 function Resolve-EmailInfo([string]$name) {
     if ($script:override.ContainsKey($name)) {
-        return @{ email = $script:override[$name]; reason = 'override'; candidates = @() }
+        return @{ email = $script:override[$name]; reason = 'override'; candidates = @(); managerEmail = $null }
     }
     try {
         # 先把括號連同內容整段拿掉（「王小明(資安室)」→「王小明」），
         # 只拿掉括號符號會變成「王小明資安室」而在 AD 查無
         $safe = $name -replace '[(（][^)）]*[)）]', ''
         $safe = ($safe -replace '[\*\\/()（）]', '').Trim()
-        if (-not $safe) { return @{ email = $null; reason = 'notfound'; candidates = @() } }
+        if (-not $safe) { return @{ email = $null; reason = 'notfound'; candidates = @(); managerEmail = $null } }
 
         $s = New-Object System.DirectoryServices.DirectorySearcher
         $s.Filter = "(&(objectCategory=person)(objectClass=user)(anr=$safe))"
         [void]$s.PropertiesToLoad.Add('mail')
         [void]$s.PropertiesToLoad.Add('samaccountname')
+        [void]$s.PropertiesToLoad.Add('manager')
         $found = @()
         foreach ($e in $s.FindAll()) {
             if ($e.Properties['mail'].Count -gt 0) {
                 $found += [pscustomobject]@{
                     mail = [string]$e.Properties['mail'][0]
                     sam  = if ($e.Properties['samaccountname'].Count -gt 0) { [string]$e.Properties['samaccountname'][0] } else { '' }
+                    mgr  = if ($e.Properties['manager'].Count -gt 0) { [string]$e.Properties['manager'][0] } else { '' }
                 }
             }
         }
         $found = @($found | Sort-Object mail -Unique)
-        if ($found.Count -eq 1) { return @{ email = $found[0].mail; reason = 'ad'; candidates = @() } }
-        if ($found.Count -gt 1) {
+        $chosen = $null
+        if ($found.Count -eq 1) { $chosen = $found[0] }
+        elseif ($found.Count -gt 1) {
             # 多筆時優先取「非管理者帳號」(adm_/a-/admin 前綴)，仍唯一才自動採用
             $normal = @($found | Where-Object { $_.sam -notmatch '^(adm[_-]|a[_-]|admin)' })
-            if ($normal.Count -eq 1) { return @{ email = $normal[0].mail; reason = 'ad'; candidates = @() } }
-            return @{ email = $null; reason = 'ambiguous'; candidates = @($found | ForEach-Object { $_.mail }) }
+            if ($normal.Count -eq 1) { $chosen = $normal[0] }
+            else { return @{ email = $null; reason = 'ambiguous'; candidates = @($found | ForEach-Object { $_.mail }); managerEmail = $null } }
         }
-        return @{ email = $null; reason = 'notfound'; candidates = @() }
+        if ($chosen) {
+            $mgrMail = Resolve-ManagerEmail $chosen.mgr
+            if ($mgrMail -and ($mgrMail -eq $chosen.mail)) { $mgrMail = $null }  # 主管就是本人時不重複
+            return @{ email = $chosen.mail; reason = 'ad'; candidates = @(); managerEmail = $mgrMail }
+        }
+        return @{ email = $null; reason = 'notfound'; candidates = @(); managerEmail = $null }
     } catch {
-        return @{ email = $null; reason = 'error'; candidates = @() }
+        return @{ email = $null; reason = 'error'; candidates = @(); managerEmail = $null }
     }
 }
 
@@ -117,6 +140,7 @@ function Build-Plan($data) {
         $plan += [pscustomobject]@{
             owner = $o.owner; count = $o.count; to = $to; mode = $mode
             reason = $info.reason; candidates = @($info.candidates)
+            managerCc = $info.managerEmail   # 該負責人主管信箱（供計畫畫面顯示「會副本給誰」），無則 $null
         }
     }
     return $plan
@@ -126,12 +150,13 @@ function Do-Send($data) {
     $smtpHost = $data.smtp.host
     $smtpPort = if ($data.smtp.port) { [int]$data.smtp.port } else { 25 }
     $from     = $data.from
-    $cc       = @($data.cc) | Where-Object { $_ }
+    $ccGlobal = @($data.cc) | Where-Object { $_ }   # 全域副本（設定畫面填的固定副本）
     $fallback = @($data.fallbackTo) | Where-Object { $_ }
     $sent = 0; $fb = 0; $skipped = 0; $failed = 0; $details = @()
     $script:logErrors = @()   # 本批次的稽核檔寫入錯誤
     foreach ($o in $data.owners) {
-        $email = Resolve-Email $o.owner
+        $info = Resolve-EmailInfo $o.owner
+        $email = $info.email
         $subj = $o.subject; $body = $o.body; $to = $null; $mode = ''
         if ($email) { $to = $email; $mode = 'ad' }
         elseif ($fallback.Count -gt 0) {
@@ -139,20 +164,25 @@ function Do-Send($data) {
             $subj = "[原負責人 $($o.owner) 查無email/離職] " + $subj
             $body = "※ 原負責人「$($o.owner)」查無 email（可能已離職），轉您處理。`r`n`r`n" + $body
         } else { $skipped++; $details += [pscustomobject]@{ owner = $o.owner; mode = 'skip' }; Write-MailLog $o.owner '' '' '跳過' ''; continue }
+        # 本封副本 = 全域副本 + 該負責人主管（僅 ad 命中時才有主管；去空、去重、不與收件人重複）
+        $toArr = @($to)
+        $ccList = @($ccGlobal)
+        if ($info.managerEmail) { $ccList += $info.managerEmail }
+        $ccList = @($ccList | Where-Object { $_ } | Select-Object -Unique | Where-Object { $toArr -notcontains $_ })
+        $ccStr = ($ccList -join ',')
         try {
             # ErrorAction Stop：SMTP 失敗多屬非終止錯誤，不加會略過 catch 而被誤記成「寄出」
             $pp = @{ SmtpServer = $smtpHost; Port = $smtpPort; From = $from; To = $to; Subject = $subj; Body = $body; Encoding = ([System.Text.Encoding]::UTF8); ErrorAction = 'Stop' }
-            if ($cc.Count -gt 0) { $pp['Cc'] = $cc }
+            if ($ccList.Count -gt 0) { $pp['Cc'] = $ccList }
             Send-MailMessage @pp
             if ($mode -eq 'ad') { $sent++ } else { $fb++ }
-            $ccStr = ($cc -join ',')
             $details += [pscustomobject]@{ owner = $o.owner; mode = $mode; to = ($to -join ','); cc = $ccStr }
             $st = if ($mode -eq 'ad') { '寄出' } else { '轉主管' }
             Write-MailLog $o.owner ($to -join ',') $ccStr $st ''
         } catch {
             $failed++
-            $details += [pscustomobject]@{ owner = $o.owner; mode = 'fail'; to = ($to -join ','); cc = ($cc -join ','); error = $_.Exception.Message }
-            Write-MailLog $o.owner ($to -join ',') ($cc -join ',') '失敗' $_.Exception.Message
+            $details += [pscustomobject]@{ owner = $o.owner; mode = 'fail'; to = ($to -join ','); cc = $ccStr; error = $_.Exception.Message }
+            Write-MailLog $o.owner ($to -join ',') $ccStr '失敗' $_.Exception.Message
         }
     }
     return [pscustomobject]@{
