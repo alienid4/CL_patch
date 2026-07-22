@@ -53,6 +53,8 @@
   <a href="#s5">5 子分頁（免下拉）</a>
   <a href="#s6">6 查詢：多選篩選</a>
   <a href="#s7">7 其他功能</a>
+  <a href="#s8">8 催辦通知信</a>
+  <a href="#s9">9 更新紀錄</a>
 </nav>
 
 <!-- 1 -->
@@ -201,8 +203,49 @@
   <p class="lead">右上「其他功能」下拉：</p>
   <ul class="steps">
     <li><b>功能開關</b>：自由開／關各面板</li>
-    <li><b>Email 設定</b>：填自己的 SMTP（免密碼內部 relay），可預覽通知內容、匯出寄送任務</li>
+    <li><b>Email 設定</b>：填自己的 SMTP（免密碼內部 relay），可預覽通知內容、匯出寄送任務（催辦寄信詳見下一節）</li>
     <li><b>重新選擇檔案</b>／<b>清除暫存資料</b>：換檔或清空</li>
+  </ul>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <h2><span class="n">8</span>催辦通知信（自動副本部門主管）</h2>
+  <p class="lead">在<b>人員追蹤</b>分頁一鍵產生催辦，或到 Email 設定按「寄出」。<b>寄出前一定會先列出「寄送計畫」讓你過目</b>，確認無誤才真的送出。</p>
+  <div class="fig">
+    <svg viewBox="0 0 720 170" xmlns="http://www.w3.org/2000/svg">
+      <rect x="30" y="24" width="150" height="50" rx="8" fill="#e8f5ec" stroke="#009142"/>
+      <text x="105" y="46" text-anchor="middle" font-size="12.5" fill="#00703a" font-weight="700">產生催辦</text>
+      <text x="105" y="63" text-anchor="middle" font-size="11" fill="#64748b">只挑逾期／快到期</text>
+      <path d="M188 49 H248" stroke="#94a3b8" stroke-width="2" marker-end="url(#b)"/>
+      <rect x="256" y="14" width="200" height="120" rx="8" fill="#fff" stroke="#009142" stroke-width="2"/>
+      <text x="356" y="38" text-anchor="middle" font-size="12.5" fill="#00703a" font-weight="700">寄送計畫（過目）</text>
+      <text x="272" y="62" font-size="11.5" fill="#334155">喬峰 → qiaofeng@…</text>
+      <text x="272" y="80" font-size="11" fill="#00703a">　（副本主管 arch_lead@…）</text>
+      <text x="272" y="100" font-size="11.5" fill="#334155">段譽 → duanyu@…</text>
+      <text x="272" y="118" font-size="11" fill="#c62828">　（主管未填：資訊安全部）</text>
+      <path d="M464 74 H524" stroke="#94a3b8" stroke-width="2" marker-end="url(#b)"/>
+      <rect x="532" y="49" width="150" height="50" rx="8" fill="#e8f5ec" stroke="#009142"/>
+      <text x="607" y="71" text-anchor="middle" font-size="12.5" fill="#00703a" font-weight="700">確認寄出</text>
+      <text x="607" y="88" text-anchor="middle" font-size="11" fill="#64748b">按下才真的送</text>
+      <defs><marker id="b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#94a3b8"/></marker></defs>
+    </svg>
+  </div>
+  <ul class="steps">
+    <li>系統只挑<b>已逾期</b>與<b>快到期</b>的負責人，例外保護中且日期還遠的不打擾</li>
+    <li>每封催辦會<b>自動副本給該負責人的部門主管</b>——計畫畫面會先顯示會副本給誰</li>
+    <li>寄完每封都留在「發信紀錄」（時間、收件人、副本、狀態），可匯出 CSV</li>
+  </ul>
+  <div class="tip"><b>設定部門主管：</b>在小幫手資料夾把 <code>dept_manager.json.example</code> 複製成 <code>dept_manager.json</code>，一個部門一行填「部門 → 主管信箱」（部門名稱要跟 Excel 一致）。<b>沒填的部門</b>，計畫會標紅「主管未填：○○部」且該封<b>不加主管副本</b>，不會亂寄。</div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <h2><span class="n">9</span>更新紀錄</h2>
+  <p class="lead">近期版本的使用者可見改動：</p>
+  <ul class="steps">
+    <li><span class="pill">V1.75</span>　催辦信每封自動<b>副本給該負責人的部門主管</b>（需設定 <code>dept_manager.json</code>，見上一節）</li>
+    <li><span class="pill">V1.73</span>　Email 設定等<b>有輸入的視窗</b>，填到一半不小心點到旁邊<b>不再整個關掉</b>；要關請按右上 ✕</li>
   </ul>
 </section>
 
