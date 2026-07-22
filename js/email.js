@@ -136,13 +136,18 @@
       var list = byOwner[o];
       var subject = (cfg.subjectPrefix || '') + o + ' 弱點待處理 ' + list.length + ' 筆（' + today + '）';
       var lines = ['以下弱點待您處理（' + today + '）：', ''];
+      var deptTally = {};
       list.forEach(function (r) {
         var od = (r.realDue && r.daysLeft < 0) ? ('逾期 ' + r.overdueDays + ' 天')
                : (r.realDue ? ('剩 ' + r.daysLeft + ' 天') : '無到期日');
         lines.push('· [' + r.sheet + '] ' + (r.unit || '(未填)') +
                    '｜' + r.name + '｜' + r.severity + '｜到期 ' + U.fmtDate(r.realDue) + '（' + od + '）');
+        var u = r.unit || '';
+        if (u) deptTally[u] = (deptTally[u] || 0) + 1;   // 該負責人的部門（供小幫手查「部門主管」副本）
       });
-      return { owner: o, count: list.length, subject: subject, body: lines.join('\n') };
+      // 跨部門時取最常出現的那個部門
+      var dept = Object.keys(deptTally).sort(function (a, b) { return deptTally[b] - deptTally[a]; })[0] || '';
+      return { owner: o, count: list.length, dept: dept, subject: subject, body: lines.join('\n') };
     });
   }
 
@@ -422,8 +427,11 @@
         var label = p.mode === 'ad' ? ('→ ' + p.to)
                   : p.mode === 'fallback' ? ('→ 轉主管 ' + p.to + '（' + why + '）')
                   : why + '，跳過';
-        // AD 命中且該負責人在 AD 有直屬主管 → 這封會加副本給主管，先讓使用者看到
-        if (p.mode === 'ad' && p.managerCc) { label += '　（副本主管 ' + p.managerCc + '）'; }
+        // AD 命中時揭露「主管副本」狀態：有就顯示主管信箱，沒有就明講未填、提示補哪個部門
+        if (p.mode === 'ad') {
+          if (p.managerCc) { label += '　（副本主管 ' + p.managerCc + '）'; }
+          else { label += '　（主管未填' + (p.dept ? '：' + p.dept : '') + '，未副本）'; }
+        }
         listBox.appendChild(U.el('div', { class: 'batch-row plan-' + p.mode }, [
           U.el('span', { class: 'batch-owner', text: p.owner }),
           U.el('span', { class: 'batch-count', text: label }),

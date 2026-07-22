@@ -59,7 +59,7 @@ copy /Y "%SRC%\index.html" "%HERE%\index.html" >nul
 
 echo Updating docs and helper scripts...
 robocopy "%SRC%\docs" "%HERE%\docs" /E /NFL /NDL /NJH /NJS >nul
-for %%F in (mail_agent.ps1 install_agent.bat uninstall_agent.bat start_agent.bat send_mail.ps1 send.bat override.json.example _show_changes.ps1) do (
+for %%F in (mail_agent.ps1 install_agent.bat uninstall_agent.bat start_agent.bat send_mail.ps1 send.bat override.json.example dept_manager.json.example _show_changes.ps1) do (
     if exist "%SRC%\%%F" copy /Y "%SRC%\%%F" "%HERE%\%%F" >nul
 )
 

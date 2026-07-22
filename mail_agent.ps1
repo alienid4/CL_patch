@@ -19,8 +19,19 @@ if (Test-Path $ovPath) {
     } catch {}
 }
 
+# dept_manager.json（部門 -> 主管 email，手填）。用於「每封催辦副本給該部門主管」。
+# AD 沒填 manager 時的主要來源；此檔優先於 AD 的直屬主管（與 override.json 優先於 AD 同邏輯）。
+$script:deptMgr = @{}
+$dmPath = Join-Path $here 'dept_manager.json'
+if (Test-Path $dmPath) {
+    try {
+        (Get-Content $dmPath -Raw -Encoding UTF8 | ConvertFrom-Json).PSObject.Properties |
+            ForEach-Object { $script:deptMgr[$_.Name] = [string]$_.Value }
+    } catch {}
+}
+
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.72 (mgr-cc)'
+$AGENT_VER = 'V1.73 (dept-mgr-cc)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -128,6 +139,17 @@ function Resolve-EmailInfo([string]$name) {
 # 相容舊呼叫：只要 email
 function Resolve-Email([string]$name) { return (Resolve-EmailInfo $name).email }
 
+# 決定該負責人這封要副本給哪位主管：手填的 dept_manager.json 優先，其次 AD 直屬主管，都沒有回 $null。
+# 回 $null 表示「主管未填」——網頁計畫畫面會明講並且不加副本，不會亂寄。
+function Resolve-ManagerCc([string]$dept, $adManagerEmail) {
+    if ($dept -and $script:deptMgr.ContainsKey($dept)) {
+        $v = [string]$script:deptMgr[$dept]
+        if (-not [string]::IsNullOrWhiteSpace($v)) { return $v }
+    }
+    if ($adManagerEmail) { return [string]$adManagerEmail }
+    return $null
+}
+
 function Build-Plan($data) {
     $fallback = @($data.fallbackTo) | Where-Object { $_ }
     $plan = @()
@@ -140,7 +162,8 @@ function Build-Plan($data) {
         $plan += [pscustomobject]@{
             owner = $o.owner; count = $o.count; to = $to; mode = $mode
             reason = $info.reason; candidates = @($info.candidates)
-            managerCc = $info.managerEmail   # 該負責人主管信箱（供計畫畫面顯示「會副本給誰」），無則 $null
+            dept = $o.dept                                        # 供計畫畫面在主管未填時提示要補哪個部門
+            managerCc = (Resolve-ManagerCc $o.dept $info.managerEmail)  # 部門對照優先、其次 AD，無則 $null(未填)
         }
     }
     return $plan
@@ -164,10 +187,11 @@ function Do-Send($data) {
             $subj = "[原負責人 $($o.owner) 查無email/離職] " + $subj
             $body = "※ 原負責人「$($o.owner)」查無 email（可能已離職），轉您處理。`r`n`r`n" + $body
         } else { $skipped++; $details += [pscustomobject]@{ owner = $o.owner; mode = 'skip' }; Write-MailLog $o.owner '' '' '跳過' ''; continue }
-        # 本封副本 = 全域副本 + 該負責人主管（僅 ad 命中時才有主管；去空、去重、不與收件人重複）
+        # 本封副本 = 全域副本 + 該負責人主管（部門對照優先、其次 AD；去空、去重、不與收件人重複）
+        $mgrCc = Resolve-ManagerCc $o.dept $info.managerEmail
         $toArr = @($to)
         $ccList = @($ccGlobal)
-        if ($info.managerEmail) { $ccList += $info.managerEmail }
+        if ($mgrCc) { $ccList += $mgrCc }
         $ccList = @($ccList | Where-Object { $_ } | Select-Object -Unique | Where-Object { $toArr -notcontains $_ })
         $ccStr = ($ccList -join ',')
         try {

@@ -25,6 +25,7 @@ upload.bat
 
 # Email 執行期產物／個人補漏（含實 email/relay IP，絕不上 GitHub）
 override.json
+dept_manager.json
 mail-batch.json
 mail-task.json
 mail_log.csv

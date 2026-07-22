@@ -1,0 +1,5 @@
+{
+  "_說明": "每封催辦要副本給『該部門主管』時，在這裡填 部門 -> 主管email。複製本檔為 dept_manager.json（去掉 .example）再填。部門名稱要跟 Excel 的部門欄一致。留空或查無的部門，計畫畫面會標『主管未填』且該封不加副本。此檔優先於 AD 的直屬主管。",
+  "資訊架構部": "arch_lead@example.com.tw",
+  "資訊安全部": "sec_lead@example.com.tw"
+}

@@ -11,7 +11,7 @@ $Src = $Src.Trim([char]34).TrimEnd([char]92, [char]47)
 $Dst = $Dst.Trim([char]34).TrimEnd([char]92, [char]47)
 
 # 只納入 update.bat 實際會更新的檔(資料夾以 / 結尾)
-$inc = @('index.html', 'css/', 'js/', 'config/', 'assets/', 'docs/', 'mail_agent.ps1', 'install_agent.bat', 'uninstall_agent.bat', 'start_agent.bat', 'send_mail.ps1', 'send.bat', 'override.json.example')
+$inc = @('index.html', 'css/', 'js/', 'config/', 'assets/', 'docs/', 'mail_agent.ps1', 'install_agent.bat', 'uninstall_agent.bat', 'start_agent.bat', 'send_mail.ps1', 'send.bat', 'override.json.example', 'dept_manager.json.example')
 function Test-Inc([string]$rel) {
     foreach ($p in $inc) {
         if ($p.EndsWith('/')) { if ($rel -like "$p*") { return $true } }
