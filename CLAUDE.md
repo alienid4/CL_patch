@@ -105,6 +105,24 @@ main.js handleFile
 
 測試資料：`docs/測試假資料_天龍八部.xlsx`（未進版控，需本機自備）
 
+### 自動回歸測試
+
+`dev/regression_test.js` 用無頭 Chrome 實跑真網頁，涵蓋最易復發的四塊：
+日期解析（民國年）、結案分類（`結案中` 不誤判、認不得的落 `other` 不丟棄）、
+數字對帳（KPI 卡點開的筆數＝卡片數字）、sticky modal 防誤觸。
+
+```
+# 1. 另開視窗啟動伺服器（或用 .claude/launch.json 的 vuln-dashboard）
+py -m http.server 8778
+# 2. 首次需安裝相依（node_modules 已 gitignore）
+cd dev && npm install
+# 3. 跑測試（找系統 Chrome/Edge，全過 exit 0）
+node regression_test.js
+```
+
+**改動任何 `js/` 後、發布前跑一次。** 不接進 `checks.py` 硬關卡是因為它需要
+伺服器＋Chrome，接進去會讓沒開伺服器時連 commit 都被擋。
+
 ---
 
 ## 完成前自我檢查

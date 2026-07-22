@@ -1,0 +1,11 @@
+{
+  "name": "cl-patch-dev-tools",
+  "private": true,
+  "description": "開發／測試用工具（不進產品）。regression_test.js 需要 puppeteer-core 驅動系統 Chrome。",
+  "scripts": {
+    "test": "node regression_test.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}
