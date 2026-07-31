@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `dbf084a`
+- 目前 HEAD: `0b7d179`
 
 ## 強制層檢查即時結果
 
@@ -98,14 +98,14 @@
 ## 最近 10 筆 commit
 
 ```
+0b7d179 V1.76 自動匯入：開啟時抓來源資料夾最新報告（管理介面可設路徑）
+7766cc7 移除誤入的空殼 sync_load/save.ps1（同步機制實作在私有 AI_note，非本公開 repo）[skip-version]
+8ba63df 晚安自動存檔 2026-07-22 16:26
+3fa5f89 使用說明新增「催辦通知信」與「更新紀錄」兩節 [skip-version]
+5060577 V1.75 主管副本改「部門對照優先」，查無主管時明講未填不亂寄
+82b3a4f V1.74 催辦每封自動 CC 該負責人的直屬主管（AD manager）
+4fa526f 新增自動回歸測試 dev/regression_test.js [skip-version]
+f7a495e V1.73 修正：有輸入的 modal 不再被誤觸關閉
+7acdb1d 開發腳本移入 dev/、git-push.sh 改為不自動加入新檔 [skip-version]
 dbf084a 下班交接：刷新 CURRENT_STATE、backlog 補記黑白箱測試與路徑更新 [skip-version]
-f625762 CLAUDE.md 更新路徑與專案目錄結構（頂層四分類）[skip-version]
-46d0571 新增 CLAUDE.md：專案規則與鐵律 [skip-version]
-f3ecf03 移出方法論分享包（與弱點看板無關）[skip-version]
-322a2e1 launch.json 移除寫死的絕對路徑，改用工作目錄（跨機器可攜）[skip-version]
-fd57e04 V1.72：資安說明第5節重構為「部署模式與安全邊界」；目錄整理
-480f798 V1.71：修掉三項可修復項目（權杖落地／埠占用／跨午夜）
-878b6d5 專案紀錄措辭調整：移除部署流程實作細節 [skip-version]
-70082ea V1.70：資安說明改為正式資安說明書格式（供資安人員審閱）
-425994f V1.69：新增「資安說明」文件，掛在其他功能底下
 ```
