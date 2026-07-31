@@ -138,8 +138,18 @@
     });
     if ($('global-search-clear')) $('global-search-clear').addEventListener('click', function () { global.Search.clear(); });
 
+    // 自動匯入設定（其他功能 → 自動匯入設定）
+    if ($('autoimport-btn')) $('autoimport-btn').addEventListener('click', function () {
+      closeMore();
+      if (global.AutoImport) global.AutoImport.openSettings();
+    });
+
     // 還原上次匯入(若有)
     tryRestore();
+
+    // 自動匯入：若已設定來源資料夾且小幫手在跑，開啟時抓最新（抓到新檔才覆蓋，同檔跳過）。
+    // 放在還原之後：沒設定就完全不動作，行為與今天相同。
+    if (global.AutoImport) global.AutoImport.run();
   }
 
   function todayStr() {
@@ -216,6 +226,34 @@
       showError('解析失敗：' + U.esc(err && err.message || err));
       UI.toast('解析失敗', 'error');
     });
+  }
+
+  /* 由 ArrayBuffer 直接匯入（自動匯入用；手動走 handleFile）。回傳成功與否。 */
+  function importArrayBuffer(buf, fileName, opts) {
+    opts = opts || {};
+    if (typeof XLSX === 'undefined') { UI.toast('函式庫未載入', 'error'); return false; }
+    state.fileName = fileName;
+    setLoading(true); hideError();
+    try {
+      loadWorkbook(buf, fileName);
+      saveWorkbook(buf, fileName);
+      if (global.History) {
+        try { global.History.record(state.sheets, fileName, todayKey()); } catch (e) {}
+      }
+      setLoading(false);
+      if (opts.source === 'auto') {
+        UI.toast('已自動匯入：' + fileName + (opts.modified ? '（' + opts.modified + '）' : '') +
+                 ' · ' + state.sheets.length + ' 張表', 'success');
+      } else {
+        UI.toast('解析完成：' + fileName + '（' + state.sheets.length + ' 張表）', 'success');
+      }
+      return true;
+    } catch (err) {
+      setLoading(false);
+      showError('解析失敗：' + U.esc(err && err.message || err));
+      UI.toast('解析失敗', 'error');
+      return false;
+    }
   }
 
   function readArrayBuffer(file) {
@@ -697,5 +735,5 @@
     init();
   }
 
-  global.App = { getState: function () { return state; }, setSubtabVisible: setSubtabVisible };
+  global.App = { getState: function () { return state; }, setSubtabVisible: setSubtabVisible, importArrayBuffer: importArrayBuffer };
 })(window);

@@ -31,7 +31,7 @@ if (Test-Path $dmPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.73 (dept-mgr-cc)'
+$AGENT_VER = 'V1.74 (auto-import)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -215,6 +215,37 @@ function Do-Send($data) {
     }
 }
 
+# ── 自動匯入：讀取來源資料夾裡「最新」的弱點彙總報告 ─────────────
+# 純前端網頁讀不到 UNC 分享路徑，故由小幫手代讀。dir/pattern 由網頁帶來（存本機、不寫死）。
+# 「最新」= 檔名裡 8 碼日期(YYYYMMDD)最大者；無日期則退回檔案修改時間。任何失敗回結構化錯誤，不丟例外。
+function Get-LatestReport([string]$dir, [string]$pattern) {
+    if ([string]::IsNullOrWhiteSpace($dir)) { return [pscustomobject]@{ ok = $false; error = '未設定來源資料夾' } }
+    if (-not (Test-Path -LiteralPath $dir)) { return [pscustomobject]@{ ok = $false; error = "讀不到資料夾（不在內網或無權限）" } }
+    $pat = if ([string]::IsNullOrWhiteSpace($pattern)) { '*.xlsx' } else { $pattern }
+    try {
+        $files = @(Get-ChildItem -LiteralPath $dir -File -ErrorAction Stop | Where-Object {
+            $_.Name -like $pat -and $_.Name -notlike '~$*' -and $_.Extension -match '(?i)^\.(xlsx|xlsm|xls|csv)$'
+        })
+    } catch { return [pscustomobject]@{ ok = $false; error = "列目錄失敗：$($_.Exception.Message)" } }
+    if (-not $files.Count) { return [pscustomobject]@{ ok = $false; error = "找不到符合『$pat』的檔案" } }
+    # 排序鍵：檔名 8 碼日期優先，無則用修改時間的日期；同鍵再用修改時間細分
+    $ranked = $files | ForEach-Object {
+        $m = [regex]::Match($_.Name, '(\d{8})')
+        $key = if ($m.Success) { $m.Groups[1].Value } else { $_.LastWriteTime.ToString('yyyyMMdd') }
+        [pscustomobject]@{ f = $_; key = $key; mtime = $_.LastWriteTime }
+    } | Sort-Object key, mtime -Descending
+    $latest = $ranked[0].f
+    try { $bytes = [IO.File]::ReadAllBytes($latest.FullName) }
+    catch { return [pscustomobject]@{ ok = $false; error = "檔案讀取失敗（可能正被開啟）：$($latest.Name)" } }
+    return [pscustomobject]@{
+        ok         = $true
+        name       = $latest.Name
+        modified   = $latest.LastWriteTime.ToString('yyyy/MM/dd HH:mm')
+        sizeKB     = [int]($latest.Length / 1KB)
+        contentB64 = [Convert]::ToBase64String($bytes)
+    }
+}
+
 # 埠被其他程式占用時自動往後找可用埠（網頁端會依序探測同一組候選埠）
 $listener = $null
 $usedPort = $null
@@ -274,9 +305,12 @@ while ($listener.IsListening) {
         } elseif ($path -eq '/health') {
             # /health 不需 token（網頁用它確認小幫手是否在跑），但不回傳 token
             $out = [pscustomobject]@{ ok = $true; agent = 'mail-agent'; version = $AGENT_VER; needToken = $true }
-        } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send') -and -not (Test-Token $req)) {
+        } elseif (($path -eq '/plan' -or $path -eq '/send' -or $path -eq '/latest-report') -and -not (Test-Token $req)) {
             $res.StatusCode = 401
             $out = [pscustomobject]@{ ok = $false; error = "未授權：請在 Email 設定貼上 agent_token.txt 的內容" }
+        } elseif ($req.HttpMethod -eq 'GET' -and $path -eq '/latest-report') {
+            # 自動匯入：讀來源資料夾最新報告回傳（dir/pattern 由查詢字串帶來，本機設定不寫死）
+            $out = Get-LatestReport $req.QueryString['dir'] $req.QueryString['pattern']
         } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send')) {
             $reader = New-Object System.IO.StreamReader($req.InputStream, [System.Text.Encoding]::UTF8)
             $bodyText = $reader.ReadToEnd(); $reader.Close()
