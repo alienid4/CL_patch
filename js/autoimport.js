@@ -44,20 +44,33 @@
   }
 
   /* 開 app 時呼叫。沒設定或小幫手沒開 → 直接不動作（行為同今天，退回手動）。 */
+  // 每一步都寫進主控台(F12 Console)，方便診斷卡在哪。前綴 [自動匯入] 好過濾。
+  function log() {
+    try { console.log.apply(console, ['[自動匯入]'].concat([].slice.call(arguments))); } catch (e) {}
+  }
+
   function run(opts) {
     opts = opts || {};
     var c = loadCfg();
-    if (!c.enabled || !c.dir) return;          // 沒開或沒設來源 → 不動作
-    // 走到這裡代表使用者已「開啟並設好來源」→ 失敗要明白告知（否則只會停在上傳畫面讓人猜）。
-    // 只有「完全沒設定」(上面已 return) 才靜默，避免打擾沒用這功能的人。
-    var tok = token();
-    if (!tok) { UI.toast('自動匯入需要小幫手權杖：請到 Email 設定貼上 agent_token.txt', 'error'); return; }
+    log('設定：開關=' + (c.enabled ? '開' : '關') + '　來源資料夾=' + (c.dir || '(未設定)') +
+        '　檔名樣式=' + (c.pattern || '(留空)'));
+    if (!c.enabled) { log('自動匯入已關閉，略過。到 其他功能→自動匯入設定 可開啟。'); return; }
+    if (!c.dir) { log('★ 未設定來源資料夾，略過。請到 其他功能→自動匯入設定 填入來源資料夾再按儲存。'); return; }
 
+    var tok = token();
+    if (!tok) {
+      log('★ 沒有小幫手權杖（Email 設定 未貼）。');
+      UI.toast('自動匯入需要小幫手權杖：請到 Email 設定貼上 agent_token.txt', 'error'); return;
+    }
+
+    log('探測本機小幫手（8899~8904）…');
     probe().then(function (base) {
       var url = base + '/latest-report?dir=' + encodeURIComponent(c.dir) +
                 '&pattern=' + encodeURIComponent(c.pattern || '');
+      log('小幫手在 ' + base + '，讀取最新報告…', url);
       return fetch(url, { headers: { 'X-Agent-Token': tok } }).then(function (r) { return r.json(); });
     }).then(function (j) {
+      log('小幫手回應：', j);
       if (!j || !j.ok) {
         // j.error 直接說原因：「未授權…」=權杖過期(小幫手重啟過要重貼)；「找不到符合『樣式』…」=檔名樣式對不上
         UI.toast('自動匯入未成功：' + ((j && j.error) || '未知錯誤'), 'error');
@@ -65,12 +78,14 @@
       }
       var tag = j.name + '|' + j.modified, last = '';
       try { last = localStorage.getItem(LAST_KEY) || ''; } catch (e) {}
-      if (tag === last && !opts.manual) return; // 跟上次同一個檔 → 不重覆沖掉當下畫面
-      if (!(global.App && global.App.importArrayBuffer)) return;
+      if (tag === last && !opts.manual) { log('跟上次同一個檔（' + j.name + '），略過不重覆匯入。'); return; }
+      if (!(global.App && global.App.importArrayBuffer)) { log('主程式尚未就緒'); return; }
+      log('匯入：' + j.name + '（' + j.modified + '）');
       var ok = global.App.importArrayBuffer(b64ToArrayBuffer(j.contentB64), j.name,
         { source: 'auto', modified: j.modified, dir: c.dir });
       if (ok) { try { localStorage.setItem(LAST_KEY, tag); } catch (e) {} }
-    }).catch(function () {
+    }).catch(function (e) {
+      log('★ 連不到小幫手或讀取失敗：', (e && e.message) || e);
       UI.toast('自動匯入：連不到小幫手（可能需重啟，或此電腦讀不到該資料夾）', 'error');
     });
   }
