@@ -48,8 +48,10 @@
     opts = opts || {};
     var c = loadCfg();
     if (!c.enabled || !c.dir) return;          // 沒開或沒設來源 → 不動作
+    // 走到這裡代表使用者已「開啟並設好來源」→ 失敗要明白告知（否則只會停在上傳畫面讓人猜）。
+    // 只有「完全沒設定」(上面已 return) 才靜默，避免打擾沒用這功能的人。
     var tok = token();
-    if (!tok) { if (opts.manual) UI.toast('尚未設定小幫手權杖（Email 設定）', 'error'); return; }
+    if (!tok) { UI.toast('自動匯入需要小幫手權杖：請到 Email 設定貼上 agent_token.txt', 'error'); return; }
 
     probe().then(function (base) {
       var url = base + '/latest-report?dir=' + encodeURIComponent(c.dir) +
@@ -57,8 +59,9 @@
       return fetch(url, { headers: { 'X-Agent-Token': tok } }).then(function (r) { return r.json(); });
     }).then(function (j) {
       if (!j || !j.ok) {
-        if (opts.manual) UI.toast('自動匯入失敗：' + ((j && j.error) || '未知錯誤'), 'error');
-        return;                                 // 讀不到 → 安靜略過（手動仍可）
+        // j.error 直接說原因：「未授權…」=權杖過期(小幫手重啟過要重貼)；「找不到符合『樣式』…」=檔名樣式對不上
+        UI.toast('自動匯入未成功：' + ((j && j.error) || '未知錯誤'), 'error');
+        return;
       }
       var tag = j.name + '|' + j.modified, last = '';
       try { last = localStorage.getItem(LAST_KEY) || ''; } catch (e) {}
@@ -68,8 +71,7 @@
         { source: 'auto', modified: j.modified, dir: c.dir });
       if (ok) { try { localStorage.setItem(LAST_KEY, tag); } catch (e) {} }
     }).catch(function () {
-      if (opts.manual) UI.toast('連不到小幫手，請先啟動（自動匯入需要它代讀資料夾）', 'error');
-      // 非手動：安靜退回手動匯入
+      UI.toast('自動匯入：連不到小幫手（可能需重啟，或此電腦讀不到該資料夾）', 'error');
     });
   }
 
@@ -80,7 +82,7 @@
     var iDir = U.el('input', { type: 'text', class: 'email-input',
       value: c.dir, placeholder: '\\\\伺服器\\分享\\資料夾（本機設定，不上傳）' });
     var iPat = U.el('input', { type: 'text', class: 'email-input',
-      value: c.pattern, placeholder: '例：弱點彙總報告_*.xlsx（留空＝任何 .xlsx）' });
+      value: c.pattern, placeholder: '留空即可（依日期挑最新）；要鎖定某系列可填 *(New)*.xlsx' });
 
     function field(label, node) {
       return U.el('label', { class: 'email-field' }, [
@@ -95,7 +97,7 @@
       field('來源資料夾', iDir),
       field('檔名樣式', iPat),
       U.el('p', { class: 'email-field-label',
-        text: '「最新」以檔名內 8 碼日期(YYYYMMDD)最大者為準，無日期則用檔案修改時間。設定只存在本機，來源換位置時改這裡即可。需本機小幫手在跑、且此電腦能讀該資料夾。' }),
+        text: '「最新」以檔名內 8 碼日期(YYYYMMDD)最大者為準，無日期則用檔案修改時間。檔名樣式留空＝資料夾內任何 .xlsx 依日期挑最新；若同資料夾有多種報告、只要某一種，才填樣式（例：檔名含 (New) 就填 *(New)*.xlsx）。設定只存本機，來源換位置改這裡即可。需本機小幫手在跑且此電腦能讀該資料夾。' }),
     ]);
 
     function collect() { return { enabled: iEnabled.checked, dir: iDir.value.trim(), pattern: iPat.value.trim() }; }
