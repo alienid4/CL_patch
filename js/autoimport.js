@@ -15,7 +15,15 @@
   // 出廠預設「留空」：不預填任何內網路徑，使用者自行在設定畫面填（存本機）
   var DEFAULTS = { enabled: true, dir: '', pattern: '' };
 
+  // 集中設定優先：小幫手若有 autoimport.json，會把來源資料夾送進 window.__AUTOIMPORT_DIR，
+  // 此時所有窗口共用同一份、零個人設定；沒有才退回各人瀏覽器 localStorage。
+  function isCentral() { return !!(global.__AUTOIMPORT_DIR && String(global.__AUTOIMPORT_DIR).trim()); }
   function loadCfg() {
+    if (isCentral()) {
+      return { enabled: true, central: true,
+               dir: String(global.__AUTOIMPORT_DIR).trim(),
+               pattern: (global.__AUTOIMPORT_PATTERN ? String(global.__AUTOIMPORT_PATTERN).trim() : '') };
+    }
     try {
       var c = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
       return { enabled: c.enabled !== false, dir: c.dir || '', pattern: c.pattern || '' };
@@ -110,7 +118,13 @@
         U.el('span', { class: 'email-field-label', text: label }), node,
       ]);
     }
-    var body = U.el('div', { class: 'email-form' }, [
+    var rows = [];
+    if (isCentral()) {
+      rows.push(U.el('p', { class: 'email-field-label',
+        text: '✓ 此電腦由「集中設定」管理（小幫手 autoimport.json）：來源資料夾＝' + c.dir +
+              '。所有窗口共用同一份，下面欄位不生效、僅供檢視。要改請改小幫手旁的 autoimport.json。' }));
+    }
+    var body = U.el('div', { class: 'email-form' }, rows.concat([
       U.el('div', { class: 'email-field' }, [
         U.el('label', { class: 'email-check' }, [iEnabled,
           U.el('span', { text: '開啟時自動抓最新（關閉＝只手動匯入）' })]),
@@ -119,7 +133,7 @@
       field('檔名樣式', iPat),
       U.el('p', { class: 'email-field-label',
         text: '「最新」以檔名內 8 碼日期(YYYYMMDD)最大者為準，無日期則用檔案修改時間。檔名樣式留空＝資料夾內任何 .xlsx 依日期挑最新；若同資料夾有多種報告、只要某一種，才填樣式（例：檔名含 (New) 就填 *(New)*.xlsx）。設定只存本機，來源換位置改這裡即可。需本機小幫手在跑且此電腦能讀該資料夾。' }),
-    ]);
+    ]));
 
     function collect() { return { enabled: iEnabled.checked, dir: iDir.value.trim(), pattern: iPat.value.trim() }; }
     var save = U.el('button', { class: 'btn btn-primary btn-sm', text: '儲存設定',

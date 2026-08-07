@@ -47,7 +47,8 @@ function group(title) { console.log("\n\x1b[36m" + title + "\x1b[0m"); }
     defaultViewport: { width: 1440, height: 950 },
   });
   const page = await browser.newPage();
-  const BENIGN = /logo\.(png|jpg)|favicon\.ico/;   // 商標/favicon 本機自備，缺了不影響邏輯
+  // 商標/favicon 本機自備；agent_token.js 由小幫手執行時才產生，沒跑就 404 且無害 —— 皆非邏輯錯誤
+  const BENIGN = /logo\.(png|jpg)|favicon\.ico|agent_token\.js/;
   const jsErrors = [];   // 真正的 JS 例外
   const bad404 = [];     // 非無害的資源 404（app 檔案掉了才該擋）
   page.on("pageerror", e => jsErrors.push("PAGEERROR: " + e.message));

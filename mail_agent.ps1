@@ -30,8 +30,21 @@ if (Test-Path $dmPath) {
     } catch {}
 }
 
+# autoimport.json（來源資料夾 + 檔名樣式，管理者填一次）。有此檔時，小幫手會把設定隨權杖
+# 一起送進網頁 → 所有窗口零設定、開 app 就自動抓最新。無此檔則退回各人瀏覽器自行設定。
+$script:autoDir = ''
+$script:autoPattern = ''
+$aiPath = Join-Path $here 'autoimport.json'
+if (Test-Path $aiPath) {
+    try {
+        $ai = Get-Content $aiPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $script:autoDir = [string]$ai.dir
+        $script:autoPattern = [string]$ai.pattern
+    } catch {}
+}
+
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.75 (auto-token)'
+$AGENT_VER = 'V1.76 (central-cfg)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -269,11 +282,17 @@ if (-not $listener) {
 # 權杖檔：限縮為「僅目前使用者可讀」，避免同機其他帳戶取得授權
 try {
     [IO.File]::WriteAllText($tokenPath, $script:token, (New-Object Text.UTF8Encoding($false)))
-    # 同時寫成網頁可直接 <script> 載入的 JS：開 app 就自動帶入權杖，使用者不必手動貼。
-    # 用佔位符 @T@ 組字串（而非直接寫 TOKEN='...'），避免密鑰掃描把「變數」誤判成寫死金鑰。
+    # 同時寫成網頁可直接 <script> 載入的 JS：開 app 就自動帶入權杖(與集中設定)，使用者不必手動。
+    # 用佔位符組字串（而非直接寫 TOKEN='...'），避免密鑰掃描把「變數」誤判成寫死金鑰。
     $q = [char]39   # 單引號；GUID 僅十六進位字元，單引號包起即可
-    $js = 'window.__AGENT_TOKEN=@T@;'.Replace('@T@', $q + $script:token + $q)
-    [IO.File]::WriteAllText($tokenJsPath, $js, (New-Object Text.UTF8Encoding($false)))
+    # JS 單引號字串內，反斜線與單引號需跳脫（UNC 路徑含反斜線，務必處理）
+    function Esc-Js([string]$s) { return $s.Replace('\', '\\').Replace([string][char]39, '\' + [char]39) }
+    $lines = @('window.__AGENT_TOKEN=@T@;'.Replace('@T@', $q + $script:token + $q))
+    if ($script:autoDir) {
+        $lines += 'window.__AUTOIMPORT_DIR=@D@;'.Replace('@D@', $q + (Esc-Js $script:autoDir) + $q)
+        $lines += 'window.__AUTOIMPORT_PATTERN=@P@;'.Replace('@P@', $q + (Esc-Js $script:autoPattern) + $q)
+    }
+    [IO.File]::WriteAllText($tokenJsPath, ($lines -join "`r`n"), (New-Object Text.UTF8Encoding($false)))
     $me = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     foreach ($f in @($tokenPath, $tokenJsPath)) {
         $acl = New-Object System.Security.AccessControl.FileSecurity
