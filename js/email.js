@@ -324,7 +324,7 @@
       // probeAgent 已驗證回應方確為 mail-agent，並記住實際使用的埠
       probeAgent()
         .then(function (j) {
-          var hasTok = !!(loadCfg().agentToken || '').trim();
+          var hasTok = !!(window.__AGENT_TOKEN || (loadCfg().agentToken || '').trim());
           var port = AGENT.replace(/^.*:/, '');
           var portNote = (port === String(AGENT_PORTS[0])) ? '' : '（埠 ' + port + '）';
           if (j.needToken && !hasTok) {
@@ -383,7 +383,8 @@
     /* 送小幫手的標頭：帶存取權杖，避免其他網頁盜用小幫手發信 */
     function agentHeaders() {
       var h = { 'Content-Type': 'application/json' };
-      var t = (loadCfg().agentToken || '').trim();
+      // 小幫手自動寫入的 agent_token.js(window.__AGENT_TOKEN) 優先；沒有才用 Email 設定手貼的
+      var t = (window.__AGENT_TOKEN ? String(window.__AGENT_TOKEN).trim() : '') || (loadCfg().agentToken || '').trim();
       if (t) h['X-Agent-Token'] = t;
       return h;
     }

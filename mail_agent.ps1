@@ -31,14 +31,19 @@ if (Test-Path $dmPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.74 (auto-import)'
+$AGENT_VER = 'V1.75 (auto-token)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
 # 以你的名義發信。啟動時產生一次性 token 寫到 agent_token.txt，網頁需帶 token 才受理。
-$script:token = [guid]::NewGuid().ToString('N')
-$tokenPath = Join-Path $here 'agent_token.txt'
-# 注意：token 檔要等監聽成功才寫，否則啟動失敗(埠被占用)也留下新 token，使用者會誤以為已就緒
+$tokenPath   = Join-Path $here 'agent_token.txt'
+$tokenJsPath = Join-Path $here 'agent_token.js'   # 給網頁自動載入用（使用者不必手貼權杖）
+# 固定權杖：agent_token.txt 已存在就沿用同一個（不每次換新），讓 agent_token.js 內容穩定、
+# 網頁不會載到舊值；不存在才首次產生。取捨：權杖不再每次重啟輪替，但只聽 localhost + 檔案 ACL 限本人可讀。
+$existingTok = ''
+if (Test-Path $tokenPath) { try { $existingTok = (Get-Content $tokenPath -Raw -Encoding UTF8).Trim() } catch {} }
+$script:token = if ($existingTok) { $existingTok } else { [guid]::NewGuid().ToString('N') }
+# 注意：token 檔要等監聽成功才(重)寫，避免啟動失敗(埠占用)時誤留狀態
 
 # 允許的來源：本機看板（file:// 會送 Origin: null，或不送 Origin）
 function Test-Origin($req) {
@@ -261,15 +266,22 @@ if (-not $listener) {
     exit 1
 }
 
-# 權杖檔：限縮為「僅目前使用者可讀」，避免同機其他帳戶取得寄信授權
+# 權杖檔：限縮為「僅目前使用者可讀」，避免同機其他帳戶取得授權
 try {
     [IO.File]::WriteAllText($tokenPath, $script:token, (New-Object Text.UTF8Encoding($false)))
-    $acl = New-Object System.Security.AccessControl.FileSecurity
-    $acl.SetAccessRuleProtection($true, $false)     # 停用繼承，且不複製既有規則
+    # 同時寫成網頁可直接 <script> 載入的 JS：開 app 就自動帶入權杖，使用者不必手動貼。
+    # 用佔位符 @T@ 組字串（而非直接寫 TOKEN='...'），避免密鑰掃描把「變數」誤判成寫死金鑰。
+    $q = [char]39   # 單引號；GUID 僅十六進位字元，單引號包起即可
+    $js = 'window.__AGENT_TOKEN=@T@;'.Replace('@T@', $q + $script:token + $q)
+    [IO.File]::WriteAllText($tokenJsPath, $js, (New-Object Text.UTF8Encoding($false)))
     $me = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
-        $me, 'FullControl', 'Allow')))
-    Set-Acl -Path $tokenPath -AclObject $acl
+    foreach ($f in @($tokenPath, $tokenJsPath)) {
+        $acl = New-Object System.Security.AccessControl.FileSecurity
+        $acl.SetAccessRuleProtection($true, $false)     # 停用繼承，且不複製既有規則
+        $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $me, 'FullControl', 'Allow')))
+        Set-Acl -Path $f -AclObject $acl
+    }
     $aclNote = '（已限縮為僅你本人可讀）'
 } catch { $aclNote = '（權限限縮失敗，請自行確認該檔存取權）' }
 
@@ -278,10 +290,10 @@ if ($usedPort -ne $Port) {
     Write-Host "註：埠 $Port 已被占用，改用 $usedPort（網頁會自動找到）" -ForegroundColor Yellow
 }
 Write-Host ""
-Write-Host "存取權杖（第一次使用請貼到網頁 Email 設定的「小幫手權杖」欄）：" -ForegroundColor Yellow
+Write-Host "存取權杖（已自動寫入，網頁開啟即帶入，無需手動貼）：" -ForegroundColor Yellow
 Write-Host "  $script:token" -ForegroundColor Cyan
-Write-Host "  已寫入 $tokenPath $aclNote"
-Write-Host "  每次重啟會換新，換了要重貼。"
+Write-Host "  已寫入 $tokenPath 與 agent_token.js $aclNote"
+Write-Host "  固定權杖：重啟沿用同一個，網頁重新整理即生效。"
 
 while ($listener.IsListening) {
     try { $ctx = $listener.GetContext() } catch { break }

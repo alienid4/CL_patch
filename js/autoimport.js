@@ -22,7 +22,13 @@
     } catch (e) { return { enabled: DEFAULTS.enabled, dir: '', pattern: '' }; }
   }
   function saveCfg(c) { try { localStorage.setItem(CFG_KEY, JSON.stringify(c)); return true; } catch (e) { return false; } }
-  function token() { try { return ((global.EmailCfg && global.EmailCfg.load().agentToken) || '').trim(); } catch (e) { return ''; } }
+  // 權杖來源：小幫手自動寫入的 agent_token.js(window.__AGENT_TOKEN) 優先；沒有才退回 Email 設定手貼的。
+  function token() {
+    try {
+      if (global.__AGENT_TOKEN) return String(global.__AGENT_TOKEN).trim();
+      return ((global.EmailCfg && global.EmailCfg.load().agentToken) || '').trim();
+    } catch (e) { return ''; }
+  }
 
   /* 探測小幫手實際在哪個埠（沿用 email 的候選埠與驗證方式） */
   function probe() {
