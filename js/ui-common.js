@@ -14,7 +14,11 @@
     box.textContent = msg;
     box.className = 'toast show ' + (type || 'info');
     clearTimeout(toast._t);
-    toast._t = setTimeout(function () { box.className = 'toast'; }, 2600);
+    // 錯誤訊息常含診斷資訊(自動匯入失敗原因等)，停久一點讓人看得完；其餘短暫。
+    var ms = (type === 'error') ? 15000 : 2600;
+    toast._t = setTimeout(function () { box.className = 'toast'; }, ms);
+    // 點一下可立刻關掉(看完就收，或提早關)
+    box.onclick = function () { clearTimeout(toast._t); box.className = 'toast'; };
   }
 
   /* -------- Modal --------
