@@ -127,7 +127,8 @@
       var attrs = { class: 'metric-card ' + k.cls + (k.recs ? ' clickable' : '') };
       if (k.recs) attrs.onclick = function () {
         var list = k.recs();
-        if (list.length) global.UI.openDetail((k.title || k.label) + '（' + list.length + ' 筆）', list);
+        // 總覽 KPI 是跨全部項目彙整 → 明細前面帶「項目/部門」欄，讓人一眼知道每筆落在哪個檢測項目
+        if (list.length) global.UI.openDetail((k.title || k.label) + '（' + list.length + ' 筆）', list, { extraCols: OVERDUE_EXTRA_COLS });
       };
       kgrid.appendChild(U.el('div', attrs, [
         U.el('div', { class: 'metric-value', text: (typeof k.value === 'number' ? U.num(k.value) : k.value) }),
@@ -262,11 +263,11 @@
     });
     var tfoot = U.el('tfoot'); var ftr = U.el('tr', { class: 'total-row' });
     ftr.appendChild(U.el('td', { class: 'owner-cell', text: '合計' }));
-    ftr.appendChild(numDrillTd(t.open, '全部項目　未結案', allR.open));
-    ftr.appendChild(numDrillTd(t.overdue, '全部項目　已逾期', allR.overdue, t.overdue > 0 ? 'has-overdue' : ''));
-    ftr.appendChild(numDrillTd(t.soon, '全部項目　近期到期', allR.soon));
-    ftr.appendChild(numDrillTd(t.high, '全部項目　高風險未結', allR.high));
-    ftr.appendChild(numDrillTd(t.closed, '全部項目　已結案', allR.closed));
+    ftr.appendChild(numDrillTd(t.open, '全部項目　未結案', allR.open, '', OVERDUE_EXTRA_COLS));
+    ftr.appendChild(numDrillTd(t.overdue, '全部項目　已逾期', allR.overdue, t.overdue > 0 ? 'has-overdue' : '', OVERDUE_EXTRA_COLS));
+    ftr.appendChild(numDrillTd(t.soon, '全部項目　近期到期', allR.soon, '', OVERDUE_EXTRA_COLS));
+    ftr.appendChild(numDrillTd(t.high, '全部項目　高風險未結', allR.high, '', OVERDUE_EXTRA_COLS));
+    ftr.appendChild(numDrillTd(t.closed, '全部項目　已結案', allR.closed, '', OVERDUE_EXTRA_COLS));
     ftr.appendChild(U.el('td', { class: 'num-cell', text: t.rate + '%' }));
     ftr.appendChild(U.el('td', {}));
     tfoot.appendChild(ftr); table.appendChild(tfoot);
@@ -274,21 +275,23 @@
   }
 
   /* 可點的數字格：val>0 → 點開該批實際筆數 */
+  /* drillTd 只用於 SLA(按嚴重度跨全部項目彙整) → 明細帶「項目/部門」欄 */
   function drillTd(val, title, recs, extraCls) {
     var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
     if (val > 0) {
       return U.el('td', { class: cls + ' clickable', text: U.num(val),
-        onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+        onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs, { extraCols: OVERDUE_EXTRA_COLS }); } });
     }
     return U.el('td', { class: cls, text: U.num(val) });
   }
 
-  /* 同 drillTd，但阻止冒泡(用於「整列可點」的表格內，避免同時觸發整列動作) */
-  function numDrillTd(val, title, recs, extraCls) {
+  /* 同 drillTd，但阻止冒泡(用於「整列可點」的表格內，避免同時觸發整列動作)。
+   * extraCols 可選：跨項目彙整(合計列)才傳，單一項目列(標題已含項目名)不傳。 */
+  function numDrillTd(val, title, recs, extraCls, extraCols) {
     var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
     if (val > 0 && recs && recs.length) {
       return U.el('td', { class: cls + ' clickable', text: U.num(val),
-        onclick: function (e) { e.stopPropagation(); global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+        onclick: function (e) { e.stopPropagation(); global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs, extraCols ? { extraCols: extraCols } : undefined); } });
     }
     return U.el('td', { class: cls, text: U.num(val) });
   }
@@ -382,11 +385,12 @@
     block.appendChild(U.el('div', { class: 'rank-block-title', text: nameHeader + '排行' }));
     if (!list.length) { block.appendChild(U.el('p', { class: 'empty-hint', text: '無資料。' })); return block; }
 
+    // 紅黑榜按部門/負責人跨全部項目彙整 → 明細帶「項目/部門」欄
     function drillCell(val, title, recs, extraCls) {
       var cls = 'num-cell' + (extraCls ? ' ' + extraCls : '');
       if (val > 0) {
         return U.el('td', { class: cls + ' clickable', text: U.num(val),
-          onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs); } });
+          onclick: function () { global.UI.openDetail(title + '（' + recs.length + ' 筆）', recs, { extraCols: OVERDUE_EXTRA_COLS }); } });
       }
       return U.el('td', { class: cls, text: U.num(val) });
     }
