@@ -44,15 +44,25 @@ if (Test-Path $aiPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.77 (autoimport-log)'
+$AGENT_VER = 'V1.78 (shared-token)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
 # 以你的名義發信。啟動時產生一次性 token 寫到 agent_token.txt，網頁需帶 token 才受理。
-$tokenPath   = Join-Path $here 'agent_token.txt'
-$tokenJsPath = Join-Path $here 'agent_token.js'   # 給網頁自動載入用（使用者不必手貼權杖）
-# 固定權杖：agent_token.txt 已存在就沿用同一個（不每次換新），讓 agent_token.js 內容穩定、
-# 網頁不會載到舊值；不存在才首次產生。取捨：權杖不再每次重啟輪替，但只聽 localhost + 檔案 ACL 限本人可讀。
+# 權杖存「每台機器共用一處」(不分資料夾)：不管幾份 app 複本、哪支小幫手，都用同一個權杖，
+# 徹底避免「app 讀到的權杖 ≠ 跑在 8899 的小幫手權杖」→ 401。放 LOCALAPPDATA(本機、使用者專屬)。
+$tokenDir = $null
+try {
+    if ($env:LOCALAPPDATA) {
+        $tokenDir = Join-Path $env:LOCALAPPDATA 'CL_patch'
+        if (-not (Test-Path $tokenDir)) { New-Item -ItemType Directory -Force $tokenDir | Out-Null }
+    }
+} catch { $tokenDir = $null }
+if (-not $tokenDir) { $tokenDir = $here }              # 萬一取不到 LOCALAPPDATA，退回本資料夾
+$tokenPath   = Join-Path $tokenDir 'agent_token.txt'   # 機器共用的權杖來源
+$tokenJsPath = Join-Path $here 'agent_token.js'        # 仍寫在 app 資料夾，供網頁 <script> 載入
+# 固定權杖：已存在就沿用同一個（不每次換新）；不存在才首次產生。取捨：不再每次重啟輪替，
+# 但只聽 localhost + 檔案 ACL 限本人可讀。機器共用 → 多複本權杖一致、不再 401。
 $existingTok = ''
 if (Test-Path $tokenPath) { try { $existingTok = (Get-Content $tokenPath -Raw -Encoding UTF8).Trim() } catch {} }
 $script:token = if ($existingTok) { $existingTok } else { [guid]::NewGuid().ToString('N') }
