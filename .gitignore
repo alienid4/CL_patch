@@ -30,6 +30,7 @@ autoimport.json
 mail-batch.json
 mail-task.json
 mail_log.csv
+autoimport_log.csv
 
 # update.bat 自我更新的暫存
 update.bat.new

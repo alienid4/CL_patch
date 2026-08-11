@@ -44,7 +44,7 @@ if (Test-Path $aiPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.76 (central-cfg)'
+$AGENT_VER = 'V1.77 (autoimport-log)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -89,6 +89,21 @@ function Write-MailLog([string]$owner, [string]$to, [string]$cc, [string]$status
             [IO.File]::AppendAllText($alt, $line + "`r`n", (New-Object Text.UTF8Encoding($true)))
         } catch {}
     }
+}
+
+# 自動匯入紀錄檔（每次讀公槽都寫一筆，失敗有持久紀錄可查/可寄；UTF-8 BOM，Excel 可直接開）
+$script:aiLogPath = Join-Path $here 'autoimport_log.csv'
+function Write-AutoImportLog($dir, $result) {
+    $ok   = if ($result.ok) { '成功' } else { '失敗' }
+    $name = if ($result.ok) { [string]$result.name } else { '' }
+    $err  = if ($result.ok) { '' } else { [string]$result.error }
+    $line = ('{0},{1},{2},{3},{4}' -f (Get-Date -Format 'yyyy/MM/dd HH:mm'), (Csv-Field $dir), $ok, (Csv-Field $name), (Csv-Field $err))
+    try {
+        if (-not (Test-Path $script:aiLogPath)) {
+            [IO.File]::WriteAllText($script:aiLogPath, "時間,來源資料夾,結果,匯入檔名,錯誤`r`n", (New-Object Text.UTF8Encoding($true)))
+        }
+        [IO.File]::AppendAllText($script:aiLogPath, $line + "`r`n", (New-Object Text.UTF8Encoding($false)))
+    } catch {}   # 寫 log 失敗不可影響匯入本身
 }
 
 # 由主管的 DN 取其 email。任何失敗（沒填 manager、繫結失敗、沒 mail）一律回 $null，
@@ -341,7 +356,9 @@ while ($listener.IsListening) {
             $out = [pscustomobject]@{ ok = $false; error = "未授權：請在 Email 設定貼上 agent_token.txt 的內容" }
         } elseif ($req.HttpMethod -eq 'GET' -and $path -eq '/latest-report') {
             # 自動匯入：讀來源資料夾最新報告回傳（dir/pattern 由查詢字串帶來，本機設定不寫死）
-            $out = Get-LatestReport $req.QueryString['dir'] $req.QueryString['pattern']
+            $reqDir = $req.QueryString['dir']
+            $out = Get-LatestReport $reqDir $req.QueryString['pattern']
+            Write-AutoImportLog $reqDir $out   # 每次讀取都留紀錄（成功/失敗都寫）
         } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send')) {
             $reader = New-Object System.IO.StreamReader($req.InputStream, [System.Text.Encoding]::UTF8)
             $bodyText = $reader.ReadToEnd(); $reader.Close()
