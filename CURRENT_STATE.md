@@ -3,7 +3,7 @@
 > 本檔由 `python .project/snapshot.py` 生成。任何手寫進度、WBS、交付紀錄都可能過期；
 > 以本檔與 `python .project/checks.py` 的即時輸出為準。
 
-- 目前 HEAD: `b93a06a`
+- 目前 HEAD: `2c3f173`
 
 ## 強制層檢查即時結果
 
@@ -98,14 +98,14 @@
 ## 最近 10 筆 commit
 
 ```
+2c3f173 V1.82 總覽下鑽明細加「項目/部門」欄：一眼知道每筆落在哪個檢測項目
+bd36d3e 新增 downloadpatch.bat：一鍵從 GitHub 抓最新版並更新+重啟小幫手 [skip-version]
+4c9ea6e 修中文路徑讀不到：小幫手直接用 autoimport.json 路徑，URL 也改 UTF-8 解碼 [skip-version]
+e25071d 小幫手權杖改「每台機器共用一個」(不分資料夾)，根治多複本 401 [skip-version]
+1c68c80 自動匯入加持久 log：小幫手寫 autoimport_log.csv（成功/失敗都記）[skip-version]
+9090688 V1.81 錯誤訊息停久一點：紅字 15 秒+點一下才關，看得完再收
+5826364 晚安自動存檔 2026-08-07 11:58
 b93a06a V1.80 自動匯入來源改可集中設定：管理者填一次，所有窗口零設定
 ccbb436 V1.79 權杖自動帶入：使用者只點 start_agent.bat，不必手貼權杖
 16a958b V1.78 自動匯入：每步寫進主控台(F12)方便診斷卡在哪
-930df5a V1.77 自動匯入：失敗時明白提示原因、修正誤導的檔名樣式範例
-67e9a13 下班：刷新 CURRENT_STATE [skip-version]
-0b7d179 V1.76 自動匯入：開啟時抓來源資料夾最新報告（管理介面可設路徑）
-7766cc7 移除誤入的空殼 sync_load/save.ps1（同步機制實作在私有 AI_note，非本公開 repo）[skip-version]
-8ba63df 晚安自動存檔 2026-07-22 16:26
-3fa5f89 使用說明新增「催辦通知信」與「更新紀錄」兩節 [skip-version]
-5060577 V1.75 主管副本改「部門對照優先」，查無主管時明講未填不亂寄
 ```
