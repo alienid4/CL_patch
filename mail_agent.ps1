@@ -44,7 +44,7 @@ if (Test-Path $aiPath) {
 }
 
 # 小幫手版本（網頁「測試小幫手」會顯示；用來確認背景跑的是不是最新版）
-$AGENT_VER = 'V1.78 (shared-token)'
+$AGENT_VER = 'V1.79 (cjk-path-fix)'
 
 # ── 存取權杖 ─────────────────────────────────────────────
 # 沒有權杖的話，任何網頁只要在這台機器上被開啟，就能呼叫 /send 用公司 relay
@@ -289,6 +289,23 @@ function Get-LatestReport([string]$dir, [string]$pattern) {
     }
 }
 
+# 從原始 URL 取查詢參數並以 UTF-8 正確解碼（避免 HttpListener 的 $req.QueryString 把中文解成亂碼）。
+# 用 $req.RawUrl（未解碼的原始字串），自行 UnescapeDataString（%XX 以 UTF-8 還原）。
+function Get-QueryUtf8([string]$rawUrl, [string]$key) {
+    if ([string]::IsNullOrEmpty($rawUrl)) { return '' }
+    $qi = $rawUrl.IndexOf('?')
+    if ($qi -lt 0) { return '' }
+    foreach ($pair in $rawUrl.Substring($qi + 1).Split('&')) {
+        $eq = $pair.IndexOf('=')
+        $k = if ($eq -ge 0) { $pair.Substring(0, $eq) } else { $pair }
+        if ($k -eq $key) {
+            $v = if ($eq -ge 0) { $pair.Substring($eq + 1) } else { '' }
+            try { return [System.Uri]::UnescapeDataString($v) } catch { return '' }
+        }
+    }
+    return ''
+}
+
 # 埠被其他程式占用時自動往後找可用埠（網頁端會依序探測同一組候選埠）
 $listener = $null
 $usedPort = $null
@@ -365,9 +382,15 @@ while ($listener.IsListening) {
             $res.StatusCode = 401
             $out = [pscustomobject]@{ ok = $false; error = "未授權：請在 Email 設定貼上 agent_token.txt 的內容" }
         } elseif ($req.HttpMethod -eq 'GET' -and $path -eq '/latest-report') {
-            # 自動匯入：讀來源資料夾最新報告回傳（dir/pattern 由查詢字串帶來，本機設定不寫死）
-            $reqDir = $req.QueryString['dir']
-            $out = Get-LatestReport $reqDir $req.QueryString['pattern']
+            # 有集中設定(autoimport.json)就直接用小幫手自己讀到的路徑——免 URL 來回，中文最保險。
+            # 沒有才用網頁經 URL 傳來的，且自行以 UTF-8 解碼(HttpListener 的 QueryString 會把中文解錯)。
+            if ($script:autoDir) {
+                $reqDir = $script:autoDir; $reqPat = $script:autoPattern
+            } else {
+                $reqDir = Get-QueryUtf8 $req.RawUrl 'dir'
+                $reqPat = Get-QueryUtf8 $req.RawUrl 'pattern'
+            }
+            $out = Get-LatestReport $reqDir $reqPat
             Write-AutoImportLog $reqDir $out   # 每次讀取都留紀錄（成功/失敗都寫）
         } elseif ($req.HttpMethod -eq 'POST' -and ($path -eq '/plan' -or $path -eq '/send')) {
             $reader = New-Object System.IO.StreamReader($req.InputStream, [System.Text.Encoding]::UTF8)
