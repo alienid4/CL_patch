@@ -17,7 +17,11 @@ set "SRC=%OUT%\CL_patch-main"
 
 echo.
 echo [1/5] Downloading latest from GitHub...
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%URL%' -OutFile '%ZIP%' -UseBasicParsing } catch { Write-Host ('DOWNLOAD FAILED: ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }"
+REM Use built-in curl like update.bat: it trusts the Windows cert store (so the
+REM corporate SSL-inspection proxy CA is accepted) and --ssl-no-revoke skips only
+REM the revocation (OCSP/CRL) check that the proxy tends to break. The full cert
+REM chain + hostname are still verified (this is NOT --insecure / -k).
+curl --ssl-no-revoke -L -o "%ZIP%" "%URL%"
 if errorlevel 1 ( echo. & echo Download failed - check network / GitHub access. & pause & exit /b 1 )
 
 echo [2/5] Extracting...
