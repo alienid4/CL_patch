@@ -3,7 +3,7 @@
 #  流程：讀 mail-batch.json → 逐位負責人查 AD 取 email → 顯示計畫 → Y/N 確認 → 才寄
 #  免安裝：ADSI(Windows 內建)查 AD；Send-MailMessage 寄信(免認證 relay)
 #  查無 email/離職者：先看 override.json，再轉寄「預設收件人(fallbackTo)」，最後列出跳過名單
-#  用法：雙擊 send.bat（或 powershell -ExecutionPolicy Bypass -File send_mail.ps1）
+#  用法：雙擊 send.bat（或 powershell -NoProfile -ExecutionPolicy RemoteSigned -File send_mail.ps1）
 #  註：relay 主機、寄件人、收件人 email 全部來自 mail-batch.json / AD，本腳本不寫死任何公司資訊
 # ============================================================
 [CmdletBinding()]

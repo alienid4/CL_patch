@@ -6,7 +6,9 @@ if "%HERE:~-1%"=="\" set "HERE=%HERE:~0,-1%"
 
 REM ============================================================
 REM  CL_patch update (company side): download latest from public
-REM  GitHub and overwrite page files + docs + helper scripts.
+REM  GitHub and overwrite page files + docs + helper scripts,
+REM  then stop the old helper and start the new one (so Test Helper
+REM  shows the new version instead of the stale in-memory one).
 REM  Run inside the CL_patch folder; paths auto-detected via %~dp0.
 REM ============================================================
 
@@ -46,9 +48,17 @@ for /f "tokens=2 delims='" %%v in ('findstr /c:"APP_VERSION =" "%SRC%\config\ver
 
 echo.
 echo === Changed files this update ^(content differs^) ===
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SRC%\_show_changes.ps1" -Src "%SRC%" -Dst "%HERE%"
+REM Run our own helper under the standard RemoteSigned policy (not Bypass);
+REM Unblock-File clears the zone mark that Expand-Archive may put on it.
+powershell -NoProfile -ExecutionPolicy RemoteSigned -Command "Unblock-File -Path '%SRC%\_show_changes.ps1' -ErrorAction SilentlyContinue; & '%SRC%\_show_changes.ps1' -Src '%SRC%' -Dst '%HERE%'"
 echo ====================================================
 echo.
+
+echo Stopping running helper ^(so the new version takes effect^)...
+REM Exclude our own powershell (its command line also contains 'mail_agent.ps1'),
+REM otherwise it could stop itself before reaching the real helper process.
+powershell -NoProfile -Command "$me=$PID; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*mail_agent.ps1*' -and $_.ProcessId -ne $me } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+timeout /t 2 /nobreak >nul
 
 echo Updating page files ^(index.html, css, js, config, assets^)...
 robocopy "%SRC%\css"    "%HERE%\css"    /MIR /NFL /NDL /NJH /NJS >nul
@@ -62,6 +72,9 @@ robocopy "%SRC%\docs" "%HERE%\docs" /E /NFL /NDL /NJH /NJS >nul
 for %%F in (mail_agent.ps1 install_agent.bat uninstall_agent.bat start_agent.bat send_mail.ps1 send.bat override.json.example dept_manager.json.example autoimport.json.example downloadpatch.bat _show_changes.ps1) do (
     if exist "%SRC%\%%F" copy /Y "%SRC%\%%F" "%HERE%\%%F" >nul
 )
+
+echo Restarting helper ^(new version^)...
+if exist "%HERE%\start_agent.bat" start "" "%HERE%\start_agent.bat"
 
 REM Self-update: stage new update.bat as .new (a background helper swaps it in after this exits)
 if exist "%SRC%\update.bat" copy /Y "%SRC%\update.bat" "%HERE%\update.bat.new" >nul
@@ -82,6 +95,8 @@ echo.
 echo ============================================
 echo   Update complete!   version: %NEWVER%   (was %OLDVER%)
 echo   (open page, top-right shows %NEWVER%; press Ctrl+F5 if not)
+echo   Helper restarted - Email settings / Test Helper should show
+echo   the new helper version (no need to re-paste the token).
 echo ============================================
 start "" "%HERE%\index.html"
 pause

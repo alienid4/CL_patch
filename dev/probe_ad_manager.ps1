@@ -9,8 +9,8 @@
 #  ※ 相容 Windows PowerShell 5.1（未使用 ?? / ?: 等 7.x 專屬語法）。
 #
 #  用法（PowerShell）：
-#      powershell -NoProfile -ExecutionPolicy Bypass -File probe_ad_manager.ps1
-#      powershell -NoProfile -ExecutionPolicy Bypass -File probe_ad_manager.ps1 -Name 王小明
+#      powershell -NoProfile -ExecutionPolicy RemoteSigned -File probe_ad_manager.ps1
+#      powershell -NoProfile -ExecutionPolicy RemoteSigned -File probe_ad_manager.ps1 -Name 王小明
 # ============================================================
 param(
     [string]$Name = $env:USERNAME    # 預設查自己

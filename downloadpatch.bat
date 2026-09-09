@@ -17,16 +17,16 @@ set "SRC=%OUT%\CL_patch-main"
 
 echo.
 echo [1/5] Downloading latest from GitHub...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%URL%' -OutFile '%ZIP%' -UseBasicParsing } catch { Write-Host ('DOWNLOAD FAILED: ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }"
+powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%URL%' -OutFile '%ZIP%' -UseBasicParsing } catch { Write-Host ('DOWNLOAD FAILED: ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }"
 if errorlevel 1 ( echo. & echo Download failed - check network / GitHub access. & pause & exit /b 1 )
 
 echo [2/5] Extracting...
 if exist "%OUT%" rmdir /s /q "%OUT%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Expand-Archive -Path '%ZIP%' -DestinationPath '%OUT%' -Force } catch { Write-Host ('EXTRACT FAILED: ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }"
+powershell -NoProfile -Command "try { Expand-Archive -Path '%ZIP%' -DestinationPath '%OUT%' -Force } catch { Write-Host ('EXTRACT FAILED: ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }"
 if not exist "%SRC%\index.html" ( echo. & echo Extract failed - index.html not found. & pause & exit /b 1 )
 
 echo [3/5] Stopping running helper(s)...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-WmiObject Win32_Process | Where-Object { $_.CommandLine -like '*mail_agent.ps1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+powershell -NoProfile -Command "$me=$PID; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*mail_agent.ps1*' -and $_.ProcessId -ne $me } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 timeout /t 2 /nobreak >nul
 
 echo [4/5] Updating program files (your autoimport.json / data are kept)...

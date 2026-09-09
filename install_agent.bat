@@ -5,12 +5,13 @@ REM  用「開機啟動資料夾」方式（不需系統管理員、不用 schtasks）
 REM  之後日常在網頁按「寄出」即可，不用再點任何 bat
 REM ============================================================
 cd /d "%~dp0"
+powershell -NoProfile -Command "Unblock-File -LiteralPath '%~dp0mail_agent.ps1' -ErrorAction SilentlyContinue"
 set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 set "VBS=%STARTUP%\CL_patch_MailAgent.vbs"
 
 echo 建立開機自動啟動（開機啟動資料夾，不需管理員）...
 > "%VBS%" echo Set s = CreateObject("WScript.Shell")
->> "%VBS%" echo s.Run "powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ""%~dp0mail_agent.ps1""", 0, False
+>> "%VBS%" echo s.Run "powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy RemoteSigned -File ""%~dp0mail_agent.ps1""", 0, False
 
 if not exist "%VBS%" (
     echo 建立失敗（可能無法寫入啟動資料夾，請改用 start_agent.bat 手動啟動）。
